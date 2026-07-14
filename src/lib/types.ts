@@ -17,6 +17,12 @@ export type PortalStatus =
   | "Building"
   | "Live: Shared with Client"
   | "Client Closed";
+export type ProjectStatus =
+  | "Planning"
+  | "In Progress"
+  | "Review"
+  | "Delivered"
+  | "On Hold";
 
 export const CLIENT_STATUSES: ClientStatus[] = [
   "Lead",
@@ -46,6 +52,14 @@ export const LEAD_SOURCES: LeadSource[] = [
   "Website",
   "Social Media",
   "Event",
+];
+
+export const PROJECT_STATUSES: ProjectStatus[] = [
+  "Planning",
+  "In Progress",
+  "Review",
+  "Delivered",
+  "On Hold",
 ];
 
 export interface Profile {
@@ -109,6 +123,19 @@ export interface ClientPortal {
   updated_at: string;
 }
 
+export interface Project {
+  id: string;
+  name: string;
+  client_id: string;
+  status: ProjectStatus;
+  owner: string | null;
+  start_date: string | null;
+  due_date: string | null;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -117,6 +144,7 @@ export interface Database {
       deals: { Row: Deal; Insert: Partial<Deal>; Update: Partial<Deal> };
       activities: { Row: Activity; Insert: Partial<Activity>; Update: Partial<Activity> };
       client_portals: { Row: ClientPortal; Insert: Partial<ClientPortal>; Update: Partial<ClientPortal> };
+      projects: { Row: Project; Insert: Partial<Project>; Update: Partial<Project> };
     };
   };
 }

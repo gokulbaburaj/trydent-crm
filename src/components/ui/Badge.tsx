@@ -20,10 +20,10 @@ const dotClasses: Record<Tone, string> = {
 
 export function statusTone(status: string): Tone {
   const s = status.toLowerCase();
-  if (s.includes("won") || s.includes("active") || s.includes("live")) return "green";
-  if (s.includes("lost") || s.includes("inactive") || s.includes("closed")) return "red";
-  if (s.includes("negotiation") || s.includes("building") || s.includes("proposal")) return "yellow";
-  if (s.includes("qualified") || s.includes("prospect")) return "blue";
+  if (s.includes("won") || s.includes("active") || s.includes("live") || s.includes("delivered")) return "green";
+  if (s.includes("lost") || s.includes("inactive") || s.includes("closed") || s.includes("on hold")) return "red";
+  if (s.includes("negotiation") || s.includes("building") || s.includes("proposal") || s.includes("review")) return "yellow";
+  if (s.includes("qualified") || s.includes("prospect") || s.includes("in progress")) return "blue";
   return "gray";
 }
 
