@@ -24,6 +24,7 @@ export function Topbar({
         <div className="relative hidden sm:block">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
           <input
+            id="global-search-input"
             placeholder="Search..."
             className="w-52 rounded border border-border bg-surface-raised py-1.5 pl-8 pr-3 text-[13px] text-foreground placeholder:text-muted focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30"
           />

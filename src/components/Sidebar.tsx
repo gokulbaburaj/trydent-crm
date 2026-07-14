@@ -11,6 +11,9 @@ import {
   MonitorSmartphone,
   UsersRound,
   Settings,
+  ChevronDown,
+  Search,
+  SquarePen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -41,7 +44,10 @@ function NavGroup({
   return (
     <div className="flex flex-col gap-px">
       {label && (
-        <div className="px-2 pb-1 pt-3 text-xs font-medium text-muted">{label}</div>
+        <div className="flex items-center gap-1 px-2 pb-1.5 pt-4 text-xs font-medium text-muted">
+          {label}
+          <ChevronDown className="h-3 w-3" />
+        </div>
       )}
       {items.map((item) => {
         const active = pathname === item.href || pathname?.startsWith(item.href + "/");
@@ -53,10 +59,10 @@ function NavGroup({
               "flex items-center gap-2.5 rounded px-2 py-[7px] text-[13px] font-medium transition-colors",
               active
                 ? "bg-surface-raised text-foreground"
-                : "text-muted hover:bg-surface-hover hover:text-foreground-secondary"
+                : "text-foreground-secondary hover:bg-surface-hover hover:text-foreground"
             )}
           >
-            <item.icon className={cn("h-4 w-4 shrink-0", active && "text-accent")} />
+            <item.icon className={cn("h-4 w-4 shrink-0 text-muted", active && "text-accent")} />
             {item.label}
           </Link>
         );
@@ -70,14 +76,34 @@ export function Sidebar() {
 
   return (
     <aside className="hidden md:flex sticky top-0 h-screen w-[220px] shrink-0 flex-col overflow-y-auto border-r border-border bg-surface">
-      <div className="flex items-center gap-2 px-4 py-4">
-        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-accent text-[11px] font-medium text-accent-foreground">
-          TL
+      <div className="flex items-center justify-between gap-2 px-3 py-3.5">
+        <button className="flex min-w-0 items-center gap-1.5 rounded px-1 py-1 text-[13px] font-medium text-foreground hover:bg-surface-hover">
+          <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-accent text-[10px] font-medium text-accent-foreground">
+            TL
+          </div>
+          <span className="truncate">Trydent Labs</span>
+          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted" />
+        </button>
+        <div className="flex shrink-0 items-center gap-0.5">
+          <button
+            title="Search"
+            onClick={() =>
+              document.getElementById("global-search-input")?.focus()
+            }
+            className="rounded p-1.5 text-muted hover:bg-surface-hover hover:text-foreground"
+          >
+            <Search className="h-3.5 w-3.5" />
+          </button>
+          <button
+            title="New"
+            className="rounded p-1.5 text-muted hover:bg-surface-hover hover:text-foreground"
+          >
+            <SquarePen className="h-3.5 w-3.5" />
+          </button>
         </div>
-        <span className="truncate text-[13px] font-medium text-foreground">Trydent Labs</span>
       </div>
 
-      <nav className="flex flex-1 flex-col gap-2 px-2 pb-4">
+      <nav className="flex flex-1 flex-col gap-1 px-2 pb-4">
         <NavGroup items={OVERVIEW} pathname={pathname} />
         <NavGroup label="Workspace" items={WORKSPACE} pathname={pathname} />
         <NavGroup label="Organization" items={ORGANIZATION} pathname={pathname} />
