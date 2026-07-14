@@ -2,7 +2,7 @@
 
 import { Search, LogOut } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
-import { Badge } from "@/components/ui/Badge";
+import { Popover, MenuItem, MenuSeparator } from "@/components/ui/Popover";
 import type { Profile } from "@/lib/types";
 
 export function Topbar({
@@ -15,7 +15,7 @@ export function Topbar({
   title?: string;
 }) {
   return (
-    <header className="flex items-center justify-between gap-4 border-b border-border bg-background px-6 py-3.5">
+    <header className="flex items-center justify-between gap-4 border-b border-border px-6 py-3">
       <div>
         <h1 className="text-[15px] font-semibold text-foreground">{title ?? "Overview"}</h1>
       </div>
@@ -31,26 +31,47 @@ export function Topbar({
         </div>
 
         {profile && (
-          <div className="flex items-center gap-2 rounded border border-border bg-surface px-2 py-1">
-            <Avatar name={profile.full_name} url={profile.avatar_url} size="sm" />
-            <div className="hidden sm:block">
-              <div className="text-[13px] font-medium leading-tight text-foreground">
-                {profile.full_name}
-              </div>
-              <Badge tone="green" className="mt-0.5">
-                {profile.role}
-              </Badge>
-            </div>
-          </div>
+          <Popover
+            align="right"
+            className="w-56"
+            trigger={
+              <button className="flex items-center rounded p-1 hover:bg-white/5">
+                <Avatar name={profile.full_name} url={profile.avatar_url} size="sm" />
+              </button>
+            }
+          >
+            {(close) => (
+              <>
+                <div className="flex items-center gap-2.5 px-2 py-2">
+                  <Avatar name={profile.full_name} url={profile.avatar_url} size="sm" />
+                  <div className="min-w-0">
+                    <p className="truncate text-[13px] font-medium text-foreground">
+                      {profile.full_name}
+                    </p>
+                    <p className="truncate text-xs text-muted">{profile.email}</p>
+                  </div>
+                </div>
+                <div className="px-2 pb-1.5">
+                  <span className="inline-flex items-center gap-1.5 rounded bg-white/5 px-1.5 py-0.5 text-[11px] font-medium capitalize text-foreground-secondary">
+                    <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+                    {profile.role}
+                  </span>
+                </div>
+                <MenuSeparator />
+                <MenuItem
+                  danger
+                  icon={<LogOut className="h-3.5 w-3.5" />}
+                  onClick={() => {
+                    close();
+                    onSignOut();
+                  }}
+                >
+                  Sign out
+                </MenuItem>
+              </>
+            )}
+          </Popover>
         )}
-
-        <button
-          onClick={onSignOut}
-          className="rounded p-2 text-muted hover:bg-white/5 hover:text-foreground"
-          title="Sign out"
-        >
-          <LogOut className="h-4 w-4" />
-        </button>
       </div>
     </header>
   );

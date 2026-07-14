@@ -23,6 +23,7 @@ export type ProjectStatus =
   | "Review"
   | "Delivered"
   | "On Hold";
+export type TaskStatus = "Not Started" | "In Progress" | "Done" | "Archived";
 
 export const CLIENT_STATUSES: ClientStatus[] = [
   "Lead",
@@ -60,6 +61,13 @@ export const PROJECT_STATUSES: ProjectStatus[] = [
   "Review",
   "Delivered",
   "On Hold",
+];
+
+export const TASK_STATUSES: TaskStatus[] = [
+  "Not Started",
+  "In Progress",
+  "Done",
+  "Archived",
 ];
 
 export interface Profile {
@@ -119,6 +127,19 @@ export interface ClientPortal {
   client_id: string;
   status: PortalStatus;
   notes: string | null;
+  portal_username: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProjectTask {
+  id: string;
+  project_id: string;
+  name: string;
+  status: TaskStatus;
+  due_date: string | null;
+  assigned_to: string | null;
+  sort_order: number;
   created_at: string;
   updated_at: string;
 }
@@ -145,6 +166,7 @@ export interface Database {
       activities: { Row: Activity; Insert: Partial<Activity>; Update: Partial<Activity> };
       client_portals: { Row: ClientPortal; Insert: Partial<ClientPortal>; Update: Partial<ClientPortal> };
       projects: { Row: Project; Insert: Partial<Project>; Update: Partial<Project> };
+      project_tasks: { Row: ProjectTask; Insert: Partial<ProjectTask>; Update: Partial<ProjectTask> };
     };
   };
 }

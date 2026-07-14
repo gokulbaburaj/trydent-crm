@@ -4,6 +4,8 @@ import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Sidebar } from "@/components/Sidebar";
 import { Topbar } from "@/components/Topbar";
+import { TabBar } from "@/components/TabBar";
+import { TabsProvider } from "@/lib/tabs";
 import { useAuth } from "@/lib/useAuth";
 
 const PAGE_TITLES: Record<string, string> = {
@@ -63,12 +65,21 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="flex min-h-screen overflow-x-hidden">
-      <Sidebar />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <Topbar profile={profile} onSignOut={signOut} title={pageTitleFor(pathname)} />
-        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden p-6">{children}</main>
+    <TabsProvider>
+      <div className="flex h-screen overflow-hidden bg-background">
+        <Sidebar />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <TabBar />
+          <div className="min-h-0 min-w-0 flex-1 pb-2 pr-2">
+            <div className="flex h-full min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-panel">
+              <Topbar profile={profile} onSignOut={signOut} title={pageTitleFor(pathname)} />
+              <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-6">
+                {children}
+              </main>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+    </TabsProvider>
   );
 }

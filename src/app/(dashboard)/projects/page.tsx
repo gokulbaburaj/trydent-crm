@@ -7,12 +7,14 @@ import { Card } from "@/components/ui/Card";
 import { Badge, statusTone } from "@/components/ui/Badge";
 import { Drawer } from "@/components/ui/Drawer";
 import { Input, Label, Textarea } from "@/components/ui/Input";
+import { DatePicker } from "@/components/ui/DatePicker";
 import { Select } from "@/components/ui/Select";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { createClient } from "@/lib/supabase/client";
 import { formatDate } from "@/lib/utils";
-import type { Project, Client, Profile } from "@/lib/types";
+import type { Project, ProjectTask, Client, Profile } from "@/lib/types";
 import { PROJECT_STATUSES } from "@/lib/types";
+import { useTabs } from "@/lib/tabs";
 
 const emptyForm: Partial<Project> = {
   name: "",
@@ -25,19 +27,19 @@ const emptyForm: Partial<Project> = {
 };
 
 export default function ProjectsPage() {
+  const { openInNewTab } = useTabs();
   const { rows: projects, setRows } = useSupabaseTable<Project>(
     "projects",
     { column: "created_at", ascending: false }
   );
   const { rows: clients } = useSupabaseTable<Client>("clients");
   const { rows: profiles } = useSupabaseTable<Profile>("profiles");
+  const { rows: tasks } = useSupabaseTable<ProjectTask>("project_tasks");
 
-  const [selected, setSelected] = useState<Project | null>(null);
   const [editing, setEditing] = useState<Partial<Project> | null>(null);
   const [saving, setSaving] = useState(false);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
-  const clientName = (id: string) => clients.find((c) => c.id === id)?.company ?? "Unknown";
   const ownerName = (id: string | null) => profiles.find((p) => p.id === id)?.full_name ?? "Unassigned";
 
   const grouped = useMemo(() => {
@@ -76,7 +78,6 @@ export default function ProjectsPage() {
         .single();
       if (!error && data) {
         setRows((prev) => prev.map((p) => (p.id === data.id ? (data as Project) : p)));
-        if (selected?.id === data.id) setSelected(data as Project);
       }
     } else {
       const { data, error } = await supabase.from("projects").insert(editing).select().single();
@@ -86,13 +87,10 @@ export default function ProjectsPage() {
     setEditing(null);
   }
 
-  async function handleDelete(id: string) {
-    const supabase = createClient();
-    if (!supabase) return;
-    if (!confirm("Delete this project?")) return;
-    await supabase.from("projects").delete().eq("id", id);
-    setRows((prev) => prev.filter((p) => p.id !== id));
-    setSelected(null);
+  function completionOf(projectId: string) {
+    const active = tasks.filter((t) => t.project_id === projectId && t.status !== "Archived");
+    if (active.length === 0) return null;
+    return (active.filter((t) => t.status === "Done").length / active.length) * 100;
   }
 
   return (
@@ -159,64 +157,46 @@ export default function ProjectsPage() {
 
               {!isCollapsed && (
                 <div className="grid grid-cols-1 gap-2.5 border-t border-border p-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {items.map((p) => (
-                    <button
-                      key={p.id}
-                      onClick={() => setSelected(p)}
-                      className="rounded border border-border bg-white/[0.02] p-3 text-left transition-colors hover:bg-white/5"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="truncate text-sm font-medium">{p.name}</span>
-                        <Badge tone={statusTone(p.status)} dot>
-                          {p.status}
-                        </Badge>
-                      </div>
-                      {p.due_date && (
-                        <p className="mt-2 text-xs text-muted">Due {formatDate(p.due_date)}</p>
-                      )}
-                      <p className="mt-1 text-xs text-muted">Owner: {ownerName(p.owner)}</p>
-                    </button>
-                  ))}
+                  {items.map((p) => {
+                    const pct = completionOf(p.id);
+                    return (
+                      <button
+                        key={p.id}
+                        onClick={() => openInNewTab(`/projects/${p.id}`, p.name)}
+                        className="rounded border border-border bg-white/[0.02] p-3 text-left transition-colors hover:bg-white/5"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="truncate text-sm font-medium">{p.name}</span>
+                          <Badge tone={statusTone(p.status)} dot>
+                            {p.status}
+                          </Badge>
+                        </div>
+                        {pct !== null && (
+                          <div className="mt-2.5 flex items-center gap-2">
+                            <span className="text-xs tabular-nums text-muted">
+                              {pct.toFixed(0)}%
+                            </span>
+                            <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/10">
+                              <div
+                                className="h-full rounded-full bg-success"
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                          </div>
+                        )}
+                        {p.due_date && (
+                          <p className="mt-2 text-xs text-muted">Due {formatDate(p.due_date)}</p>
+                        )}
+                        <p className="mt-1 text-xs text-muted">Owner: {ownerName(p.owner)}</p>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
           );
         })}
       </div>
-
-      <Drawer open={!!selected} onClose={() => setSelected(null)} title={selected?.name ?? ""}>
-        {selected && (
-          <div className="flex flex-col gap-6">
-            <div className="flex items-center justify-between">
-              <Badge tone={statusTone(selected.status)} dot>
-                {selected.status}
-              </Badge>
-              <div className="flex gap-2">
-                <Button size="sm" variant="secondary" onClick={() => setEditing(selected)}>
-                  Edit
-                </Button>
-                <Button size="sm" variant="danger" onClick={() => handleDelete(selected.id)}>
-                  Delete
-                </Button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <Info label="Client" value={clientName(selected.client_id)} />
-              <Info label="Owner" value={ownerName(selected.owner)} />
-              <Info label="Start Date" value={formatDate(selected.start_date)} />
-              <Info label="Due Date" value={formatDate(selected.due_date)} />
-            </div>
-
-            {selected.description && (
-              <div>
-                <p className="text-xs font-medium text-muted">Description</p>
-                <p className="text-sm">{selected.description}</p>
-              </div>
-            )}
-          </div>
-        )}
-      </Drawer>
 
       <Drawer
         open={!!editing}
@@ -260,18 +240,16 @@ export default function ProjectsPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>Start Date</Label>
-                <Input
-                  type="date"
-                  value={editing.start_date ?? ""}
-                  onChange={(e) => setEditing({ ...editing, start_date: e.target.value || null })}
+                <DatePicker
+                  value={editing.start_date}
+                  onChange={(d) => setEditing({ ...editing, start_date: d })}
                 />
               </div>
               <div>
                 <Label>Due Date</Label>
-                <Input
-                  type="date"
-                  value={editing.due_date ?? ""}
-                  onChange={(e) => setEditing({ ...editing, due_date: e.target.value || null })}
+                <DatePicker
+                  value={editing.due_date}
+                  onChange={(d) => setEditing({ ...editing, due_date: d })}
                 />
               </div>
             </div>
@@ -306,15 +284,6 @@ export default function ProjectsPage() {
           </form>
         )}
       </Drawer>
-    </div>
-  );
-}
-
-function Info({ label, value }: { label: string; value?: string | null }) {
-  return (
-    <div>
-      <p className="text-xs font-medium text-muted">{label}</p>
-      <p className="text-sm">{value || "—"}</p>
     </div>
   );
 }

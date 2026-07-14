@@ -20,7 +20,7 @@ import { StatCard } from "@/components/ui/StatCard";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrency } from "@/lib/currency";
 import type { Deal, Client, Activity } from "@/lib/types";
 import { DEAL_STAGES } from "@/lib/types";
 
@@ -34,6 +34,7 @@ const COLORS = [
 ];
 
 export default function DashboardPage() {
+  const { format: formatCurrency } = useCurrency();
   const { rows: deals, loading: dealsLoading } = useSupabaseTable<Deal>("deals");
   const { rows: clients, loading: clientsLoading } = useSupabaseTable<Client>("clients");
   const { rows: activities, loading: activitiesLoading } = useSupabaseTable<Activity>(

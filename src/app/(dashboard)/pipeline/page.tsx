@@ -1,16 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { ChevronDown, Plus } from "lucide-react";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { Button } from "@/components/ui/Button";
 import { Badge, statusTone } from "@/components/ui/Badge";
 import { Drawer } from "@/components/ui/Drawer";
 import { Input, Label } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
+import { DatePicker } from "@/components/ui/DatePicker";
+import { Popover, MenuItem, MenuLabel } from "@/components/ui/Popover";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { createClient } from "@/lib/supabase/client";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
+import { CURRENCIES, useCurrency } from "@/lib/currency";
 import type { Deal, Client, Profile } from "@/lib/types";
 import { DEAL_STAGES } from "@/lib/types";
 
@@ -34,6 +37,7 @@ export default function PipelinePage() {
   const [selected, setSelected] = useState<Deal | null>(null);
   const [editing, setEditing] = useState<Partial<Deal> | null>(null);
   const [saving, setSaving] = useState(false);
+  const { currency, setCurrency, format: formatCurrency } = useCurrency();
 
   const clientName = (id: string) => clients.find((c) => c.id === id)?.company ?? "Unknown";
   const ownerName = (id: string | null) => profiles.find((p) => p.id === id)?.full_name ?? "Unassigned";
@@ -92,12 +96,42 @@ export default function PipelinePage() {
         <h2 className="text-sm text-muted">
           {deals.length} deal{deals.length !== 1 ? "s" : ""} in pipeline
         </h2>
-        <Button
-          size="sm"
-          onClick={() => setEditing({ ...emptyForm, client_id: clients[0]?.id ?? "" })}
-        >
-          <Plus className="h-4 w-4" /> New Deal
-        </Button>
+        <div className="flex items-center gap-2">
+          <Popover
+            align="right"
+            trigger={
+              <button className="flex items-center gap-1.5 rounded border border-border bg-surface px-2.5 py-1.5 text-xs font-medium text-foreground-secondary hover:bg-white/5 hover:text-foreground">
+                {CURRENCIES.find((c) => c.code === currency)?.symbol} {currency}
+                <ChevronDown className="h-3 w-3 text-muted" />
+              </button>
+            }
+          >
+            {(close) => (
+              <>
+                <MenuLabel>Display currency</MenuLabel>
+                {CURRENCIES.map((c) => (
+                  <MenuItem
+                    key={c.code}
+                    selected={c.code === currency}
+                    icon={<span className="text-[11px] text-muted">{c.symbol}</span>}
+                    onClick={() => {
+                      setCurrency(c.code);
+                      close();
+                    }}
+                  >
+                    {c.label}
+                  </MenuItem>
+                ))}
+              </>
+            )}
+          </Popover>
+          <Button
+            size="sm"
+            onClick={() => setEditing({ ...emptyForm, client_id: clients[0]?.id ?? "" })}
+          >
+            <Plus className="h-4 w-4" /> New Deal
+          </Button>
+        </div>
       </div>
 
       <KanbanBoard
@@ -209,10 +243,9 @@ export default function PipelinePage() {
             </div>
             <div>
               <Label>Close Date</Label>
-              <Input
-                type="date"
-                value={editing.close_date ?? ""}
-                onChange={(e) => setEditing({ ...editing, close_date: e.target.value || null })}
+              <DatePicker
+                value={editing.close_date}
+                onChange={(d) => setEditing({ ...editing, close_date: d })}
               />
             </div>
             <div>

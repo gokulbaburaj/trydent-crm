@@ -23,7 +23,7 @@ export function DataTable<T>({
   emptyMessage?: string;
 }) {
   return (
-    <div className="overflow-x-auto rounded-md border border-border bg-background">
+    <div className="overflow-x-auto rounded-md border border-border">
       <table className="w-full min-w-max text-[13px]">
         <thead>
           <tr className="border-b border-border-subtle text-left text-[11px] uppercase tracking-wide text-muted">

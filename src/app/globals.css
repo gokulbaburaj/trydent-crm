@@ -2,6 +2,7 @@
 
 :root {
   --background: #08090a;
+  --panel: #101012;        /* main canvas — slightly lighter than the app background */
   --surface: #131316;
   --border: #1c1c1f;
   --border-subtle: #17171a;
@@ -29,6 +30,7 @@
 
 @theme inline {
   --color-background: var(--background);
+  --color-panel: var(--panel);
   --color-surface: var(--surface);
   --color-border: var(--border);
   --color-border-subtle: var(--border-subtle);

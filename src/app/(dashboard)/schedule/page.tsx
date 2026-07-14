@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import {
   addMonths,
   addWeeks,
@@ -32,7 +33,7 @@ import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/useAuth";
 import { formatDate } from "@/lib/utils";
-import type { Activity, Client, Deal, Profile } from "@/lib/types";
+import type { Activity, Client, Deal, Profile, Project, ProjectTask } from "@/lib/types";
 
 type Tab = "all" | "mine" | "calendar";
 type CalView = "week" | "month";
@@ -111,6 +112,8 @@ export default function SchedulePage() {
   const { rows: clients } = useSupabaseTable<Client>("clients");
   const { rows: deals } = useSupabaseTable<Deal>("deals");
   const { rows: profiles } = useSupabaseTable<Profile>("profiles");
+  const { rows: projectTasks } = useSupabaseTable<ProjectTask>("project_tasks");
+  const { rows: projects } = useSupabaseTable<Project>("projects");
 
   const [tab, setTab] = useState<Tab>("all");
   const [calView, setCalView] = useState<CalView>("week");
@@ -187,6 +190,21 @@ export default function SchedulePage() {
   }, [activities]);
 
   const dayEvents = (day: Date) => eventsByDay.get(format(day, "yyyy-MM-dd")) ?? [];
+
+  const tasksByDay = useMemo(() => {
+    const map = new Map<string, ProjectTask[]>();
+    for (const t of projectTasks) {
+      if (!t.due_date || t.status === "Archived") continue;
+      const key = t.due_date.slice(0, 10);
+      const arr = map.get(key) ?? [];
+      arr.push(t);
+      map.set(key, arr);
+    }
+    return map;
+  }, [projectTasks]);
+
+  const dayTasks = (day: Date) => tasksByDay.get(format(day, "yyyy-MM-dd")) ?? [];
+  const projectName = (id: string) => projects.find((p) => p.id === id)?.name ?? "Project";
 
   const goPrev = () =>
     setAnchor((d) => (calView === "week" ? subWeeks(d, 1) : subMonths(d, 1)));
@@ -269,6 +287,8 @@ export default function SchedulePage() {
             <WeekGrid
               anchor={anchor}
               dayEvents={dayEvents}
+              dayTasks={dayTasks}
+              projectName={projectName}
               clientName={clientName}
               onEventClick={setEditing}
               onSlotClick={(dt) =>
@@ -280,6 +300,7 @@ export default function SchedulePage() {
               anchor={anchor}
               activities={activities}
               dayEvents={dayEvents}
+              dayTasks={dayTasks}
               selectedDay={selectedDay}
               setSelectedDay={setSelectedDay}
               clientName={clientName}
@@ -401,12 +422,16 @@ export default function SchedulePage() {
 function WeekGrid({
   anchor,
   dayEvents,
+  dayTasks,
+  projectName,
   clientName,
   onEventClick,
   onSlotClick,
 }: {
   anchor: Date;
   dayEvents: (day: Date) => Activity[];
+  dayTasks: (day: Date) => ProjectTask[];
+  projectName: (id: string) => string;
   clientName: (id: string | null) => string;
   onEventClick: (a: Activity) => void;
   onSlotClick: (dt: Date) => void;
@@ -450,6 +475,38 @@ function WeekGrid({
             </span>
           </div>
         ))}
+      </div>
+
+      {/* All-day row: project tasks due that day */}
+      <div className="grid grid-cols-[3.5rem_repeat(7,1fr)] border-b border-border">
+        <div className="flex items-center justify-end pr-2 text-[10px] text-muted-2">tasks</div>
+        {days.map((day) => {
+          const dts = dayTasks(day);
+          return (
+            <div
+              key={day.toISOString()}
+              className="flex min-h-7 flex-col gap-0.5 border-l border-border-subtle p-0.5"
+            >
+              {dts.slice(0, 3).map((t) => (
+                <Link
+                  key={t.id}
+                  href={`/projects/${t.project_id}`}
+                  title={`${t.name} — ${projectName(t.project_id)}`}
+                  className="truncate rounded px-1.5 py-0.5 text-[11px] font-medium text-white"
+                  style={{
+                    background: "var(--event-indigo-bg)",
+                    boxShadow: "inset 3px 0 0 0 var(--event-indigo-bar)",
+                  }}
+                >
+                  {t.name}
+                </Link>
+              ))}
+              {dts.length > 3 && (
+                <span className="px-1.5 text-[10px] text-muted">+{dts.length - 3} more</span>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* Time grid */}
@@ -556,6 +613,7 @@ function MonthGrid({
   anchor,
   activities,
   dayEvents,
+  dayTasks,
   selectedDay,
   setSelectedDay,
   clientName,
@@ -564,6 +622,7 @@ function MonthGrid({
   anchor: Date;
   activities: Activity[];
   dayEvents: (day: Date) => Activity[];
+  dayTasks: (day: Date) => ProjectTask[];
   selectedDay: Date | null;
   setSelectedDay: (d: Date | null) => void;
   clientName: (id: string | null) => string;
@@ -596,7 +655,7 @@ function MonthGrid({
         <div className="grid grid-cols-7 gap-1">
           {monthGrid.map((day) => {
             const inMonth = isSameMonth(day, anchor);
-            const hasEvents = dayEvents(day).length > 0;
+            const hasEvents = dayEvents(day).length > 0 || dayTasks(day).length > 0;
             const selected = !!selectedDay && isSameDay(day, selectedDay);
             return (
               <button

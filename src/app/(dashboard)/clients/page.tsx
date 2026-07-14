@@ -6,6 +6,8 @@ import { DataTable, Column } from "@/components/DataTable";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { Button } from "@/components/ui/Button";
 import { Badge, statusTone } from "@/components/ui/Badge";
+import { StatusPicker } from "@/components/ui/StatusPicker";
+import { DatePicker } from "@/components/ui/DatePicker";
 import { PersonCell } from "@/components/ui/Avatar";
 import { Drawer } from "@/components/ui/Drawer";
 import { Input, Label, Textarea } from "@/components/ui/Input";
@@ -55,9 +57,11 @@ export default function ClientsPage() {
     {
       header: "Status",
       render: (c) => (
-        <Badge tone={statusTone(c.status)} dot>
-          {c.status}
-        </Badge>
+        <StatusPicker
+          value={c.status}
+          options={CLIENT_STATUSES}
+          onChange={(status) => handleStageMove(c, status)}
+        />
       ),
     },
     { header: "Email", render: (c) => c.email || "—" },
@@ -353,10 +357,9 @@ export default function ClientsPage() {
             </div>
             <div>
               <Label>Last Contact</Label>
-              <Input
-                type="date"
-                value={editing.last_contact ?? ""}
-                onChange={(e) => setEditing({ ...editing, last_contact: e.target.value })}
+              <DatePicker
+                value={editing.last_contact}
+                onChange={(d) => setEditing({ ...editing, last_contact: d })}
               />
             </div>
             <div className="flex gap-2 pt-2">

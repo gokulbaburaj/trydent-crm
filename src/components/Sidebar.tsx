@@ -75,7 +75,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden md:flex sticky top-0 h-screen w-[220px] shrink-0 flex-col overflow-y-auto border-r border-border bg-background">
+    <aside className="hidden md:flex h-full w-[220px] shrink-0 flex-col overflow-y-auto bg-background">
       <div className="flex items-center justify-between gap-2 px-3 py-3.5">
         <button className="flex min-w-0 items-center gap-1.5 rounded px-1 py-1 text-[13px] font-medium text-foreground hover:bg-white/5">
           <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-accent text-[10px] font-medium text-accent-foreground">

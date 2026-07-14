@@ -3,6 +3,7 @@
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { portalEmail } from "@/lib/portal";
 import { Button } from "@/components/ui/Button";
 import { Input, Label } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
@@ -27,8 +28,10 @@ export default function LoginPage() {
     }
 
     setLoading(true);
+    // Client-portal users sign in with a plain username — expand it to the portal email.
+    const identifier = email.includes("@") ? email : portalEmail(email);
     const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
+      email: identifier,
       password,
     });
     setLoading(false);
@@ -62,13 +65,13 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <Label>Email</Label>
+            <Label>Email or username</Label>
             <Input
-              type="email"
+              type="text"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@trydentlabs.com"
+              placeholder="you@trydentlabs.com or portal username"
             />
           </div>
           <div>
