@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
+import Link from "next/link";
+import { parseISO, format as formatDateFns } from "date-fns";
 import {
   PieChart,
   Pie,
@@ -13,12 +15,12 @@ import {
   YAxis,
   CartesianGrid,
 } from "recharts";
-import { DollarSign, TrendingUp, Users, GitBranch } from "lucide-react";
+import { DollarSign, TrendingUp, Users, GitBranch, ArrowRight } from "lucide-react";
 import { StatCard } from "@/components/ui/StatCard";
 import { Card } from "@/components/ui/Card";
-import { Badge, statusTone } from "@/components/ui/Badge";
+import { Badge } from "@/components/ui/Badge";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import type { Deal, Client, Activity } from "@/lib/types";
 import { DEAL_STAGES } from "@/lib/types";
 
@@ -91,6 +93,14 @@ export default function DashboardPage() {
   }, [deals]);
 
   const loading = dealsLoading || clientsLoading || activitiesLoading;
+
+  const upcomingSchedule = useMemo(() => {
+    const now = new Date();
+    return activities
+      .filter((a) => parseISO(a.activity_date) >= now)
+      .sort((a, b) => parseISO(a.activity_date).getTime() - parseISO(b.activity_date).getTime())
+      .slice(0, 6);
+  }, [activities]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -195,22 +205,39 @@ export default function DashboardPage() {
       </div>
 
       <Card>
-        <h3 className="mb-4 text-sm font-semibold text-muted">Recent Activities</h3>
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-muted">Upcoming Schedule</h3>
+          <Link
+            href="/schedule"
+            className="flex items-center gap-1 text-xs font-medium text-accent hover:underline"
+          >
+            View all <ArrowRight className="h-3 w-3" />
+          </Link>
+        </div>
         <div className="flex flex-col divide-y divide-border">
-          {!loading && activities.length === 0 && (
-            <p className="py-6 text-center text-sm text-muted">No activities yet.</p>
+          {!loading && upcomingSchedule.length === 0 && (
+            <p className="py-6 text-center text-sm text-muted">Nothing scheduled yet.</p>
           )}
-          {activities.slice(0, 8).map((a) => (
-            <div key={a.id} className="flex items-center justify-between gap-4 py-3">
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium">{a.description}</p>
-                <p className="text-xs text-muted">{formatDate(a.activity_date)}</p>
+          {upcomingSchedule.map((a) => {
+            const date = parseISO(a.activity_date);
+            const client = clients.find((c) => c.id === a.client_id);
+            return (
+              <div key={a.id} className="flex items-center gap-3 py-3">
+                <div className="flex w-11 shrink-0 flex-col items-center rounded-lg bg-background py-1.5">
+                  <span className="text-sm font-bold">{formatDateFns(date, "d")}</span>
+                  <span className="text-[10px] uppercase text-muted">{formatDateFns(date, "EEE")}</span>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{a.description}</p>
+                  <p className="truncate text-xs text-muted">{client?.company ?? "—"}</p>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  {a.follow_up_required && <Badge tone="yellow" dot>Follow-up</Badge>}
+                  <span className="text-xs text-muted">{formatDateFns(date, "h:mm a")}</span>
+                </div>
               </div>
-              {a.follow_up_required && (
-                <Badge tone={statusTone("Negotiation")}>Follow-up</Badge>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       </Card>
     </div>
