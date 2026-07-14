@@ -56,7 +56,7 @@ export function KanbanBoard<T extends { id: string }>({
             <KanbanColumnDroppable key={col.id} id={col.id}>
               <div className="mb-3 flex items-center justify-between">
                 <h3 className="text-[13px] font-medium text-foreground">{col.label}</h3>
-                <span className="rounded bg-surface-hover px-1.5 py-0.5 text-xs text-muted">
+                <span className="rounded bg-white/5 px-1.5 py-0.5 text-xs text-muted">
                   {colItems.length}
                 </span>
               </div>
@@ -88,7 +88,7 @@ function KanbanColumnDroppable({
     <div
       ref={setNodeRef}
       className={cn(
-        "w-72 shrink-0 rounded-md border border-border bg-surface p-3 transition-colors",
+        "w-72 shrink-0 rounded-md border border-border bg-white/[0.02] p-3 transition-colors",
         isOver && "border-accent bg-accent/5"
       )}
     >
@@ -120,7 +120,7 @@ function KanbanCardDraggable({
       {...listeners}
       {...attributes}
       className={cn(
-        "cursor-grab rounded border border-border bg-surface-raised p-3 active:cursor-grabbing hover:bg-border/40",
+        "cursor-grab rounded border border-border bg-surface p-3 active:cursor-grabbing hover:bg-white/5",
         isDragging && "opacity-70 shadow-xl"
       )}
     >

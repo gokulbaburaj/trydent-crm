@@ -220,9 +220,9 @@ export default function SchedulePage() {
                 <button
                   key={a.id}
                   onClick={() => setEditing(a)}
-                  className="flex items-center gap-3 py-3 text-left hover:bg-surface-hover"
+                  className="flex items-center gap-3 py-3 text-left hover:bg-white/5"
                 >
-                  <div className="flex w-11 shrink-0 flex-col items-center rounded bg-surface-raised py-1.5">
+                  <div className="flex w-11 shrink-0 flex-col items-center rounded bg-white/10 py-1.5">
                     <span className="text-sm font-bold">{format(parseISO(a.activity_date), "d")}</span>
                     <span className="text-[10px] uppercase text-muted">
                       {format(parseISO(a.activity_date), "EEE")}
@@ -364,7 +364,7 @@ function TabButton({
     <button
       onClick={onClick}
       className={`flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium ${
-        active ? "bg-surface-raised text-foreground" : "text-muted hover:text-foreground-secondary"
+        active ? "bg-white/10 text-foreground" : "text-muted hover:text-foreground-secondary"
       }`}
     >
       <Icon className="h-3.5 w-3.5" /> {label}
@@ -376,6 +376,6 @@ function dayCellClass(inMonth: boolean, today: boolean, selected: boolean) {
   const base = "flex h-10 items-center justify-center rounded text-sm transition-colors";
   if (selected) return `${base} bg-accent text-accent-foreground font-semibold`;
   if (today) return `${base} border border-accent text-accent font-semibold`;
-  if (!inMonth) return `${base} text-muted/40 hover:bg-surface-hover`;
-  return `${base} text-foreground hover:bg-surface-hover`;
+  if (!inMonth) return `${base} text-muted/40 hover:bg-white/5`;
+  return `${base} text-foreground hover:bg-white/5`;
 }

@@ -49,7 +49,7 @@ export function Drawer({
           <h2 className="text-[15px] font-semibold">{title}</h2>
           <button
             onClick={onClose}
-            className="rounded p-1.5 hover:bg-surface-hover text-muted hover:text-foreground"
+            className="rounded p-1.5 hover:bg-white/5 text-muted hover:text-foreground"
           >
             <X className="h-4 w-4" />
           </button>

@@ -58,11 +58,11 @@ function NavGroup({
             className={cn(
               "flex items-center gap-2.5 rounded px-2 py-[7px] text-[13px] font-medium transition-colors",
               active
-                ? "bg-surface-raised text-foreground"
-                : "text-foreground-secondary hover:bg-surface-hover hover:text-foreground"
+                ? "bg-white/10 text-foreground"
+                : "text-foreground-secondary hover:bg-white/5 hover:text-foreground"
             )}
           >
-            <item.icon className={cn("h-4 w-4 shrink-0 text-muted", active && "text-accent")} />
+            <item.icon className="h-4 w-4 shrink-0 text-muted" />
             {item.label}
           </Link>
         );
@@ -75,9 +75,9 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden md:flex sticky top-0 h-screen w-[220px] shrink-0 flex-col overflow-y-auto border-r border-border bg-surface">
+    <aside className="hidden md:flex sticky top-0 h-screen w-[220px] shrink-0 flex-col overflow-y-auto border-r border-border bg-background">
       <div className="flex items-center justify-between gap-2 px-3 py-3.5">
-        <button className="flex min-w-0 items-center gap-1.5 rounded px-1 py-1 text-[13px] font-medium text-foreground hover:bg-surface-hover">
+        <button className="flex min-w-0 items-center gap-1.5 rounded px-1 py-1 text-[13px] font-medium text-foreground hover:bg-white/5">
           <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-accent text-[10px] font-medium text-accent-foreground">
             TL
           </div>
@@ -90,13 +90,13 @@ export function Sidebar() {
             onClick={() =>
               document.getElementById("global-search-input")?.focus()
             }
-            className="rounded p-1.5 text-muted hover:bg-surface-hover hover:text-foreground"
+            className="rounded p-1.5 text-muted hover:bg-white/5 hover:text-foreground"
           >
             <Search className="h-3.5 w-3.5" />
           </button>
           <button
             title="New"
-            className="rounded p-1.5 text-muted hover:bg-surface-hover hover:text-foreground"
+            className="rounded p-1.5 text-muted hover:bg-white/5 hover:text-foreground"
           >
             <SquarePen className="h-3.5 w-3.5" />
           </button>

@@ -7,7 +7,7 @@ const toneClasses: Record<Tone, string> = {
   yellow: "bg-warning/10 text-warning",
   red: "bg-danger/10 text-danger",
   blue: "bg-blue-500/10 text-blue-400",
-  gray: "bg-muted/10 text-muted",
+  gray: "bg-white/5 text-foreground-secondary",
 };
 
 const dotClasses: Record<Tone, string> = {
@@ -41,7 +41,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded border border-border/60 bg-surface-hover px-2 py-1 text-xs font-medium text-foreground-secondary",
+        "inline-flex items-center gap-1.5 rounded border border-white/5 px-2 py-1 text-xs font-medium",
         toneClasses[tone],
         className
       )}

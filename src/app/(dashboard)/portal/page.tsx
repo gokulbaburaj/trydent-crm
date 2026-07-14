@@ -52,7 +52,7 @@ export default function ClientPortalPage() {
           </div>
           <span className="text-[13px] font-medium text-foreground">Trydent Labs Client Portal</span>
         </div>
-        <button onClick={signOut} className="rounded p-2 text-muted hover:bg-surface-hover hover:text-foreground">
+        <button onClick={signOut} className="rounded p-2 text-muted hover:bg-white/5 hover:text-foreground">
           <LogOut className="h-4 w-4" />
         </button>
       </header>

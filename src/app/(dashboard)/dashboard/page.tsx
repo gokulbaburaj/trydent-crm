@@ -223,7 +223,7 @@ export default function DashboardPage() {
             const client = clients.find((c) => c.id === a.client_id);
             return (
               <div key={a.id} className="flex items-center gap-3 py-3">
-                <div className="flex w-11 shrink-0 flex-col items-center rounded bg-surface-raised py-1.5">
+                <div className="flex w-11 shrink-0 flex-col items-center rounded bg-white/10 py-1.5">
                   <span className="text-sm font-bold">{formatDateFns(date, "d")}</span>
                   <span className="text-[10px] uppercase text-muted">{formatDateFns(date, "EEE")}</span>
                 </div>

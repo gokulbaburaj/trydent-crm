@@ -133,7 +133,7 @@ export default function ClientsPage() {
           <button
             onClick={() => setView("table")}
             className={`flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium ${
-              view === "table" ? "bg-surface-raised text-foreground" : "text-muted hover:text-foreground-secondary"
+              view === "table" ? "bg-white/10 text-foreground" : "text-muted hover:text-foreground-secondary"
             }`}
           >
             <List className="h-3.5 w-3.5" /> Table
@@ -141,7 +141,7 @@ export default function ClientsPage() {
           <button
             onClick={() => setView("kanban")}
             className={`flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium ${
-              view === "kanban" ? "bg-surface-raised text-foreground" : "text-muted hover:text-foreground-secondary"
+              view === "kanban" ? "bg-white/10 text-foreground" : "text-muted hover:text-foreground-secondary"
             }`}
           >
             <LayoutGrid className="h-3.5 w-3.5" /> Kanban

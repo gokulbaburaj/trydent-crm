@@ -163,7 +163,7 @@ export default function ProjectsPage() {
                     <button
                       key={p.id}
                       onClick={() => setSelected(p)}
-                      className="rounded border border-border bg-surface-raised p-3 text-left transition-colors hover:bg-border/40"
+                      className="rounded border border-border bg-white/[0.02] p-3 text-left transition-colors hover:bg-white/5"
                     >
                       <div className="flex items-center justify-between gap-2">
                         <span className="truncate text-sm font-medium">{p.name}</span>

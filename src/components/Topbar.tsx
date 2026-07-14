@@ -26,12 +26,12 @@ export function Topbar({
           <input
             id="global-search-input"
             placeholder="Search..."
-            className="w-52 rounded border border-border bg-surface-raised py-1.5 pl-8 pr-3 text-[13px] text-foreground placeholder:text-muted focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30"
+            className="w-52 rounded border border-border bg-surface py-1.5 pl-8 pr-3 text-[13px] text-foreground placeholder:text-muted focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30"
           />
         </div>
 
         {profile && (
-          <div className="flex items-center gap-2 rounded border border-border bg-surface-raised px-2 py-1">
+          <div className="flex items-center gap-2 rounded border border-border bg-surface px-2 py-1">
             <Avatar name={profile.full_name} url={profile.avatar_url} size="sm" />
             <div className="hidden sm:block">
               <div className="text-[13px] font-medium leading-tight text-foreground">
@@ -46,7 +46,7 @@ export function Topbar({
 
         <button
           onClick={onSignOut}
-          className="rounded p-2 text-muted hover:bg-surface-hover hover:text-foreground"
+          className="rounded p-2 text-muted hover:bg-white/5 hover:text-foreground"
           title="Sign out"
         >
           <LogOut className="h-4 w-4" />
