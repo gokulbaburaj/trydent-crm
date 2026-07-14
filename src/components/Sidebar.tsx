@@ -52,7 +52,7 @@ function NavGroup({
             className={cn(
               "flex items-center gap-2.5 rounded px-2 py-[7px] text-[13px] font-medium transition-colors",
               active
-                ? "bg-muted/20 text-foreground"
+                ? "bg-surface-raised text-foreground"
                 : "text-muted hover:bg-surface-hover hover:text-foreground-secondary"
             )}
           >
