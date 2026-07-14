@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { Plus } from "lucide-react";
-import { KanbanBoard } from "@/components/KanbanBoard";
+import { useMemo, useState } from "react";
+import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { Badge, statusTone } from "@/components/ui/Badge";
 import { Drawer } from "@/components/ui/Drawer";
 import { Input, Label, Textarea } from "@/components/ui/Input";
@@ -35,17 +35,29 @@ export default function ProjectsPage() {
   const [selected, setSelected] = useState<Project | null>(null);
   const [editing, setEditing] = useState<Partial<Project> | null>(null);
   const [saving, setSaving] = useState(false);
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
   const clientName = (id: string) => clients.find((c) => c.id === id)?.company ?? "Unknown";
   const ownerName = (id: string | null) => profiles.find((p) => p.id === id)?.full_name ?? "Unassigned";
 
-  async function handleStatusMove(project: Project, status: string) {
-    setRows((prev) =>
-      prev.map((p) => (p.id === project.id ? { ...p, status: status as Project["status"] } : p))
-    );
-    const supabase = createClient();
-    if (!supabase) return;
-    await supabase.from("projects").update({ status }).eq("id", project.id);
+  const grouped = useMemo(() => {
+    const map = new Map<string, Project[]>();
+    for (const p of projects) {
+      const arr = map.get(p.client_id) ?? [];
+      arr.push(p);
+      map.set(p.client_id, arr);
+    }
+    return Array.from(map.entries())
+      .map(([clientId, items]) => ({
+        clientId,
+        client: clients.find((c) => c.id === clientId) ?? null,
+        items,
+      }))
+      .sort((a, b) => (a.client?.company ?? "").localeCompare(b.client?.company ?? ""));
+  }, [projects, clients]);
+
+  function toggle(clientId: string) {
+    setCollapsed((prev) => ({ ...prev, [clientId]: !prev[clientId] }));
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -87,7 +99,8 @@ export default function ProjectsPage() {
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
         <h2 className="text-sm text-muted">
-          {projects.length} project{projects.length !== 1 ? "s" : ""}
+          {projects.length} project{projects.length !== 1 ? "s" : ""} across{" "}
+          {grouped.length} client{grouped.length !== 1 ? "s" : ""}
         </h2>
         <Button
           size="sm"
@@ -97,21 +110,79 @@ export default function ProjectsPage() {
         </Button>
       </div>
 
-      <KanbanBoard
-        columns={PROJECT_STATUSES.map((s) => ({ id: s, label: s }))}
-        items={projects}
-        getColumnId={(p) => p.status}
-        onMove={handleStatusMove}
-        renderCard={(p) => (
-          <div onClick={() => setSelected(p)}>
-            <p className="text-sm font-medium">{p.name}</p>
-            <p className="mt-0.5 text-xs text-muted">{clientName(p.client_id)}</p>
-            {p.due_date && (
-              <p className="mt-2 text-xs text-muted">Due {formatDate(p.due_date)}</p>
-            )}
-          </div>
-        )}
-      />
+      {grouped.length === 0 && (
+        <Card>
+          <p className="py-10 text-center text-sm text-muted">
+            No projects yet. Create your first one to see it organized by client here.
+          </p>
+        </Card>
+      )}
+
+      <div className="flex flex-col gap-3">
+        {grouped.map(({ clientId, client, items }) => {
+          const isCollapsed = collapsed[clientId];
+          return (
+            <div key={clientId} className="rounded-2xl border border-border bg-surface/60">
+              <div
+                onClick={() => toggle(clientId)}
+                className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3"
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  {isCollapsed ? (
+                    <ChevronRight className="h-4 w-4 shrink-0 text-muted" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 shrink-0 text-muted" />
+                  )}
+                  <span className="truncate text-sm font-semibold">
+                    {client?.company ?? "Unknown Client"}
+                  </span>
+                  {client && (
+                    <Badge tone={statusTone(client.status)} dot>
+                      {client.status}
+                    </Badge>
+                  )}
+                  <span className="shrink-0 text-xs text-muted">
+                    {items.length} project{items.length !== 1 ? "s" : ""}
+                  </span>
+                </div>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditing({ ...emptyForm, client_id: clientId });
+                  }}
+                >
+                  <Plus className="h-3.5 w-3.5" /> Add
+                </Button>
+              </div>
+
+              {!isCollapsed && (
+                <div className="grid grid-cols-1 gap-2.5 border-t border-border p-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {items.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => setSelected(p)}
+                      className="rounded-xl border border-border bg-surface p-3 text-left transition-colors hover:bg-surface-hover"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate text-sm font-medium">{p.name}</span>
+                        <Badge tone={statusTone(p.status)} dot>
+                          {p.status}
+                        </Badge>
+                      </div>
+                      {p.due_date && (
+                        <p className="mt-2 text-xs text-muted">Due {formatDate(p.due_date)}</p>
+                      )}
+                      <p className="mt-1 text-xs text-muted">Owner: {ownerName(p.owner)}</p>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
 
       <Drawer open={!!selected} onClose={() => setSelected(null)} title={selected?.name ?? ""}>
         {selected && (

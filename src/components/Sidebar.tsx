@@ -30,7 +30,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden md:flex w-60 shrink-0 flex-col border-r border-border bg-surface/60 px-3 py-5">
+    <aside className="hidden md:flex sticky top-0 h-screen w-60 shrink-0 flex-col overflow-y-auto border-r border-border bg-surface/60 px-3 py-5">
       <div className="flex items-center gap-2 px-3 pb-6">
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-accent-foreground">
           <Zap className="h-4 w-4" />
