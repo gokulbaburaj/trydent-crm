@@ -52,7 +52,7 @@ export function PersonCell({
     <div className="flex items-center gap-2.5">
       <Avatar name={name} url={url} size="sm" />
       <div className="min-w-0">
-        <div className="truncate text-sm font-medium">{name}</div>
+        <div className="truncate text-[13px] font-medium text-foreground">{name}</div>
         {subtitle && (
           <div className="truncate text-xs text-muted">{subtitle}</div>
         )}

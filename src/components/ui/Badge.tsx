@@ -3,11 +3,11 @@ import { cn } from "@/lib/utils";
 type Tone = "green" | "yellow" | "red" | "blue" | "gray";
 
 const toneClasses: Record<Tone, string> = {
-  green: "bg-accent/15 text-accent",
-  yellow: "bg-warning/15 text-warning",
-  red: "bg-danger/15 text-danger",
-  blue: "bg-blue-500/15 text-blue-400",
-  gray: "bg-muted/15 text-muted",
+  green: "bg-accent/10 text-accent",
+  yellow: "bg-warning/10 text-warning",
+  red: "bg-danger/10 text-danger",
+  blue: "bg-blue-500/10 text-blue-400",
+  gray: "bg-muted/10 text-muted",
 };
 
 const dotClasses: Record<Tone, string> = {
@@ -41,12 +41,12 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium",
+        "inline-flex items-center gap-1.5 rounded border border-border/60 bg-surface-hover px-2 py-1 text-xs font-medium text-foreground-secondary",
         toneClasses[tone],
         className
       )}
     >
-      {dot && <span className={cn("h-1.5 w-1.5 rounded-full", dotClasses[tone])} />}
+      {dot && <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", dotClasses[tone])} />}
       {children}
     </span>
   );

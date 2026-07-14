@@ -6,6 +6,25 @@ import { Sidebar } from "@/components/Sidebar";
 import { Topbar } from "@/components/Topbar";
 import { useAuth } from "@/lib/useAuth";
 
+const PAGE_TITLES: Record<string, string> = {
+  "/dashboard": "Dashboard",
+  "/clients": "Clients",
+  "/pipeline": "Pipeline",
+  "/projects": "Projects",
+  "/schedule": "Schedule",
+  "/portals": "Client Portals",
+  "/team": "Team",
+  "/settings": "Settings",
+};
+
+function pageTitleFor(pathname: string | null) {
+  if (!pathname) return undefined;
+  const match = Object.keys(PAGE_TITLES).find(
+    (key) => pathname === key || pathname.startsWith(key + "/")
+  );
+  return match ? PAGE_TITLES[match] : undefined;
+}
+
 export default function DashboardLayout({
   children,
 }: {
@@ -47,7 +66,7 @@ export default function DashboardLayout({
     <div className="flex min-h-screen overflow-x-hidden">
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
-        <Topbar profile={profile} onSignOut={signOut} />
+        <Topbar profile={profile} onSignOut={signOut} title={pageTitleFor(pathname)} />
         <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden p-6">{children}</main>
       </div>
     </div>

@@ -16,14 +16,14 @@ export function StatCard({
   return (
     <Card className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <span className="text-sm text-muted">{label}</span>
+        <span className="text-xs font-medium text-muted">{label}</span>
         {Icon && (
-          <div className="rounded-full bg-accent/10 p-2">
-            <Icon className="h-4 w-4 text-accent" />
+          <div className="rounded bg-surface-raised p-1.5">
+            <Icon className="h-3.5 w-3.5 text-muted" />
           </div>
         )}
       </div>
-      <div className="text-3xl font-bold tracking-tight">{value}</div>
+      <div className="text-2xl font-semibold tracking-tight text-foreground">{value}</div>
       {trend && (
         <span
           className={cn(

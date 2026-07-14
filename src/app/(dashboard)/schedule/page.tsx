@@ -148,7 +148,7 @@ export default function SchedulePage() {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1 rounded-full border border-border bg-surface p-1">
+        <div className="flex items-center gap-0.5 rounded-md border border-border bg-surface p-1">
           <TabButton active={tab === "all"} onClick={() => setTab("all")} icon={List} label="All" />
           <TabButton active={tab === "mine"} onClick={() => setTab("mine")} icon={User} label="Mine" />
           <TabButton active={tab === "calendar"} onClick={() => setTab("calendar")} icon={Calendar} label="Calendar" />
@@ -222,7 +222,7 @@ export default function SchedulePage() {
                   onClick={() => setEditing(a)}
                   className="flex items-center gap-3 py-3 text-left hover:bg-surface-hover"
                 >
-                  <div className="flex w-11 shrink-0 flex-col items-center rounded-lg bg-background py-1.5">
+                  <div className="flex w-11 shrink-0 flex-col items-center rounded bg-surface-raised py-1.5">
                     <span className="text-sm font-bold">{format(parseISO(a.activity_date), "d")}</span>
                     <span className="text-[10px] uppercase text-muted">
                       {format(parseISO(a.activity_date), "EEE")}
@@ -363,8 +363,8 @@ function TabButton({
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium ${
-        active ? "bg-accent text-accent-foreground" : "text-muted"
+      className={`flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium ${
+        active ? "bg-surface-raised text-foreground" : "text-muted hover:text-foreground-secondary"
       }`}
     >
       <Icon className="h-3.5 w-3.5" /> {label}
@@ -373,7 +373,7 @@ function TabButton({
 }
 
 function dayCellClass(inMonth: boolean, today: boolean, selected: boolean) {
-  const base = "flex h-10 items-center justify-center rounded-lg text-sm transition-colors";
+  const base = "flex h-10 items-center justify-center rounded text-sm transition-colors";
   if (selected) return `${base} bg-accent text-accent-foreground font-semibold`;
   if (today) return `${base} border border-accent text-accent font-semibold`;
   if (!inMonth) return `${base} text-muted/40 hover:bg-surface-hover`;

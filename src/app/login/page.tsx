@@ -2,7 +2,6 @@
 
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Zap } from "lucide-react";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { Input, Label } from "@/components/ui/Input";
@@ -47,15 +46,15 @@ export default function LoginPage() {
     <div className="flex min-h-screen flex-1 items-center justify-center bg-background px-4">
       <Card className="w-full max-w-sm">
         <div className="mb-6 flex flex-col items-center gap-2 text-center">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent text-accent-foreground">
-            <Zap className="h-5 w-5" />
+          <div className="flex h-9 w-9 items-center justify-center rounded bg-accent text-xs font-medium text-accent-foreground">
+            TL
           </div>
-          <h1 className="text-xl font-semibold">Trydent Labs</h1>
+          <h1 className="text-[17px] font-semibold text-foreground">Trydent Labs</h1>
           <p className="text-sm text-muted">Sign in to your CRM account</p>
         </div>
 
         {!isSupabaseConfigured && (
-          <div className="mb-4 rounded-xl border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning">
+          <div className="mb-4 rounded border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning">
             Supabase credentials are not set. Add NEXT_PUBLIC_SUPABASE_URL and
             NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local.
           </div>

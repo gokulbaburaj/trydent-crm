@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Zap, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Badge, statusTone } from "@/components/ui/Badge";
 import { useAuth } from "@/lib/useAuth";
@@ -47,12 +47,12 @@ export default function ClientPortalPage() {
     <div className="min-h-screen bg-background">
       <header className="flex items-center justify-between border-b border-border px-6 py-4">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-accent-foreground">
-            <Zap className="h-4 w-4" />
+          <div className="flex h-7 w-7 items-center justify-center rounded bg-accent text-[11px] font-medium text-accent-foreground">
+            TL
           </div>
-          <span className="font-semibold">Trydent Labs Client Portal</span>
+          <span className="text-[13px] font-medium text-foreground">Trydent Labs Client Portal</span>
         </div>
-        <button onClick={signOut} className="rounded-full p-2 text-muted hover:bg-surface-hover hover:text-foreground">
+        <button onClick={signOut} className="rounded p-2 text-muted hover:bg-surface-hover hover:text-foreground">
           <LogOut className="h-4 w-4" />
         </button>
       </header>
@@ -88,7 +88,7 @@ export default function ClientPortalPage() {
               <h3 className="mb-3 text-sm font-semibold text-muted">Your Deals</h3>
               <div className="flex flex-col gap-2">
                 {deals.map((d) => (
-                  <div key={d.id} className="rounded-xl border border-border p-3 text-sm">
+                  <div key={d.id} className="rounded border border-border p-3 text-sm">
                     <div className="flex items-center justify-between">
                       <span className="font-medium">{d.deal_name}</span>
                       <Badge tone={statusTone(d.deal_stage)}>{d.deal_stage}</Badge>

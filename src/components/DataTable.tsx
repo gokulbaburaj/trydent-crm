@@ -23,12 +23,12 @@ export function DataTable<T>({
   emptyMessage?: string;
 }) {
   return (
-    <div className="overflow-x-auto rounded-2xl border border-border bg-surface">
-      <table className="w-full min-w-max text-sm">
+    <div className="overflow-x-auto rounded-md border border-border bg-surface">
+      <table className="w-full min-w-max text-[13px]">
         <thead>
-          <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted">
+          <tr className="border-b border-border-subtle text-left text-[11px] uppercase tracking-wide text-muted">
             {columns.map((col, i) => (
-              <th key={i} className={cn("px-4 py-3 font-medium", col.className)}>
+              <th key={i} className={cn("px-4 py-2.5 font-medium", col.className)}>
                 {col.header}
               </th>
             ))}
@@ -50,12 +50,12 @@ export function DataTable<T>({
               key={rowKey(row)}
               onClick={() => onRowClick?.(row)}
               className={cn(
-                "border-b border-border last:border-0",
+                "border-b border-border-subtle last:border-0 transition-colors",
                 onRowClick && "cursor-pointer hover:bg-surface-hover"
               )}
             >
               {columns.map((col, i) => (
-                <td key={i} className={cn("px-4 py-3 align-middle", col.className)}>
+                <td key={i} className={cn("px-4 py-2.5 align-middle", col.className)}>
                   {col.render(row)}
                 </td>
               ))}

@@ -129,19 +129,19 @@ export default function ClientsPage() {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1 rounded-full border border-border bg-surface p-1">
+        <div className="flex items-center gap-0.5 rounded-md border border-border bg-surface p-1">
           <button
             onClick={() => setView("table")}
-            className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium ${
-              view === "table" ? "bg-accent text-accent-foreground" : "text-muted"
+            className={`flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium ${
+              view === "table" ? "bg-surface-raised text-foreground" : "text-muted hover:text-foreground-secondary"
             }`}
           >
             <List className="h-3.5 w-3.5" /> Table
           </button>
           <button
             onClick={() => setView("kanban")}
-            className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium ${
-              view === "kanban" ? "bg-accent text-accent-foreground" : "text-muted"
+            className={`flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium ${
+              view === "kanban" ? "bg-surface-raised text-foreground" : "text-muted hover:text-foreground-secondary"
             }`}
           >
             <LayoutGrid className="h-3.5 w-3.5" /> Kanban
@@ -221,7 +221,7 @@ export default function ClientsPage() {
               <h4 className="mb-2 text-sm font-semibold">Deals ({selectedDeals.length})</h4>
               <div className="flex flex-col gap-2">
                 {selectedDeals.map((d) => (
-                  <div key={d.id} className="rounded-xl border border-border p-3 text-sm">
+                  <div key={d.id} className="rounded border border-border p-3 text-sm">
                     <div className="flex justify-between">
                       <span className="font-medium">{d.deal_name}</span>
                       <Badge tone={statusTone(d.deal_stage)}>{d.deal_stage}</Badge>
@@ -239,7 +239,7 @@ export default function ClientsPage() {
               <h4 className="mb-2 text-sm font-semibold">Activities ({selectedActivities.length})</h4>
               <div className="flex flex-col gap-2">
                 {selectedActivities.map((a) => (
-                  <div key={a.id} className="rounded-xl border border-border p-3 text-sm">
+                  <div key={a.id} className="rounded border border-border p-3 text-sm">
                     <p>{a.description}</p>
                     <p className="mt-1 text-xs text-muted">{formatDate(a.activity_date)}</p>
                   </div>

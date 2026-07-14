@@ -122,7 +122,7 @@ export default function ProjectsPage() {
         {grouped.map(({ clientId, client, items }) => {
           const isCollapsed = collapsed[clientId];
           return (
-            <div key={clientId} className="rounded-2xl border border-border bg-surface/60">
+            <div key={clientId} className="rounded-md border border-border bg-surface">
               <div
                 onClick={() => toggle(clientId)}
                 className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3"
@@ -163,7 +163,7 @@ export default function ProjectsPage() {
                     <button
                       key={p.id}
                       onClick={() => setSelected(p)}
-                      className="rounded-xl border border-border bg-surface p-3 text-left transition-colors hover:bg-surface-hover"
+                      className="rounded border border-border bg-surface-raised p-3 text-left transition-colors hover:bg-border/40"
                     >
                       <div className="flex items-center justify-between gap-2">
                         <span className="truncate text-sm font-medium">{p.name}</span>

@@ -1,35 +1,45 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0a0a0a;
-  --surface: #18181b;
-  --surface-hover: #202024;
-  --border: #27272a;
-  --foreground: #f4f4f5;
-  --muted: #9a9aa2;
+  --background: #181921;
+  --surface: #191a23;
+  --surface-hover: #21232e;
+  --surface-raised: #292a35;
+  --border: #2c2d3c;
+  --border-subtle: #212234;
+  --foreground: #eeeffc;
+  --foreground-secondary: #d2d3e0;
+  --muted: #858699;
+  --muted-2: #6b6c7d;
   --accent: #22c55e;
   --accent-foreground: #052e12;
-  --danger: #ef4444;
-  --warning: #f59e0b;
+  --danger: #eb5757;
+  --warning: #f2994a;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);
   --color-surface-hover: var(--surface-hover);
+  --color-surface-raised: var(--surface-raised);
   --color-border: var(--border);
+  --color-border-subtle: var(--border-subtle);
   --color-foreground: var(--foreground);
+  --color-foreground-secondary: var(--foreground-secondary);
   --color-muted: var(--muted);
+  --color-muted-2: var(--muted-2);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-danger: var(--danger);
   --color-warning: var(--warning);
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
 }
 
 * {
