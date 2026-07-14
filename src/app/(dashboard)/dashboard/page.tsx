@@ -25,12 +25,12 @@ import type { Deal, Client, Activity } from "@/lib/types";
 import { DEAL_STAGES } from "@/lib/types";
 
 const COLORS = [
-  "#22c55e",
-  "#3b82f6",
-  "#f59e0b",
-  "#a855f7",
-  "#10b981",
-  "#ef4444",
+  "#5e6ad2",
+  "#4ea7e0",
+  "#d9a53f",
+  "#d95c8a",
+  "#4cb782",
+  "#eb5757",
 ];
 
 export default function DashboardPage() {
@@ -193,7 +193,7 @@ export default function DashboardPage() {
                   }}
                   formatter={(v) => formatCurrency(Number(v))}
                 />
-                <Bar dataKey="revenue" fill="#22c55e" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="revenue" fill="#5e6ad2" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (

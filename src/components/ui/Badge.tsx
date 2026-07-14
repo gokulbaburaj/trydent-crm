@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 type Tone = "green" | "yellow" | "red" | "blue" | "gray";
 
 const toneClasses: Record<Tone, string> = {
-  green: "bg-accent/10 text-accent",
+  green: "bg-success/10 text-success",
   yellow: "bg-warning/10 text-warning",
   red: "bg-danger/10 text-danger",
   blue: "bg-blue-500/10 text-blue-400",
@@ -11,7 +11,7 @@ const toneClasses: Record<Tone, string> = {
 };
 
 const dotClasses: Record<Tone, string> = {
-  green: "bg-accent",
+  green: "bg-success",
   yellow: "bg-warning",
   red: "bg-danger",
   blue: "bg-blue-400",

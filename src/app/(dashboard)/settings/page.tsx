@@ -31,7 +31,7 @@ export default function SettingsPage() {
         <p className="text-sm">
           Supabase connection:{" "}
           {isSupabaseConfigured ? (
-            <span className="text-accent">Connected</span>
+            <span className="text-success">Connected</span>
           ) : (
             <span className="text-warning">Not configured</span>
           )}

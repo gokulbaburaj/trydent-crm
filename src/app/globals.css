@@ -9,10 +9,22 @@
   --foreground-secondary: #d4d4d8;
   --muted: #6e6e76;
   --muted-2: #55555c;
-  --accent: #22c55e;
-  --accent-foreground: #052e12;
+  --accent: #5e6ad2;
+  --accent-foreground: #ffffff;
   --danger: #eb5757;
   --warning: #f2994a;
+  --success: #4cb782;
+  /* Calendar event palette — pastel blocks with dark text, like Linear's calendar */
+  --event-blue-bg: #c7e3f5;
+  --event-blue-bar: #4ea7e0;
+  --event-purple-bg: #d6d4f2;
+  --event-purple-bar: #5e6ad2;
+  --event-pink-bg: #f2d2dc;
+  --event-pink-bar: #d95c8a;
+  --event-yellow-bg: #f0e3c0;
+  --event-yellow-bar: #d9a53f;
+  --event-indigo-bg: #6c74dd;
+  --event-indigo-bar: #4a52c4;
 }
 
 @theme inline {
@@ -28,6 +40,7 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-danger: var(--danger);
   --color-warning: var(--warning);
+  --color-success: var(--success);
   --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
 }
 
