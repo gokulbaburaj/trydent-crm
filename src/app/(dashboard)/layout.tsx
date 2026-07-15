@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Sidebar } from "@/components/Sidebar";
 import { Topbar } from "@/components/Topbar";
 import { TabBar } from "@/components/TabBar";
+import { Toaster } from "@/components/Toaster";
+import { CommandMenu } from "@/components/CommandMenu";
 import { TabsProvider } from "@/lib/tabs";
 import { useAuth } from "@/lib/useAuth";
 
@@ -35,6 +37,7 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
   const { profile, loading, signOut, isSupabaseConfigured } = useAuth();
+  const [mobileNav, setMobileNav] = useState(false);
 
   useEffect(() => {
     if (loading) return;
@@ -70,20 +73,42 @@ export default function DashboardLayout({
     <TabsProvider>
       <div className="flex h-screen overflow-hidden bg-background">
         <Sidebar />
+
+        {/* Mobile slide-in navigation */}
+        {mobileNav && (
+          <div className="fixed inset-0 z-[120] md:hidden">
+            <div
+              className="animate-fade absolute inset-0 bg-black/60"
+              onClick={() => setMobileNav(false)}
+            />
+            <div className="animate-page absolute left-0 top-0 h-full w-[250px] border-r border-border bg-background">
+              <Sidebar mobile onNavigate={() => setMobileNav(false)} />
+            </div>
+          </div>
+        )}
+
         <div className="flex min-w-0 flex-1 flex-col">
           <TabBar />
-          <div className="min-h-0 min-w-0 flex-1 pb-2 pr-2">
+          <div className="min-h-0 min-w-0 flex-1 px-2 pb-2 md:pl-0">
             <div className="flex h-full min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-panel">
-              <Topbar profile={profile} onSignOut={signOut} title={pageTitleFor(pathname)} />
+              <Topbar
+                profile={profile}
+                onSignOut={signOut}
+                title={pageTitleFor(pathname)}
+                onMenuClick={() => setMobileNav(true)}
+              />
               <main
                 key={pathname}
-                className="animate-page min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-6"
+                className="animate-page min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6"
               >
                 {children}
               </main>
             </div>
           </div>
         </div>
+
+        <Toaster />
+        <CommandMenu />
       </div>
     </TabsProvider>
   );

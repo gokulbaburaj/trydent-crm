@@ -21,18 +21,22 @@ import {
   AlertTriangle,
   Box,
   Calendar as CalendarIcon,
+  CalendarDays,
   Check,
   ChevronLeft,
   ChevronRight,
   LayoutGrid,
   LayoutDashboard,
+  Link2,
   List,
+  ListChecks,
   MoreHorizontal,
   Plus,
   Trash2,
   User,
 } from "lucide-react";
 import { KanbanBoard } from "@/components/KanbanBoard";
+import { TaskDetailDrawer } from "@/components/TaskDetailDrawer";
 import { Button } from "@/components/ui/Button";
 import { Badge, statusTone } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
@@ -44,7 +48,7 @@ import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { createClient } from "@/lib/supabase/client";
 import { formatDate, initials, cn } from "@/lib/utils";
 import { useTabs } from "@/lib/tabs";
-import type { Activity, Client, Profile, Project, ProjectTask, TaskStatus } from "@/lib/types";
+import type { Activity, Client, Profile, Project, ProjectTask, TaskItem, TaskStatus } from "@/lib/types";
 import { PROJECT_STATUSES, TASK_STATUSES } from "@/lib/types";
 
 type PageTab = "overview" | "tasks" | "board" | "calendar";
@@ -65,6 +69,7 @@ export default function ProjectDetailPage() {
   const [tab, setTab] = useState<PageTab>("overview");
   const [newTask, setNewTask] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
+  const [detailTaskId, setDetailTaskId] = useState<string | null>(null);
 
   const {
     rows: allTasks,
@@ -77,6 +82,18 @@ export default function ProjectDetailPage() {
   const { rows: clients } = useSupabaseTable<Client>("clients");
   const { rows: profiles } = useSupabaseTable<Profile>("profiles");
   const { rows: activities } = useSupabaseTable<Activity>("activities");
+  const { rows: allSubtasks } = useSupabaseTable<TaskItem>("task_items");
+
+  const subtaskStats = useMemo(() => {
+    const map = new Map<string, { done: number; total: number }>();
+    for (const s of allSubtasks) {
+      const cur = map.get(s.task_id) ?? { done: 0, total: 0 };
+      cur.total += 1;
+      if (s.status === "Done") cur.done += 1;
+      map.set(s.task_id, cur);
+    }
+    return map;
+  }, [allSubtasks]);
 
   const tasks = useMemo(
     () => allTasks.filter((t) => t.project_id === projectId),
@@ -246,38 +263,69 @@ export default function ProjectDetailPage() {
         </Popover>
       </div>
 
-      {/* Title */}
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-md bg-accent/15">
-          <Box className="h-5 w-5 text-accent" />
-        </div>
-        <h1 className="text-[26px] font-semibold tracking-tight">{project.name}</h1>
-      </div>
-
-      {/* Properties */}
-      <div className="flex flex-col gap-2">
-        <PropRow label="Status">
+      {/* Header card */}
+      <Card className="p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-accent/15">
+              <Box className="h-5 w-5 text-accent" />
+            </div>
+            <h1 className="truncate text-[24px] font-semibold tracking-tight">{project.name}</h1>
+          </div>
           <StatusPicker
+            align="right"
             value={project.status}
             options={PROJECT_STATUSES}
             onChange={(status) => updateProject({ status })}
           />
-        </PropRow>
-        <PropRow label="Lead">
+        </div>
+        <textarea
+          rows={2}
+          placeholder="Add a short summary of this project..."
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          onBlur={() => {
+            if (description !== (project.description ?? "")) {
+              updateProject({ description });
+            }
+          }}
+          className="mt-3 w-full resize-none rounded border border-transparent bg-transparent px-1 py-0.5 text-sm leading-relaxed text-foreground-secondary placeholder:text-muted-2 hover:border-border focus:border-accent/60 focus:outline-none focus:ring-1 focus:ring-accent/30"
+        />
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+          <div className="flex items-center gap-1.5">
+            <CalendarDays className="h-3.5 w-3.5 text-muted" />
+            <div className="w-36">
+              <DatePicker
+                value={project.start_date}
+                placeholder="Start"
+                onChange={(d) => updateProject({ start_date: d })}
+              />
+            </div>
+            <span className="text-muted">→</span>
+            <div className="w-36">
+              <DatePicker
+                value={project.due_date}
+                placeholder="Deadline"
+                onChange={(d) => updateProject({ due_date: d })}
+              />
+            </div>
+          </div>
+          <span className="inline-flex items-center gap-1.5 rounded border border-white/5 bg-white/5 px-2 py-1 text-xs font-medium text-foreground-secondary">
+            {clientName(project.client_id)}
+          </span>
           <Popover
             trigger={
-              <button className="flex items-center gap-2 rounded px-1.5 py-1 text-[13px] hover:bg-white/5">
+              <button className="flex items-center gap-2 rounded border border-white/5 bg-white/5 px-2 py-1 text-xs font-medium text-foreground-secondary hover:bg-white/10">
                 {project.owner ? (
                   <>
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent/15 text-[9px] font-semibold text-accent">
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-accent/15 text-[8px] font-semibold text-accent">
                       {initials(personName(project.owner))}
                     </span>
                     {personName(project.owner)}
                   </>
                 ) : (
                   <>
-                    <User className="h-3.5 w-3.5 text-muted" />
-                    <span className="text-muted">Unassigned</span>
+                    <User className="h-3 w-3 text-muted" /> Assign lead
                   </>
                 )}
               </button>
@@ -301,26 +349,14 @@ export default function ProjectDetailPage() {
               </>
             )}
           </Popover>
-        </PropRow>
-        <PropRow label="Client">
-          <span className="px-1.5 text-[13px]">{clientName(project.client_id)}</span>
-        </PropRow>
-        <PropRow label="Deadline">
-          <div className="w-44">
-            <DatePicker
-              value={project.due_date}
-              placeholder="Target date"
-              onChange={(d) => updateProject({ due_date: d })}
-            />
-          </div>
-        </PropRow>
-      </div>
+        </div>
+      </Card>
 
-      {/* Tabs */}
-      <div className="flex items-center gap-0.5 border-b border-border">
+      {/* View switcher */}
+      <div className="flex w-fit items-center gap-0.5 rounded-md border border-border bg-surface p-1">
         <PageTabButton active={tab === "overview"} onClick={() => setTab("overview")} icon={LayoutDashboard} label="Overview" />
-        <PageTabButton active={tab === "board"} onClick={() => setTab("board")} icon={LayoutGrid} label="Board" />
-        <PageTabButton active={tab === "tasks"} onClick={() => setTab("tasks")} icon={List} label="Tasks" />
+        <PageTabButton active={tab === "board"} onClick={() => setTab("board")} icon={LayoutGrid} label="Kanban" />
+        <PageTabButton active={tab === "tasks"} onClick={() => setTab("tasks")} icon={List} label="List" />
         <PageTabButton active={tab === "calendar"} onClick={() => setTab("calendar")} icon={CalendarIcon} label="Calendar" />
       </div>
 
@@ -381,39 +417,41 @@ export default function ProjectDetailPage() {
                 <p className="py-6 text-center text-sm text-muted">No tasks yet.</p>
               )}
               {[...notStarted, ...inProgress, ...done].slice(0, 7).map((t) => (
-                <button
+                <div
                   key={t.id}
-                  onClick={() =>
-                    updateTask(t.id, { status: t.status === "Done" ? "Not Started" : "Done" })
-                  }
-                  className="group flex items-center gap-2.5 rounded px-1.5 py-1.5 text-left hover:bg-white/5"
+                  className="group flex items-center gap-2.5 rounded px-1.5 py-1.5 hover:bg-white/5"
                 >
-                  <span
+                  <button
+                    onClick={() =>
+                      updateTask(t.id, { status: t.status === "Done" ? "Not Started" : "Done" })
+                    }
                     className={cn(
                       "flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors",
                       t.status === "Done"
                         ? "border-accent bg-accent"
-                        : "border-muted-2 group-hover:border-muted"
+                        : "border-muted-2 hover:border-muted"
                     )}
+                    title={t.status === "Done" ? "Mark as not started" : "Mark as done"}
                   >
                     {t.status === "Done" && (
                       <Check className="h-3 w-3 text-accent-foreground" />
                     )}
-                  </span>
-                  <span
+                  </button>
+                  <button
+                    onClick={() => setDetailTaskId(t.id)}
                     className={cn(
-                      "min-w-0 flex-1 truncate text-sm",
+                      "min-w-0 flex-1 truncate text-left text-sm hover:underline",
                       t.status === "Done" && "text-muted line-through"
                     )}
                   >
                     {t.name}
-                  </span>
+                  </button>
                   {t.due_date && (
                     <span className="shrink-0 text-[11px] text-muted">
                       {format(parseISO(t.due_date), "MMM d")}
                     </span>
                   )}
-                </button>
+                </div>
               ))}
             </div>
           </Card>
@@ -421,25 +459,8 @@ export default function ProjectDetailPage() {
           {/* Mini calendar */}
           <MiniCalendar tasks={active} />
 
-          {/* Description */}
-          <Card className="lg:col-span-2">
-            <h3 className="mb-2 text-sm font-semibold">About this project</h3>
-            <textarea
-              rows={4}
-              placeholder="Add a short summary..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              onBlur={() => {
-                if (description !== (project.description ?? "")) {
-                  updateProject({ description });
-                }
-              }}
-              className="w-full resize-none rounded border border-transparent bg-transparent px-2 py-1.5 text-sm leading-relaxed text-foreground placeholder:text-muted-2 hover:border-border focus:border-accent/60 focus:outline-none focus:ring-1 focus:ring-accent/30"
-            />
-          </Card>
-
           {/* Upcoming schedule for this client */}
-          <Card>
+          <Card className="lg:col-span-3">
             <h3 className="mb-3 text-sm font-semibold">Upcoming Schedule</h3>
             <div className="flex flex-col divide-y divide-border-subtle">
               {upcomingSchedule.length === 0 && (
@@ -488,27 +509,50 @@ export default function ProjectDetailPage() {
             items={tasks.filter((t) => t.status !== "Archived")}
             getColumnId={(t) => t.status}
             onMove={(t, status) => updateTask(t.id, { status: status as TaskStatus })}
-            renderCard={(t) => (
-              <div>
-                <div className="mb-1.5 flex items-center gap-1.5">
-                  <Badge tone={statusTone(t.status)} dot>{t.status}</Badge>
-                </div>
-                <p className="text-sm font-medium">{t.name}</p>
-                <div className="mt-2 flex items-center justify-between">
-                  <span className="text-xs text-muted">
-                    {t.due_date ? formatDate(t.due_date) : "No due date"}
-                  </span>
-                  {t.assigned_to && (
-                    <span
-                      title={personName(t.assigned_to) ?? undefined}
-                      className="flex h-5 w-5 items-center justify-center rounded-full bg-accent/15 text-[9px] font-semibold text-accent"
-                    >
-                      {initials(personName(t.assigned_to))}
-                    </span>
+            renderCard={(t) => {
+              const stats = subtaskStats.get(t.id);
+              const linkCount = Array.isArray(t.links) ? t.links.length : 0;
+              return (
+                <div onClick={() => setDetailTaskId(t.id)}>
+                  {t.label && (
+                    <div className="mb-1.5">
+                      <LabelChip label={t.label} />
+                    </div>
                   )}
+                  <p className="text-sm font-medium">{t.name}</p>
+                  {t.description && (
+                    <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted">
+                      {t.description}
+                    </p>
+                  )}
+                  <div className="mt-2.5 flex items-center gap-3">
+                    {t.assigned_to && (
+                      <span
+                        title={personName(t.assigned_to) ?? undefined}
+                        className="flex h-5 w-5 items-center justify-center rounded-full bg-accent/15 text-[9px] font-semibold text-accent"
+                      >
+                        {initials(personName(t.assigned_to))}
+                      </span>
+                    )}
+                    {t.due_date && (
+                      <span className="text-[11px] text-muted">{formatDate(t.due_date)}</span>
+                    )}
+                    <span className="ml-auto flex items-center gap-2.5 text-[11px] text-muted">
+                      {linkCount > 0 && (
+                        <span className="flex items-center gap-1">
+                          <Link2 className="h-3 w-3" /> {linkCount}
+                        </span>
+                      )}
+                      {stats && stats.total > 0 && (
+                        <span className="flex items-center gap-1">
+                          <ListChecks className="h-3 w-3" /> {stats.done}/{stats.total}
+                        </span>
+                      )}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            }}
           />
         </div>
       )}
@@ -540,15 +584,26 @@ export default function ProjectDetailPage() {
                   options={TASK_STATUSES}
                   onChange={(status) => updateTask(t.id, { status })}
                 />
-                <span
-                  className={cn(
-                    "min-w-0 flex-1 truncate text-sm",
-                    (t.status === "Done" || t.status === "Archived") &&
-                      "text-muted line-through decoration-muted-2"
-                  )}
+                <button
+                  onClick={() => setDetailTaskId(t.id)}
+                  className="flex min-w-0 flex-1 items-center gap-2 text-left"
                 >
-                  {t.name}
-                </span>
+                  <span
+                    className={cn(
+                      "min-w-0 truncate text-sm hover:underline",
+                      (t.status === "Done" || t.status === "Archived") &&
+                        "text-muted line-through decoration-muted-2"
+                    )}
+                  >
+                    {t.name}
+                  </span>
+                  {t.label && <LabelChip label={t.label} />}
+                  {Array.isArray(t.links) && t.links.length > 0 && (
+                    <span className="flex shrink-0 items-center gap-1 text-[11px] text-muted">
+                      <Link2 className="h-3 w-3" /> {t.links.length}
+                    </span>
+                  )}
+                </button>
                 {t.assigned_to && (
                   <span
                     title={personName(t.assigned_to) ?? undefined}
@@ -606,6 +661,15 @@ export default function ProjectDetailPage() {
 
       {/* ============ CALENDAR ============ */}
       {tab === "calendar" && <ProjectCalendar tasks={active} />}
+
+      {/* Task detail */}
+      <TaskDetailDrawer
+        task={tasks.find((t) => t.id === detailTaskId) ?? null}
+        profiles={profiles}
+        onClose={() => setDetailTaskId(null)}
+        onUpdate={updateTask}
+        onDelete={deleteTask}
+      />
     </div>
   );
 }
@@ -617,9 +681,11 @@ function ProgressRing({ pct }: { pct: number }) {
   const c = 2 * Math.PI * r;
   const [drawn, setDrawn] = useState(0);
   useEffect(() => {
-    const t = requestAnimationFrame(() => setDrawn(pct));
+    // Double rAF so the 0-state paints first and the arc visibly sweeps in.
+    const t = requestAnimationFrame(() => requestAnimationFrame(() => setDrawn(pct)));
     return () => cancelAnimationFrame(t);
   }, [pct]);
+  const color = pct >= 100 ? "var(--success)" : "var(--accent)";
   return (
     <svg viewBox="0 0 120 120" className="h-36 w-36">
       <circle cx="60" cy="60" r={r} fill="none" stroke="var(--border)" strokeWidth="10" />
@@ -628,10 +694,10 @@ function ProgressRing({ pct }: { pct: number }) {
         cy="60"
         r={r}
         fill="none"
-        stroke="var(--accent)"
+        stroke={color}
         strokeWidth="10"
         strokeLinecap="round"
-        strokeDasharray={`${(drawn / 100) * c} ${c}`}
+        strokeDasharray={`${Math.max((drawn / 100) * c, 0.01)} ${c}`}
         transform="rotate(-90 60 60)"
         style={{ transition: "stroke-dasharray 700ms cubic-bezier(0.16, 1, 0.3, 1)" }}
       />
@@ -830,12 +896,32 @@ function ProjectCalendar({ tasks }: { tasks: ProjectTask[] }) {
   );
 }
 
-function PropRow({ label, children }: { label: string; children: React.ReactNode }) {
+/** Deterministic colored chip for free-text task labels. */
+const LABEL_STYLES = [
+  "bg-warning/15 text-warning",
+  "bg-success/15 text-success",
+  "bg-blue-400/15 text-blue-400",
+  "bg-accent/15 text-accent",
+  "bg-pink-400/15 text-pink-400",
+  "bg-danger/15 text-danger",
+];
+
+function labelChipClass(label: string) {
+  let hash = 0;
+  for (let i = 0; i < label.length; i++) hash = (hash * 31 + label.charCodeAt(i)) | 0;
+  return LABEL_STYLES[Math.abs(hash) % LABEL_STYLES.length];
+}
+
+function LabelChip({ label }: { label: string }) {
   return (
-    <div className="flex items-center gap-4">
-      <span className="w-24 shrink-0 text-[13px] text-muted">{label}</span>
-      {children}
-    </div>
+    <span
+      className={cn(
+        "inline-flex rounded px-1.5 py-0.5 text-[11px] font-medium",
+        labelChipClass(label)
+      )}
+    >
+      {label}
+    </span>
   );
 }
 
@@ -854,10 +940,10 @@ function PageTabButton({
     <button
       onClick={onClick}
       className={cn(
-        "flex items-center gap-1.5 border-b-2 px-3 py-2 text-[13px] font-medium transition-colors",
+        "flex items-center gap-1.5 rounded px-2.5 py-1.5 text-[13px] font-medium transition-colors",
         active
-          ? "border-accent text-foreground"
-          : "border-transparent text-muted hover:text-foreground-secondary"
+          ? "bg-white/10 text-foreground"
+          : "text-muted hover:bg-white/5 hover:text-foreground-secondary"
       )}
     >
       <Icon className="h-3.5 w-3.5" /> {label}

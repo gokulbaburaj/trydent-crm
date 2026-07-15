@@ -16,6 +16,7 @@ import {
   SquarePen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { openCommandMenu } from "@/components/CommandMenu";
 
 const OVERVIEW = [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }];
 
@@ -36,10 +37,12 @@ function NavGroup({
   label,
   items,
   pathname,
+  onNavigate,
 }: {
   label?: string;
   items: { href: string; label: string; icon: React.ComponentType<{ className?: string }> }[];
   pathname: string | null;
+  onNavigate?: () => void;
 }) {
   return (
     <div className="flex flex-col gap-px">
@@ -55,6 +58,7 @@ function NavGroup({
           <Link
             key={item.href}
             href={item.href}
+            onClick={onNavigate}
             className={cn(
               "flex items-center gap-2.5 rounded px-2 py-[7px] text-[13px] font-medium transition-colors",
               active
@@ -71,11 +75,22 @@ function NavGroup({
   );
 }
 
-export function Sidebar() {
+export function Sidebar({
+  mobile = false,
+  onNavigate,
+}: {
+  mobile?: boolean;
+  onNavigate?: () => void;
+}) {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden md:flex h-full w-[220px] shrink-0 flex-col overflow-y-auto bg-background">
+    <aside
+      className={cn(
+        "h-full w-[220px] shrink-0 flex-col overflow-y-auto bg-background",
+        mobile ? "flex w-full" : "hidden md:flex"
+      )}
+    >
       <div className="flex items-center justify-between gap-2 px-3 py-3.5">
         <button className="flex min-w-0 items-center gap-1.5 rounded px-1 py-1 text-[13px] font-medium text-foreground hover:bg-white/5">
           <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-accent text-[10px] font-medium text-accent-foreground">
@@ -86,10 +101,8 @@ export function Sidebar() {
         </button>
         <div className="flex shrink-0 items-center gap-0.5">
           <button
-            title="Search"
-            onClick={() =>
-              document.getElementById("global-search-input")?.focus()
-            }
+            title="Search (⌘K)"
+            onClick={openCommandMenu}
             className="rounded p-1.5 text-muted hover:bg-white/5 hover:text-foreground"
           >
             <Search className="h-3.5 w-3.5" />
@@ -104,9 +117,9 @@ export function Sidebar() {
       </div>
 
       <nav className="flex flex-1 flex-col gap-1 px-2 pb-4">
-        <NavGroup items={OVERVIEW} pathname={pathname} />
-        <NavGroup label="Workspace" items={WORKSPACE} pathname={pathname} />
-        <NavGroup label="Organization" items={ORGANIZATION} pathname={pathname} />
+        <NavGroup items={OVERVIEW} pathname={pathname} onNavigate={onNavigate} />
+        <NavGroup label="Workspace" items={WORKSPACE} pathname={pathname} onNavigate={onNavigate} />
+        <NavGroup label="Organization" items={ORGANIZATION} pathname={pathname} onNavigate={onNavigate} />
       </nav>
     </aside>
   );

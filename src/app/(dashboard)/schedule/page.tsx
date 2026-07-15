@@ -22,6 +22,7 @@ import {
   subWeeks,
 } from "date-fns";
 import { Calendar, ChevronLeft, ChevronRight, List, Plus, User } from "lucide-react";
+import { DatePicker } from "@/components/ui/DatePicker";
 import { DataTable, Column } from "@/components/DataTable";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -376,17 +377,35 @@ export default function SchedulePage() {
                 ))}
               </Select>
             </div>
-            <div>
-              <Label>Date</Label>
-              <Input
-                type="datetime-local"
-                value={
-                  editing.activity_date
-                    ? new Date(editing.activity_date).toISOString().slice(0, 16)
-                    : ""
-                }
-                onChange={(e) => setEditing({ ...editing, activity_date: e.target.value })}
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Date</Label>
+                <DatePicker
+                  value={datePart(editing.activity_date)}
+                  onChange={(d) =>
+                    setEditing({
+                      ...editing,
+                      activity_date: `${d ?? format(new Date(), "yyyy-MM-dd")}T${timePart(editing.activity_date)}`,
+                    })
+                  }
+                />
+              </div>
+              <div>
+                <Label>Time</Label>
+                <Select
+                  value={timePart(editing.activity_date)}
+                  onChange={(e) =>
+                    setEditing({
+                      ...editing,
+                      activity_date: `${datePart(editing.activity_date) ?? format(new Date(), "yyyy-MM-dd")}T${e.target.value}`,
+                    })
+                  }
+                >
+                  {timeOptions(timePart(editing.activity_date)).map((t) => (
+                    <option key={t} value={t}>{formatTimeLabel(t)}</option>
+                  ))}
+                </Select>
+              </div>
             </div>
             <label className="flex items-center gap-2 text-sm">
               <input
@@ -450,7 +469,8 @@ function WeekGrid({
   const hours = Array.from({ length: 24 }, (_, i) => i);
 
   return (
-    <div className="overflow-hidden rounded border border-border bg-surface">
+    <div className="overflow-x-auto rounded border border-border bg-surface">
+      <div className="min-w-[680px]">
       {/* Day headers */}
       <div className="grid grid-cols-[3.5rem_repeat(7,1fr)] border-b border-border">
         <div className="flex items-end justify-center pb-2 pt-3 text-[11px] font-medium text-muted-2">
@@ -586,6 +606,7 @@ function WeekGrid({
             );
           })}
         </div>
+      </div>
       </div>
     </div>
   );
@@ -733,6 +754,36 @@ function TabButton({
       <Icon className="h-3.5 w-3.5" /> {label}
     </button>
   );
+}
+
+/* -------- datetime helpers for the form -------- */
+
+function datePart(value: string | null | undefined): string | null {
+  if (!value) return null;
+  return format(new Date(value), "yyyy-MM-dd");
+}
+
+function timePart(value: string | null | undefined): string {
+  if (!value) return "09:00";
+  return format(new Date(value), "HH:mm");
+}
+
+function timeOptions(current: string): string[] {
+  const opts: string[] = [];
+  for (let h = 0; h < 24; h++) {
+    for (const m of ["00", "30"]) {
+      opts.push(`${String(h).padStart(2, "0")}:${m}`);
+    }
+  }
+  if (!opts.includes(current)) opts.push(current);
+  return opts.sort();
+}
+
+function formatTimeLabel(t: string) {
+  const [h, m] = t.split(":").map(Number);
+  const suffix = h >= 12 ? "PM" : "AM";
+  const hour12 = h % 12 === 0 ? 12 : h % 12;
+  return `${hour12}:${String(m).padStart(2, "0")} ${suffix}`;
 }
 
 function dayCellClass(inMonth: boolean, today: boolean, selected: boolean) {

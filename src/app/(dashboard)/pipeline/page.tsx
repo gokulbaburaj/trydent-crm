@@ -139,6 +139,13 @@ export default function PipelinePage() {
         items={deals}
         getColumnId={(d) => d.deal_stage}
         onMove={handleStageMove}
+        columnMeta={(_, items) =>
+          items.length > 0 ? (
+            <span className="text-xs font-medium tabular-nums text-success">
+              {formatCurrency(items.reduce((sum, d) => sum + Number(d.deal_value), 0))}
+            </span>
+          ) : null
+        }
         renderCard={(d) => (
           <div onClick={() => setSelected(d)}>
             <p className="text-sm font-medium">{d.deal_name}</p>

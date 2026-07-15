@@ -132,6 +132,11 @@ export interface ClientPortal {
   updated_at: string;
 }
 
+export interface TaskLink {
+  title: string;
+  url: string;
+}
+
 export interface ProjectTask {
   id: string;
   project_id: string;
@@ -140,8 +145,20 @@ export interface ProjectTask {
   due_date: string | null;
   assigned_to: string | null;
   sort_order: number;
+  description: string | null;
+  links: TaskLink[];
+  label: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface TaskItem {
+  id: string;
+  task_id: string;
+  name: string;
+  status: TaskStatus;
+  sort_order: number;
+  created_at: string;
 }
 
 export interface Project {
@@ -167,6 +184,7 @@ export interface Database {
       client_portals: { Row: ClientPortal; Insert: Partial<ClientPortal>; Update: Partial<ClientPortal> };
       projects: { Row: Project; Insert: Partial<Project>; Update: Partial<Project> };
       project_tasks: { Row: ProjectTask; Insert: Partial<ProjectTask>; Update: Partial<ProjectTask> };
+      task_items: { Row: TaskItem; Insert: Partial<TaskItem>; Update: Partial<TaskItem> };
     };
   };
 }

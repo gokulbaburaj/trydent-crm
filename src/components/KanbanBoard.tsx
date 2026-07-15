@@ -24,6 +24,8 @@ export function KanbanBoard<T extends { id: string }>({
   onMove,
   renderCard,
   renderColumnFooter,
+  columnClassName,
+  columnMeta,
 }: {
   columns: KanbanColumn[];
   items: T[];
@@ -31,6 +33,8 @@ export function KanbanBoard<T extends { id: string }>({
   onMove: (item: T, columnId: string) => void;
   renderCard: (item: T) => ReactNode;
   renderColumnFooter?: (columnId: string, items: T[]) => ReactNode;
+  columnClassName?: string;
+  columnMeta?: (columnId: string, items: T[]) => ReactNode;
 }) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -53,12 +57,17 @@ export function KanbanBoard<T extends { id: string }>({
         {columns.map((col) => {
           const colItems = items.filter((i) => getColumnId(i) === col.id);
           return (
-            <KanbanColumnDroppable key={col.id} id={col.id}>
-              <div className="mb-3 flex items-center justify-between">
-                <h3 className="text-[13px] font-medium text-foreground">{col.label}</h3>
-                <span className="rounded bg-white/5 px-1.5 py-0.5 text-xs text-muted">
-                  {colItems.length}
-                </span>
+            <KanbanColumnDroppable key={col.id} id={col.id} className={columnClassName}>
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <h3 className="min-w-0 truncate text-[13px] font-medium text-foreground">
+                  {col.label}
+                </h3>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  {columnMeta?.(col.id, colItems)}
+                  <span className="rounded bg-white/5 px-1.5 py-0.5 text-xs text-muted">
+                    {colItems.length}
+                  </span>
+                </div>
               </div>
               <div className="flex flex-col gap-2.5">
                 {colItems.map((item) => (
@@ -79,9 +88,11 @@ export function KanbanBoard<T extends { id: string }>({
 function KanbanColumnDroppable({
   id,
   children,
+  className,
 }: {
   id: string;
   children: ReactNode;
+  className?: string;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id });
   return (
@@ -89,6 +100,7 @@ function KanbanColumnDroppable({
       ref={setNodeRef}
       className={cn(
         "w-72 shrink-0 rounded-md border border-border bg-white/[0.02] p-3 transition-colors",
+        className,
         isOver && "border-accent bg-accent/5"
       )}
     >

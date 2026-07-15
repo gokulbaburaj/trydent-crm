@@ -1,34 +1,53 @@
 "use client";
 
-import { Search, LogOut } from "lucide-react";
+import { Search, LogOut, Menu } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Popover, MenuItem, MenuSeparator } from "@/components/ui/Popover";
+import { openCommandMenu } from "@/components/CommandMenu";
 import type { Profile } from "@/lib/types";
 
 export function Topbar({
   profile,
   onSignOut,
   title,
+  onMenuClick,
 }: {
   profile: Profile | null;
   onSignOut: () => void;
   title?: string;
+  onMenuClick?: () => void;
 }) {
   return (
-    <header className="flex items-center justify-between gap-4 border-b border-border px-6 py-3">
-      <div>
-        <h1 className="text-[15px] font-semibold text-foreground">{title ?? "Overview"}</h1>
+    <header className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 md:px-6">
+      <div className="flex min-w-0 items-center gap-2">
+        <button
+          onClick={onMenuClick}
+          className="rounded p-1.5 text-muted hover:bg-white/5 hover:text-foreground md:hidden"
+          title="Menu"
+        >
+          <Menu className="h-4 w-4" />
+        </button>
+        <h1 className="truncate text-[15px] font-semibold text-foreground">
+          {title ?? "Overview"}
+        </h1>
       </div>
 
       <div className="flex items-center gap-2">
-        <div className="relative hidden sm:block">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
-          <input
-            id="global-search-input"
-            placeholder="Search..."
-            className="w-52 rounded border border-border bg-surface py-1.5 pl-8 pr-3 text-[13px] text-foreground placeholder:text-muted focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30"
-          />
-        </div>
+        <button
+          onClick={openCommandMenu}
+          className="hidden w-52 items-center gap-2 rounded border border-border bg-surface py-1.5 pl-2.5 pr-2 text-left text-[13px] text-muted hover:bg-white/5 hover:text-foreground-secondary sm:flex"
+        >
+          <Search className="h-3.5 w-3.5 shrink-0" />
+          <span className="flex-1">Search...</span>
+          <kbd className="rounded border border-border bg-white/5 px-1.5 py-0.5 text-[10px]">⌘K</kbd>
+        </button>
+        <button
+          onClick={openCommandMenu}
+          className="rounded p-1.5 text-muted hover:bg-white/5 hover:text-foreground sm:hidden"
+          title="Search"
+        >
+          <Search className="h-4 w-4" />
+        </button>
 
         {profile && (
           <Popover

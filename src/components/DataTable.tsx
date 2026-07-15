@@ -20,7 +20,7 @@ export function DataTable<T>({
   rows: T[];
   onRowClick?: (row: T) => void;
   rowKey: (row: T) => string;
-  emptyMessage?: string;
+  emptyMessage?: ReactNode;
 }) {
   return (
     <div className="overflow-x-auto rounded-md border border-border">

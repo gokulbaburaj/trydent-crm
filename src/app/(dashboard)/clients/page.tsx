@@ -1,7 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { LayoutGrid, List, Plus } from "lucide-react";
+import { LayoutGrid, List, Plus, X } from "lucide-react";
+import { toast } from "@/components/Toaster";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { DataTable, Column } from "@/components/DataTable";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { Button } from "@/components/ui/Button";
@@ -83,9 +85,11 @@ export default function ClientsPage() {
         .eq("id", editing.id)
         .select()
         .single();
+      if (error) toast.error(`Couldn't save: ${error.message}`);
       if (!error && data) {
         setRows((prev) => prev.map((c) => (c.id === data.id ? (data as Client) : c)));
         if (selected?.id === data.id) setSelected(data as Client);
+        toast.success("Client updated");
       }
     } else {
       const { data, error } = await supabase
@@ -93,7 +97,11 @@ export default function ClientsPage() {
         .insert(editing)
         .select()
         .single();
-      if (!error && data) setRows((prev) => [data as Client, ...prev]);
+      if (error) toast.error(`Couldn't save: ${error.message}`);
+      if (!error && data) {
+        setRows((prev) => [data as Client, ...prev]);
+        toast.success("Client created");
+      }
     }
     setSaving(false);
     setEditing(null);
@@ -162,7 +170,19 @@ export default function ClientsPage() {
           rows={clients}
           rowKey={(c) => c.id}
           onRowClick={setSelected}
-          emptyMessage={loading ? "Loading..." : "No clients yet."}
+          emptyMessage={
+            loading ? (
+              "Loading..."
+            ) : (
+              <EmptyState
+                icon={List}
+                title="No clients yet"
+                description="Clients are the heart of the CRM — add your first one to start tracking deals, projects, and schedules."
+                actionLabel="New Client"
+                onAction={() => setEditing({ ...emptyForm })}
+              />
+            )
+          }
         />
       ) : (
         <KanbanBoard
@@ -342,6 +362,13 @@ export default function ClientsPage() {
               </Select>
             </div>
             <div>
+              <Label>Tags</Label>
+              <TagInput
+                tags={editing.tags ?? []}
+                onChange={(tags) => setEditing({ ...editing, tags })}
+              />
+            </div>
+            <div>
               <Label>Account Owner</Label>
               <Select
                 value={editing.account_owner ?? ""}
@@ -382,6 +409,51 @@ function Info({ label, value }: { label: string; value?: string | null }) {
     <div>
       <p className="text-xs font-medium text-muted">{label}</p>
       <p className="text-sm">{value || "—"}</p>
+    </div>
+  );
+}
+
+function TagInput({ tags, onChange }: { tags: string[]; onChange: (tags: string[]) => void }) {
+  const [draft, setDraft] = useState("");
+
+  function commit() {
+    const t = draft.trim();
+    if (t && !tags.includes(t)) onChange([...tags, t]);
+    setDraft("");
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 rounded border border-border bg-surface px-2 py-1.5 focus-within:border-accent/60 focus-within:ring-1 focus-within:ring-accent/30">
+      {tags.map((t) => (
+        <span
+          key={t}
+          className="inline-flex items-center gap-1 rounded bg-white/5 px-1.5 py-0.5 text-xs text-foreground-secondary"
+        >
+          {t}
+          <button
+            type="button"
+            onClick={() => onChange(tags.filter((x) => x !== t))}
+            className="rounded text-muted hover:text-danger"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </span>
+      ))}
+      <input
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === ",") {
+            e.preventDefault();
+            commit();
+          } else if (e.key === "Backspace" && !draft && tags.length > 0) {
+            onChange(tags.slice(0, -1));
+          }
+        }}
+        onBlur={commit}
+        placeholder={tags.length === 0 ? "Type a tag, press Enter" : ""}
+        className="min-w-[100px] flex-1 bg-transparent py-0.5 text-sm text-foreground placeholder:text-muted-2 focus:outline-none"
+      />
     </div>
   );
 }
