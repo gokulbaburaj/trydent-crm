@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Copy, KeyRound, Plus } from "lucide-react";
+import { Check, Copy, Eye, KeyRound, Link2, Plus } from "lucide-react";
+import Link from "next/link";
+import { toast } from "@/components/Toaster";
 import { DataTable, Column } from "@/components/DataTable";
 import { Button } from "@/components/ui/Button";
 import { Badge, statusTone } from "@/components/ui/Badge";
@@ -120,6 +122,15 @@ export default function PortalsPage() {
           <span className="text-xs text-muted">—</span>
         ),
     },
+    {
+      header: "Last opened",
+      render: (p) =>
+        p.last_opened_at ? (
+          <span className="text-xs text-success">{formatDate(p.last_opened_at)}</span>
+        ) : (
+          <span className="text-xs text-muted">Never</span>
+        ),
+    },
     { header: "Notes", render: (p) => p.notes || "—" },
     { header: "Updated", render: (p) => formatDate(p.updated_at) },
   ];
@@ -212,10 +223,39 @@ export default function PortalsPage() {
               />
             </div>
             {editing.id && (
+              <div className="flex items-center gap-2">
+                <Link
+                  href={`/portal?client=${editing.client_id}`}
+                  target="_blank"
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded border border-border bg-white/5 px-3 py-2 text-xs font-medium text-foreground-secondary transition-colors hover:bg-white/10 hover:text-foreground"
+                >
+                  <Eye className="h-3.5 w-3.5" /> Preview portal
+                </Link>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  className="flex-1"
+                  onClick={() => {
+                    navigator.clipboard.writeText(`${window.location.origin}/login`);
+                    toast.success("Client login link copied");
+                  }}
+                >
+                  <Link2 className="h-3.5 w-3.5" /> Copy client link
+                </Button>
+              </div>
+            )}
+
+            {editing.id && (
               <div className="flex flex-col gap-3 rounded border border-border bg-white/[0.02] p-3">
                 <div className="flex items-center gap-2">
                   <KeyRound className="h-3.5 w-3.5 text-muted" />
                   <span className="text-[13px] font-medium">Portal login</span>
+                  {editing.last_opened_at && (
+                    <span className="ml-auto text-[11px] text-success">
+                      Opened {formatDate(editing.last_opened_at)}
+                    </span>
+                  )}
                 </div>
 
                 {editing.portal_username && !loginCreated && (

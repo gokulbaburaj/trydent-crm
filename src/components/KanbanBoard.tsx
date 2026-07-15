@@ -1,9 +1,11 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import {
   DndContext,
   DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
   PointerSensor,
   useSensor,
   useSensors,
@@ -39,8 +41,15 @@ export function KanbanBoard<T extends { id: string }>({
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const activeItem = activeId ? items.find((i) => i.id === activeId) : null;
+
+  function handleDragStart(event: DragStartEvent) {
+    setActiveId(String(event.active.id));
+  }
 
   function handleDragEnd(event: DragEndEvent) {
+    setActiveId(null);
     const { active, over } = event;
     if (!over) return;
     const item = items.find((i) => i.id === active.id);
@@ -52,7 +61,12 @@ export function KanbanBoard<T extends { id: string }>({
   }
 
   return (
-    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+    <DndContext
+      sensors={sensors}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onDragCancel={() => setActiveId(null)}
+    >
       <div className="flex gap-4 overflow-x-auto pb-4">
         {columns.map((col) => {
           const colItems = items.filter((i) => getColumnId(i) === col.id);
@@ -81,6 +95,17 @@ export function KanbanBoard<T extends { id: string }>({
           );
         })}
       </div>
+
+      {/* Floating clone while dragging — the original stays as a dimmed placeholder */}
+      <DragOverlay
+        dropAnimation={{ duration: 200, easing: "cubic-bezier(0.16, 1, 0.3, 1)" }}
+      >
+        {activeItem ? (
+          <div className="rotate-2 scale-[1.03] cursor-grabbing rounded border border-accent/50 bg-surface p-3 shadow-2xl shadow-black/60">
+            {renderCard(activeItem)}
+          </div>
+        ) : null}
+      </DragOverlay>
     </DndContext>
   );
 }
@@ -116,24 +141,16 @@ function KanbanCardDraggable({
   id: string;
   children: ReactNode;
 }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } =
-    useDraggable({ id });
-  const style = transform
-    ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-        zIndex: 50,
-      }
-    : undefined;
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id });
 
   return (
     <div
       ref={setNodeRef}
-      style={style}
       {...listeners}
       {...attributes}
       className={cn(
-        "animate-row cursor-grab rounded border border-border bg-surface p-3 transition-[border-color,background-color,box-shadow,translate] duration-150 hover:-translate-y-px hover:border-white/15 hover:bg-white/5 hover:shadow-lg hover:shadow-black/20 active:cursor-grabbing",
-        isDragging && "rotate-1 opacity-80 shadow-2xl shadow-black/50"
+        "animate-row cursor-grab rounded border border-border bg-surface p-3 transition-[border-color,background-color,box-shadow,translate,opacity] duration-150 hover:-translate-y-px hover:border-white/15 hover:bg-white/5 hover:shadow-lg hover:shadow-black/20 active:cursor-grabbing",
+        isDragging && "border-dashed border-white/15 opacity-30"
       )}
     >
       {children}

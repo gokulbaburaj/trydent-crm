@@ -11,7 +11,6 @@ import {
   format,
   getHours,
   getMinutes,
-  isSameDay,
   isSameMonth,
   isToday,
   parseISO,
@@ -22,11 +21,20 @@ import {
   subWeeks,
 } from "date-fns";
 import { Calendar, ChevronLeft, ChevronRight, List, Plus, User } from "lucide-react";
+import {
+  DndContext,
+  DragEndEvent,
+  PointerSensor,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
 import { DatePicker } from "@/components/ui/DatePicker";
+import { cn } from "@/lib/utils";
 import { DataTable, Column } from "@/components/DataTable";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
-import { Card } from "@/components/ui/Card";
 import { Drawer } from "@/components/ui/Drawer";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -113,15 +121,14 @@ export default function SchedulePage() {
   const { rows: clients } = useSupabaseTable<Client>("clients");
   const { rows: deals } = useSupabaseTable<Deal>("deals");
   const { rows: profiles } = useSupabaseTable<Profile>("profiles");
-  const { rows: projectTasks } = useSupabaseTable<ProjectTask>("project_tasks");
-  const { rows: projects } = useSupabaseTable<Project>("projects");
+  const { rows: projectTasks, setRows: setTaskRows } = useSupabaseTable<ProjectTask>("project_tasks");
+  const { rows: projects, setRows: setProjectRows } = useSupabaseTable<Project>("projects");
 
   const [tab, setTab] = useState<Tab>("all");
   const [calView, setCalView] = useState<CalView>("week");
   const [editing, setEditing] = useState<Partial<Activity> | null>(null);
   const [saving, setSaving] = useState(false);
   const [anchor, setAnchor] = useState(() => new Date());
-  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
 
   const clientName = (id: string | null) => clients.find((c) => c.id === id)?.company ?? "—";
   const assigneeName = (id: string | null) => profiles.find((p) => p.id === id)?.full_name ?? "Unassigned";
@@ -207,6 +214,50 @@ export default function SchedulePage() {
   const dayTasks = (day: Date) => tasksByDay.get(format(day, "yyyy-MM-dd")) ?? [];
   const projectName = (id: string) => projects.find((p) => p.id === id)?.name ?? "Project";
 
+  const projectsByDay = useMemo(() => {
+    const map = new Map<string, Project[]>();
+    for (const p of projects) {
+      if (!p.due_date) continue;
+      const key = p.due_date.slice(0, 10);
+      const arr = map.get(key) ?? [];
+      arr.push(p);
+      map.set(key, arr);
+    }
+    return map;
+  }, [projects]);
+
+  const dayProjects = (day: Date) => projectsByDay.get(format(day, "yyyy-MM-dd")) ?? [];
+
+  /* ---- drag-to-reschedule + recolor handlers ---- */
+
+  async function moveActivity(a: Activity, newIso: string) {
+    setRows((prev) => prev.map((x) => (x.id === a.id ? { ...x, activity_date: newIso } : x)));
+    const supabase = createClient();
+    if (!supabase) return;
+    await supabase.from("activities").update({ activity_date: newIso }).eq("id", a.id);
+  }
+
+  async function moveTaskDue(id: string, day: string) {
+    setTaskRows((prev) => prev.map((t) => (t.id === id ? { ...t, due_date: day } : t)));
+    const supabase = createClient();
+    if (!supabase) return;
+    await supabase.from("project_tasks").update({ due_date: day }).eq("id", id);
+  }
+
+  async function moveProjectDue(id: string, day: string) {
+    setProjectRows((prev) => prev.map((p) => (p.id === id ? { ...p, due_date: day } : p)));
+    const supabase = createClient();
+    if (!supabase) return;
+    await supabase.from("projects").update({ due_date: day }).eq("id", id);
+  }
+
+  async function recolorActivity(id: string, color: string | null) {
+    setRows((prev) => prev.map((a) => (a.id === id ? { ...a, color } : a)));
+    const supabase = createClient();
+    if (!supabase) return;
+    await supabase.from("activities").update({ color }).eq("id", id);
+  }
+
   const goPrev = () =>
     setAnchor((d) => (calView === "week" ? subWeeks(d, 1) : subMonths(d, 1)));
   const goNext = () =>
@@ -289,23 +340,29 @@ export default function SchedulePage() {
               anchor={anchor}
               dayEvents={dayEvents}
               dayTasks={dayTasks}
+              dayProjects={dayProjects}
               projectName={projectName}
               clientName={clientName}
               onEventClick={setEditing}
+              onEventMove={moveActivity}
               onSlotClick={(dt) =>
                 setEditing({ ...emptyForm, activity_date: format(dt, "yyyy-MM-dd'T'HH:mm") })
               }
             />
           ) : (
-            <MonthGrid
+            <MonthGridPro
               anchor={anchor}
-              activities={activities}
               dayEvents={dayEvents}
               dayTasks={dayTasks}
-              selectedDay={selectedDay}
-              setSelectedDay={setSelectedDay}
-              clientName={clientName}
+              dayProjects={dayProjects}
+              projectName={projectName}
               onEventClick={setEditing}
+              onMoveActivity={(a, day) =>
+                moveActivity(a, `${day}T${format(parseISO(a.activity_date), "HH:mm")}`)
+              }
+              onMoveTask={moveTaskDue}
+              onMoveProject={moveProjectDue}
+              onRecolor={recolorActivity}
             />
           )}
         </>
@@ -442,20 +499,27 @@ function WeekGrid({
   anchor,
   dayEvents,
   dayTasks,
+  dayProjects,
   projectName,
   clientName,
   onEventClick,
+  onEventMove,
   onSlotClick,
 }: {
   anchor: Date;
   dayEvents: (day: Date) => Activity[];
   dayTasks: (day: Date) => ProjectTask[];
+  dayProjects: (day: Date) => Project[];
   projectName: (id: string) => string;
   clientName: (id: string | null) => string;
   onEventClick: (a: Activity) => void;
+  onEventMove: (a: Activity, newIso: string) => void;
   onSlotClick: (dt: Date) => void;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
+  );
   const days = useMemo(() => {
     const start = startOfWeek(anchor, { weekStartsOn: 1 });
     return eachDayOfInterval({ start, end: endOfWeek(anchor, { weekStartsOn: 1 }) });
@@ -468,7 +532,25 @@ function WeekGrid({
 
   const hours = Array.from({ length: 24 }, (_, i) => i);
 
+  function handleDragEnd(e: DragEndEvent) {
+    const { active, over, delta } = e;
+    if (!over) return;
+    const a = active.data.current?.activity as Activity | undefined;
+    if (!a) return;
+    const day = String(over.id).replace("wday:", "");
+    const orig = parseISO(a.activity_date);
+    // Snap the vertical drag to 30-minute steps, clamped to the day.
+    const shift = Math.round(((delta.y / HOUR_HEIGHT) * 60) / 30) * 30;
+    const total = Math.min(
+      Math.max(getHours(orig) * 60 + getMinutes(orig) + shift, 0),
+      23 * 60 + 30
+    );
+    const hh = `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+    onEventMove(a, `${day}T${hh}`);
+  }
+
   return (
+    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
     <div className="overflow-x-auto rounded border border-border bg-surface">
       <div className="min-w-[680px]">
       {/* Day headers */}
@@ -497,16 +579,27 @@ function WeekGrid({
         ))}
       </div>
 
-      {/* All-day row: project tasks due that day */}
+      {/* All-day row: project tasks + project deadlines that day */}
       <div className="grid grid-cols-[3.5rem_repeat(7,1fr)] border-b border-border">
         <div className="flex items-center justify-end pr-2 text-[10px] text-muted-2">tasks</div>
         {days.map((day) => {
           const dts = dayTasks(day);
+          const dps = dayProjects(day);
           return (
             <div
               key={day.toISOString()}
               className="flex min-h-7 flex-col gap-0.5 border-l border-border-subtle p-0.5"
             >
+              {dps.map((p) => (
+                <Link
+                  key={p.id}
+                  href={`/projects/${p.id}`}
+                  title={`${p.name} — project deadline`}
+                  className="truncate rounded border border-danger/40 bg-danger/10 px-1.5 py-0.5 text-[11px] font-medium text-danger"
+                >
+                  ◆ {p.name}
+                </Link>
+              ))}
               {dts.slice(0, 3).map((t) => (
                 <Link
                   key={t.id}
@@ -548,17 +641,7 @@ function WeekGrid({
           {days.map((day) => {
             const placed = layoutDay(dayEvents(day));
             return (
-              <div
-                key={day.toISOString()}
-                className="relative border-l border-border-subtle"
-                style={{ height: 24 * HOUR_HEIGHT }}
-                onClick={(e) => {
-                  if ((e.target as HTMLElement).closest("[data-event]")) return;
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  const hour = Math.floor((e.clientY - rect.top) / HOUR_HEIGHT);
-                  onSlotClick(setHours(day, hour));
-                }}
-              >
+              <WeekDayColumn key={day.toISOString()} day={day} onSlotClick={onSlotClick}>
                 {/* Hour lines */}
                 {hours.slice(1).map((h) => (
                   <div
@@ -572,43 +655,108 @@ function WeekGrid({
                 {isToday(day) && <NowLine />}
 
                 {/* Events */}
-                {placed.map(({ a, col, cols }) => {
-                  const d = parseISO(a.activity_date);
-                  const top = (getHours(d) + getMinutes(d) / 60) * HOUR_HEIGHT;
-                  const color = eventColor(a);
-                  const width = 100 / cols;
-                  return (
-                    <button
-                      key={a.id}
-                      data-event
-                      onClick={() => onEventClick(a)}
-                      className="absolute overflow-hidden rounded px-1.5 py-1 text-left transition-[filter,box-shadow] duration-150 hover:brightness-105 hover:shadow-md hover:shadow-black/20"
-                      style={{
-                        top: top + 1,
-                        height: (EVENT_MINUTES / 60) * HOUR_HEIGHT - 2,
-                        left: `calc(${col * width}% + 2px)`,
-                        width: `calc(${width}% - 4px)`,
-                        background: color.bg,
-                        boxShadow: `inset 3px 0 0 0 ${color.bar}`,
-                      }}
-                    >
-                      <p className="truncate text-[11px] font-semibold leading-tight text-[#16171b]">
-                        {format(d, "H:mm")}{" "}
-                        <span className="font-medium">{a.description}</span>
-                      </p>
-                      <p className="truncate text-[10px] leading-tight text-[#16171b]/70">
-                        {clientName(a.client_id)}
-                      </p>
-                    </button>
-                  );
-                })}
-              </div>
+                {placed.map(({ a, col, cols }) => (
+                  <WeekEvent
+                    key={a.id}
+                    a={a}
+                    col={col}
+                    cols={cols}
+                    clientName={clientName}
+                    onClick={() => onEventClick(a)}
+                  />
+                ))}
+              </WeekDayColumn>
             );
           })}
         </div>
       </div>
       </div>
     </div>
+    </DndContext>
+  );
+}
+
+function WeekDayColumn({
+  day,
+  onSlotClick,
+  children,
+}: {
+  day: Date;
+  onSlotClick: (dt: Date) => void;
+  children: React.ReactNode;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: `wday:${format(day, "yyyy-MM-dd")}` });
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "relative border-l border-border-subtle transition-colors",
+        isOver && "bg-accent/5"
+      )}
+      style={{ height: 24 * HOUR_HEIGHT }}
+      onClick={(e) => {
+        if ((e.target as HTMLElement).closest("[data-event]")) return;
+        const rect = e.currentTarget.getBoundingClientRect();
+        const hour = Math.floor((e.clientY - rect.top) / HOUR_HEIGHT);
+        onSlotClick(setHours(day, hour));
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function WeekEvent({
+  a,
+  col,
+  cols,
+  clientName,
+  onClick,
+}: {
+  a: Activity;
+  col: number;
+  cols: number;
+  clientName: (id: string | null) => string;
+  onClick: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: `act:${a.id}`,
+    data: { activity: a },
+  });
+  const d = parseISO(a.activity_date);
+  const top = (getHours(d) + getMinutes(d) / 60) * HOUR_HEIGHT;
+  const color = eventColor(a);
+  const width = 100 / cols;
+  return (
+    <button
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      data-event
+      onClick={onClick}
+      className={cn(
+        "absolute overflow-hidden rounded px-1.5 py-1 text-left transition-[filter,box-shadow] duration-150 hover:brightness-105 hover:shadow-md hover:shadow-black/20",
+        isDragging && "z-30 opacity-90 shadow-xl shadow-black/50 brightness-110"
+      )}
+      style={{
+        top: top + 1,
+        height: (EVENT_MINUTES / 60) * HOUR_HEIGHT - 2,
+        left: `calc(${col * width}% + 2px)`,
+        width: `calc(${width}% - 4px)`,
+        background: color.bg,
+        boxShadow: `inset 3px 0 0 0 ${color.bar}`,
+        transform: transform
+          ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
+          : undefined,
+      }}
+    >
+      <p className="truncate text-[11px] font-semibold leading-tight text-[#16171b]">
+        {format(d, "H:mm")} <span className="font-medium">{a.description}</span>
+      </p>
+      <p className="truncate text-[10px] leading-tight text-[#16171b]/70">
+        {clientName(a.client_id)}
+      </p>
+    </button>
   );
 }
 
@@ -630,106 +778,262 @@ function NowLine() {
 
 /* ---------------------------------- Month view ---------------------------------- */
 
-function MonthGrid({
+const CHIP_COLORS = ["#eb5757", "#d9a53f", "#4cb782", "#4ea7e0", "#a855f7", "#d95c8a"];
+
+function chipColor(a: Activity) {
+  if (a.color) return a.color;
+  const key = a.client_id ?? a.id;
+  let hash = 0;
+  for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) | 0;
+  return CHIP_COLORS[Math.abs(hash) % CHIP_COLORS.length];
+}
+
+interface MonthDrag {
+  kind: "act" | "task" | "proj";
+  id: string;
+  activity?: Activity;
+}
+
+function MonthGridPro({
   anchor,
-  activities,
   dayEvents,
   dayTasks,
-  selectedDay,
-  setSelectedDay,
-  clientName,
+  dayProjects,
+  projectName,
   onEventClick,
+  onMoveActivity,
+  onMoveTask,
+  onMoveProject,
+  onRecolor,
 }: {
   anchor: Date;
-  activities: Activity[];
   dayEvents: (day: Date) => Activity[];
   dayTasks: (day: Date) => ProjectTask[];
-  selectedDay: Date | null;
-  setSelectedDay: (d: Date | null) => void;
-  clientName: (id: string | null) => string;
+  dayProjects: (day: Date) => Project[];
+  projectName: (id: string) => string;
   onEventClick: (a: Activity) => void;
+  onMoveActivity: (a: Activity, day: string) => void;
+  onMoveTask: (id: string, day: string) => void;
+  onMoveProject: (id: string, day: string) => void;
+  onRecolor: (id: string, color: string | null) => void;
 }) {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
+  );
+  const [menu, setMenu] = useState<{ x: number; y: number; id: string; color: string | null } | null>(null);
+
   const monthGrid = useMemo(() => {
     const start = startOfWeek(startOfMonth(anchor), { weekStartsOn: 1 });
     const end = endOfWeek(endOfMonth(anchor), { weekStartsOn: 1 });
     return eachDayOfInterval({ start, end });
   }, [anchor]);
 
-  const upcomingOrSelected = useMemo(() => {
-    if (selectedDay) return dayEvents(selectedDay);
-    const now = new Date();
-    return activities
-      .filter((a) => parseISO(a.activity_date) >= now)
-      .sort((a, b) => parseISO(a.activity_date).getTime() - parseISO(b.activity_date).getTime())
-      .slice(0, 6);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDay, activities]);
+  function handleDragEnd(e: DragEndEvent) {
+    const { active, over } = e;
+    if (!over) return;
+    const day = String(over.id).replace("mday:", "");
+    const data = active.data.current as MonthDrag | undefined;
+    if (!data) return;
+    if (data.kind === "act" && data.activity) onMoveActivity(data.activity, day);
+    if (data.kind === "task") onMoveTask(data.id, day);
+    if (data.kind === "proj") onMoveProject(data.id, day);
+  }
+
+  const now = new Date();
 
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-      <Card className="lg:col-span-2">
-        <div className="grid grid-cols-7 gap-1 text-center text-xs text-muted">
-          {WEEKDAYS.map((d) => (
-            <div key={d} className="py-1">{d}</div>
-          ))}
-        </div>
-        <div className="grid grid-cols-7 gap-1">
-          {monthGrid.map((day) => {
-            const inMonth = isSameMonth(day, anchor);
-            const hasEvents = dayEvents(day).length > 0 || dayTasks(day).length > 0;
-            const selected = !!selectedDay && isSameDay(day, selectedDay);
-            return (
-              <button
-                key={day.toISOString()}
-                onClick={() =>
-                  setSelectedDay(selectedDay && isSameDay(day, selectedDay) ? null : day)
-                }
-                className={dayCellClass(inMonth, isToday(day), selected)}
-              >
-                <span className="relative">
-                  {format(day, "d")}
-                  {hasEvents && (
-                    <span className="absolute -right-1.5 -top-1 h-1.5 w-1.5 rounded-full bg-accent" />
+    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+      <div className="overflow-x-auto rounded border border-border bg-surface">
+        <div className="min-w-[760px]">
+          <div className="grid grid-cols-7 border-b border-border text-center">
+            {WEEKDAYS.map((d) => (
+              <div key={d} className="py-2 text-[11px] font-medium text-muted">{d}</div>
+            ))}
+          </div>
+          <div className="grid grid-cols-7">
+            {monthGrid.map((day) => {
+              const inMonth = isSameMonth(day, anchor);
+              const events = dayEvents(day);
+              const tasks = dayTasks(day);
+              const projects = dayProjects(day);
+              const extra = Math.max(events.length + tasks.length + projects.length - 3, 0);
+              return (
+                <MonthDayCell key={day.toISOString()} day={day} inMonth={inMonth}>
+                  {projects.slice(0, 1).map((p) => (
+                    <MonthChip
+                      key={p.id}
+                      drag={{ kind: "proj", id: p.id }}
+                      color="#eb5757"
+                      title={`◆ ${p.name}`}
+                      hint="due"
+                      past={false}
+                      onClick={() => {}}
+                    />
+                  ))}
+                  {events.slice(0, 2).map((a) => (
+                    <MonthChip
+                      key={a.id}
+                      drag={{ kind: "act", id: a.id, activity: a }}
+                      color={chipColor(a)}
+                      title={a.description}
+                      hint={format(parseISO(a.activity_date), "h:mm a")}
+                      past={parseISO(a.activity_date) < now}
+                      onClick={() => onEventClick(a)}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        setMenu({ x: e.clientX, y: e.clientY, id: a.id, color: a.color });
+                      }}
+                    />
+                  ))}
+                  {tasks.slice(0, 1).map((t) => (
+                    <MonthChip
+                      key={t.id}
+                      drag={{ kind: "task", id: t.id }}
+                      color="#6c74dd"
+                      title={t.name}
+                      hint={projectName(t.project_id)}
+                      past={false}
+                      onClick={() => {}}
+                    />
+                  ))}
+                  {extra > 0 && (
+                    <span className="px-1 text-[10px] text-muted">+{extra} more</span>
                   )}
-                </span>
-              </button>
-            );
-          })}
+                </MonthDayCell>
+              );
+            })}
+          </div>
         </div>
-      </Card>
+      </div>
 
-      <Card>
-        <h3 className="mb-3 text-sm font-semibold text-muted">
-          {selectedDay ? format(selectedDay, "MMMM d, yyyy") : "Upcoming"}
-        </h3>
-        <div className="flex flex-col divide-y divide-border">
-          {upcomingOrSelected.length === 0 && (
-            <p className="py-6 text-center text-sm text-muted">No events.</p>
-          )}
-          {upcomingOrSelected.map((a) => (
-            <button
-              key={a.id}
-              onClick={() => onEventClick(a)}
-              className="flex items-center gap-3 py-3 text-left hover:bg-white/5"
-            >
-              <div className="flex w-11 shrink-0 flex-col items-center rounded bg-white/10 py-1.5">
-                <span className="text-sm font-bold">{format(parseISO(a.activity_date), "d")}</span>
-                <span className="text-[10px] uppercase text-muted">
-                  {format(parseISO(a.activity_date), "EEE")}
-                </span>
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{a.description}</p>
-                <p className="truncate text-xs text-muted">{clientName(a.client_id)}</p>
-              </div>
-              <span className="shrink-0 text-xs text-muted">
-                {format(parseISO(a.activity_date), "h:mm a")}
-              </span>
-            </button>
-          ))}
+      {/* Right-click color menu */}
+      {menu && (
+        <div
+          className="fixed inset-0 z-[140]"
+          onClick={() => setMenu(null)}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            setMenu(null);
+          }}
+        >
+          <div
+            className="animate-pop absolute rounded-md border border-border bg-surface p-2.5 shadow-xl shadow-black/60"
+            style={{ top: Math.min(menu.y, window.innerHeight - 90), left: Math.min(menu.x, window.innerWidth - 220) }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="mb-2 text-[11px] font-medium text-muted">Event color</p>
+            <div className="flex items-center gap-1.5">
+              {CHIP_COLORS.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => {
+                    onRecolor(menu.id, c);
+                    setMenu(null);
+                  }}
+                  className={cn(
+                    "h-5 w-5 rounded-full transition-transform hover:scale-110",
+                    menu.color === c && "ring-2 ring-white/60 ring-offset-1 ring-offset-surface"
+                  )}
+                  style={{ background: c }}
+                />
+              ))}
+              <button
+                title="Auto (by client)"
+                onClick={() => {
+                  onRecolor(menu.id, null);
+                  setMenu(null);
+                }}
+                className="flex h-5 w-5 items-center justify-center rounded-full border border-border text-[9px] font-medium text-muted hover:text-foreground"
+              >
+                A
+              </button>
+            </div>
+          </div>
         </div>
-      </Card>
+      )}
+    </DndContext>
+  );
+}
+
+function MonthDayCell({
+  day,
+  inMonth,
+  children,
+}: {
+  day: Date;
+  inMonth: boolean;
+  children: React.ReactNode;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: `mday:${format(day, "yyyy-MM-dd")}` });
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "flex min-h-[104px] flex-col gap-1 border-b border-r border-border-subtle p-1.5 transition-colors [&:nth-child(7n)]:border-r-0",
+        !inMonth && "opacity-40",
+        isOver && "bg-accent/10"
+      )}
+    >
+      <span
+        className={cn(
+          "self-end text-xs",
+          isToday(day)
+            ? "flex h-5 w-5 items-center justify-center rounded-full bg-accent font-semibold text-accent-foreground"
+            : "px-1 text-muted"
+        )}
+      >
+        {format(day, "d")}
+      </span>
+      {children}
     </div>
+  );
+}
+
+function MonthChip({
+  drag,
+  color,
+  title,
+  hint,
+  past,
+  onClick,
+  onContextMenu,
+}: {
+  drag: MonthDrag;
+  color: string;
+  title: string;
+  hint?: string;
+  past: boolean;
+  onClick: () => void;
+  onContextMenu?: (e: React.MouseEvent) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: `${drag.kind}:${drag.id}`,
+    data: drag,
+  });
+  return (
+    <button
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      onClick={onClick}
+      onContextMenu={onContextMenu}
+      className={cn(
+        "flex items-center justify-between gap-1 rounded-md border px-1.5 py-0.5 text-left text-[11px] font-medium transition-[filter] hover:brightness-125",
+        past && "line-through opacity-45",
+        isDragging && "z-30 opacity-90 shadow-lg shadow-black/50"
+      )}
+      style={{
+        borderColor: `${color}55`,
+        color,
+        background: `${color}14`,
+        transform: transform
+          ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
+          : undefined,
+      }}
+    >
+      <span className="min-w-0 truncate">{title}</span>
+      {hint && <span className="shrink-0 text-[10px] opacity-75">{hint}</span>}
+    </button>
   );
 }
 
@@ -786,10 +1090,3 @@ function formatTimeLabel(t: string) {
   return `${hour12}:${String(m).padStart(2, "0")} ${suffix}`;
 }
 
-function dayCellClass(inMonth: boolean, today: boolean, selected: boolean) {
-  const base = "flex h-10 items-center justify-center rounded text-sm transition-colors";
-  if (selected) return `${base} bg-accent text-accent-foreground font-semibold`;
-  if (today) return `${base} border border-accent text-accent font-semibold`;
-  if (!inMonth) return `${base} text-muted/40 hover:bg-white/5`;
-  return `${base} text-foreground hover:bg-white/5`;
-}

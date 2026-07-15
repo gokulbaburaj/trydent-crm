@@ -15,11 +15,13 @@ export function Popover({
   children,
   align = "left",
   className,
+  fullWidth = false,
 }: {
   trigger: ReactNode;
   children: ReactNode | ((close: () => void) => ReactNode);
   align?: "left" | "right";
   className?: string;
+  fullWidth?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ top: number; left?: number; right?: number } | null>(null);
@@ -70,7 +72,7 @@ export function Popover({
     <>
       <div
         ref={triggerRef}
-        className="inline-block"
+        className={fullWidth ? "block w-full" : "inline-block"}
         onClick={(e) => {
           e.stopPropagation();
           toggle();

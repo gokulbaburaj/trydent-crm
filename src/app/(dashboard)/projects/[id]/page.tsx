@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import {
+  addDays,
   addMonths,
   eachDayOfInterval,
   endOfMonth,
@@ -13,6 +14,7 @@ import {
   isSameMonth,
   isToday,
   parseISO,
+  startOfDay,
   startOfMonth,
   startOfWeek,
   subMonths,
@@ -81,7 +83,7 @@ export default function ProjectDetailPage() {
   });
   const { rows: clients } = useSupabaseTable<Client>("clients");
   const { rows: profiles } = useSupabaseTable<Profile>("profiles");
-  const { rows: activities } = useSupabaseTable<Activity>("activities");
+  const { rows: activities, setRows: setActivityRows } = useSupabaseTable<Activity>("activities");
   const { rows: allSubtasks } = useSupabaseTable<TaskItem>("task_items");
 
   const subtaskStats = useMemo(() => {
@@ -192,6 +194,34 @@ export default function ProjectDetailPage() {
     const supabase = createClient();
     if (!supabase) return;
     await supabase.from("project_tasks").delete().eq("id", id);
+  }
+
+  /** Quick-add from the project calendar: a task due that day, or a meeting at 10:00. */
+  async function quickAdd(kind: "task" | "meeting", name: string, day: string) {
+    const supabase = createClient();
+    if (!supabase || !project) return;
+    if (kind === "task") {
+      const { data, error } = await supabase
+        .from("project_tasks")
+        .insert({ project_id: projectId, name, status: "Not Started", due_date: day, sort_order: tasks.length })
+        .select()
+        .single();
+      if (error) setActionError(`Couldn't add task: ${error.message}`);
+      if (!error && data) setTasks((prev) => [...prev, data as ProjectTask]);
+    } else {
+      const { data, error } = await supabase
+        .from("activities")
+        .insert({
+          description: name,
+          client_id: project.client_id,
+          activity_date: `${day}T10:00`,
+          follow_up_required: false,
+        })
+        .select()
+        .single();
+      if (error) setActionError(`Couldn't add meeting: ${error.message}`);
+      if (!error && data) setActivityRows((prev) => [data as Activity, ...prev]);
+    }
   }
 
   if (loading) {
@@ -459,34 +489,53 @@ export default function ProjectDetailPage() {
           {/* Mini calendar */}
           <MiniCalendar tasks={active} />
 
-          {/* Upcoming schedule for this client */}
-          <Card className="lg:col-span-3">
-            <h3 className="mb-3 text-sm font-semibold">Upcoming Schedule</h3>
-            <div className="flex flex-col divide-y divide-border-subtle">
-              {upcomingSchedule.length === 0 && (
-                <p className="py-6 text-center text-sm text-muted">
-                  Nothing scheduled with {clientName(project.client_id)}.
-                </p>
-              )}
-              {upcomingSchedule.map((a) => (
-                <div key={a.id} className="flex items-center gap-3 py-2.5">
-                  <div className="flex w-11 shrink-0 flex-col items-center rounded bg-white/10 py-1">
-                    <span className="text-sm font-bold">
-                      {format(parseISO(a.activity_date), "d")}
-                    </span>
-                    <span className="text-[10px] uppercase text-muted">
-                      {format(parseISO(a.activity_date), "EEE")}
-                    </span>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm">{a.description}</p>
-                    <p className="text-xs text-muted">
-                      {format(parseISO(a.activity_date), "h:mm a")}
+          {/* Upcoming meetings for this client */}
+          <Card>
+            <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold">
+              Upcoming Meetings
+              <span className="rounded bg-white/5 px-1.5 py-0.5 text-xs font-normal text-muted">
+                {upcomingSchedule.length}
+              </span>
+            </h3>
+            {upcomingSchedule.length === 0 && (
+              <p className="py-6 text-center text-sm text-muted">
+                Nothing scheduled with {clientName(project.client_id)}.
+              </p>
+            )}
+            <div className="flex flex-col gap-1">
+              {upcomingSchedule.map((a, i) =>
+                i === 0 ? (
+                  <div key={a.id} className="rounded-md bg-accent p-3 text-accent-foreground">
+                    <p className="flex items-center gap-2 text-sm font-semibold">
+                      {format(parseISO(a.activity_date), "HH:mm")}
+                      <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-[10px] font-medium">
+                        {format(parseISO(a.activity_date), "EEE, MMM d")}
+                      </span>
                     </p>
+                    <p className="mt-1 text-[13px] leading-snug opacity-90">{a.description}</p>
                   </div>
-                </div>
-              ))}
+                ) : (
+                  <div
+                    key={a.id}
+                    className="border-t border-border-subtle px-1 py-2.5 first:border-0"
+                  >
+                    <p className="text-sm font-medium text-foreground-secondary">
+                      {format(parseISO(a.activity_date), "HH:mm")}
+                      <span className="ml-2 text-[11px] font-normal text-muted">
+                        {format(parseISO(a.activity_date), "EEE, MMM d")}
+                      </span>
+                    </p>
+                    <p className="truncate text-xs text-muted">{a.description}</p>
+                  </div>
+                )
+              )}
             </div>
+          </Card>
+
+          {/* Tasks timeline */}
+          <Card className="lg:col-span-2">
+            <h3 className="mb-3 text-sm font-semibold">Tasks Timeline</h3>
+            <TasksTimeline tasks={active} />
           </Card>
         </div>
       )}
@@ -660,7 +709,7 @@ export default function ProjectDetailPage() {
       )}
 
       {/* ============ CALENDAR ============ */}
-      {tab === "calendar" && <ProjectCalendar tasks={active} />}
+      {tab === "calendar" && <ProjectCalendar tasks={active} onQuickAdd={quickAdd} />}
 
       {/* Task detail */}
       <TaskDetailDrawer
@@ -788,9 +837,16 @@ function MiniCalendar({ tasks }: { tasks: ProjectTask[] }) {
   );
 }
 
-function ProjectCalendar({ tasks }: { tasks: ProjectTask[] }) {
+function ProjectCalendar({
+  tasks,
+  onQuickAdd,
+}: {
+  tasks: ProjectTask[];
+  onQuickAdd: (kind: "task" | "meeting", name: string, day: string) => void;
+}) {
   const [month, setMonth] = useState(() => startOfMonth(new Date()));
   const [selected, setSelected] = useState<Date | null>(null);
+  const [quickName, setQuickName] = useState("");
   const grid = useMemo(() => {
     const start = startOfWeek(startOfMonth(month), { weekStartsOn: 1 });
     const end = endOfWeek(endOfMonth(month), { weekStartsOn: 1 });
@@ -874,6 +930,43 @@ function ProjectCalendar({ tasks }: { tasks: ProjectTask[] }) {
         <h3 className="mb-3 text-sm font-semibold text-muted">
           {selected ? format(selected, "MMMM d, yyyy") : "Tasks with due dates"}
         </h3>
+
+        {selected && (
+          <div className="mb-3 flex flex-col gap-2 rounded border border-border bg-white/[0.02] p-2.5">
+            <Input
+              placeholder={`Add on ${format(selected, "MMM d")}...`}
+              value={quickName}
+              onChange={(e) => setQuickName(e.target.value)}
+            />
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="secondary"
+                className="flex-1"
+                disabled={!quickName.trim()}
+                onClick={() => {
+                  onQuickAdd("task", quickName.trim(), format(selected, "yyyy-MM-dd"));
+                  setQuickName("");
+                }}
+              >
+                <Plus className="h-3.5 w-3.5" /> Task
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="flex-1"
+                disabled={!quickName.trim()}
+                onClick={() => {
+                  onQuickAdd("meeting", quickName.trim(), format(selected, "yyyy-MM-dd"));
+                  setQuickName("");
+                }}
+              >
+                <Plus className="h-3.5 w-3.5" /> Meeting
+              </Button>
+            </div>
+          </div>
+        )}
+
         <div className="flex flex-col divide-y divide-border-subtle">
           {(selected ? tasksOn(selected) : tasks.filter((t) => t.due_date)).length === 0 && (
             <p className="py-6 text-center text-sm text-muted">No tasks here.</p>
@@ -892,6 +985,75 @@ function ProjectCalendar({ tasks }: { tasks: ProjectTask[] }) {
           ))}
         </div>
       </Card>
+    </div>
+  );
+}
+
+/* ---------------------------------- Tasks timeline ---------------------------------- */
+
+const TIMELINE_COLORS = ["#a855f7", "#4cb782", "#6c74dd", "#4ea7e0", "#d9a53f", "#d95c8a"];
+
+/** Gantt-style strip: bars run created → due inside a 12-day window around today. */
+function TasksTimeline({ tasks }: { tasks: ProjectTask[] }) {
+  const windowStart = startOfDay(addDays(new Date(), -5));
+  const spanMs = 12 * 86_400_000;
+  const rows = tasks
+    .filter((t) => t.due_date)
+    .sort((a, b) => (a.due_date ?? "").localeCompare(b.due_date ?? ""))
+    .slice(0, 6);
+
+  if (rows.length === 0) {
+    return (
+      <p className="py-8 text-center text-sm text-muted">
+        Give tasks due dates and they&apos;ll appear here as a timeline.
+      </p>
+    );
+  }
+
+  const pct = (d: Date) =>
+    Math.min(Math.max((d.getTime() - windowStart.getTime()) / spanMs, 0), 1) * 100;
+  const todayPct = pct(new Date());
+
+  return (
+    <div className="relative pt-1">
+      {/* Today line */}
+      <div
+        className="pointer-events-none absolute bottom-7 top-0 z-10 w-px bg-accent"
+        style={{ left: `${todayPct}%` }}
+      >
+        <span className="absolute -left-[3px] -top-1 h-2 w-2 rounded-full border-2 border-accent bg-panel" />
+      </div>
+
+      <div className="flex flex-col gap-2.5">
+        {rows.map((t, i) => {
+          const start = pct(startOfDay(parseISO(t.created_at)));
+          const end = pct(addDays(startOfDay(parseISO(t.due_date as string)), 1));
+          const left = Math.min(start, 90);
+          const width = Math.max(end - left, 10);
+          const color = TIMELINE_COLORS[i % TIMELINE_COLORS.length];
+          return (
+            <div key={t.id} className="relative h-7 border-b border-dashed border-border-subtle">
+              <div
+                title={`${t.name} — due ${formatDate(t.due_date)}`}
+                className={cn(
+                  "absolute top-0 flex h-6 items-center overflow-hidden rounded-full px-2.5 text-[11px] font-medium text-white shadow-sm",
+                  t.status === "Done" && "opacity-60"
+                )}
+                style={{ left: `${left}%`, width: `${width}%`, background: color }}
+              >
+                <span className="truncate">{t.name}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Date labels */}
+      <div className="mt-2 flex justify-between text-[10px] tabular-nums text-muted-2">
+        {Array.from({ length: 7 }, (_, i) => addDays(windowStart, i * 2)).map((d) => (
+          <span key={d.getTime()}>{format(d, "d")}</span>
+        ))}
+      </div>
     </div>
   );
 }

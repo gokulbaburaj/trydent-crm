@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, ChevronRight, LogOut } from "lucide-react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { ChevronDown, ChevronRight, Eye, LogOut } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Badge, statusTone } from "@/components/ui/Badge";
 import { useAuth } from "@/lib/useAuth";
@@ -11,7 +12,24 @@ import { useCurrency } from "@/lib/currency";
 import type { Client, Deal, ClientPortal, Project, ProjectTask } from "@/lib/types";
 
 export default function ClientPortalPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center text-muted">Loading...</div>
+      }
+    >
+      <PortalInner />
+    </Suspense>
+  );
+}
+
+function PortalInner() {
   const { profile, signOut } = useAuth();
+  const searchParams = useSearchParams();
+  // Staff can preview any client's portal via /portal?client=<id>
+  const previewClientId =
+    profile && profile.role !== "client" ? searchParams.get("client") : null;
+  const isPreview = !!previewClientId;
   const { format: formatCurrency } = useCurrency();
   const [client, setClient] = useState<Client | null>(null);
   const [deals, setDeals] = useState<Deal[]>([]);
@@ -24,16 +42,17 @@ export default function ClientPortalPage() {
   useEffect(() => {
     async function load() {
       const supabase = createClient();
-      if (!supabase || !profile?.client_id) {
+      const clientId = previewClientId ?? profile?.client_id;
+      if (!supabase || !clientId) {
         setLoading(false);
         return;
       }
 
       const [clientRes, dealsRes, portalRes, projectsRes, tasksRes] = await Promise.all([
-        supabase.from("clients").select("*").eq("id", profile.client_id).single(),
-        supabase.from("deals").select("*").eq("client_id", profile.client_id),
-        supabase.from("client_portals").select("*").eq("client_id", profile.client_id).maybeSingle(),
-        supabase.from("projects").select("*").eq("client_id", profile.client_id),
+        supabase.from("clients").select("*").eq("id", clientId).single(),
+        supabase.from("deals").select("*").eq("client_id", clientId),
+        supabase.from("client_portals").select("*").eq("client_id", clientId).maybeSingle(),
+        supabase.from("projects").select("*").eq("client_id", clientId),
         supabase.from("project_tasks").select("*"),
       ]);
 
@@ -43,9 +62,14 @@ export default function ClientPortalPage() {
       setProjects((projectsRes.data as Project[]) ?? []);
       setTasks((tasksRes.data as ProjectTask[]) ?? []);
       setLoading(false);
+
+      // Record that the client opened their portal (staff previews don't count).
+      if (profile?.role === "client") {
+        await supabase.rpc("touch_portal");
+      }
     }
     load();
-  }, [profile]);
+  }, [profile, previewClientId]);
 
   const tasksOf = useMemo(() => {
     const map = new Map<string, ProjectTask[]>();
@@ -77,6 +101,11 @@ export default function ClientPortalPage() {
           <span className="text-[13px] font-medium text-foreground">Trydent Labs</span>
           <ChevronRight className="h-3.5 w-3.5 text-muted" />
           <span className="text-[13px] text-muted">{client?.company ?? "Client Portal"}</span>
+          {isPreview && (
+            <span className="ml-2 inline-flex items-center gap-1 rounded border border-warning/30 bg-warning/10 px-1.5 py-0.5 text-[11px] font-medium text-warning">
+              <Eye className="h-3 w-3" /> Preview — what your client sees
+            </span>
+          )}
         </div>
         <button
           onClick={signOut}

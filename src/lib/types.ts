@@ -119,6 +119,7 @@ export interface Activity {
   deal_id: string | null;
   assigned_to: string | null;
   activity_date: string;
+  color: string | null;
   created_at: string;
 }
 
@@ -128,6 +129,7 @@ export interface ClientPortal {
   status: PortalStatus;
   notes: string | null;
   portal_username: string | null;
+  last_opened_at: string | null;
   created_at: string;
   updated_at: string;
 }

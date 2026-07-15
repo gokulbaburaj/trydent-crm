@@ -24,8 +24,9 @@ import { useCurrency } from "@/lib/currency";
 import type { Deal, Client, Activity } from "@/lib/types";
 import { DEAL_STAGES } from "@/lib/types";
 
+/* First slice follows the user's chosen accent; the rest stay fixed. */
 const COLORS = [
-  "#5e6ad2",
+  "var(--accent)",
   "#4ea7e0",
   "#d9a53f",
   "#d95c8a",
@@ -194,7 +195,7 @@ export default function DashboardPage() {
                   }}
                   formatter={(v) => formatCurrency(Number(v))}
                 />
-                <Bar dataKey="revenue" fill="#5e6ad2" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="revenue" fill="var(--accent)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (

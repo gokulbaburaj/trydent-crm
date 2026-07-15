@@ -8,7 +8,7 @@ import { Badge, statusTone } from "@/components/ui/Badge";
 import { Drawer } from "@/components/ui/Drawer";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { DatePicker } from "@/components/ui/DatePicker";
-import { Select } from "@/components/ui/Select";
+import { Dropdown } from "@/components/ui/Dropdown";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { createClient } from "@/lib/supabase/client";
 import { formatDate } from "@/lib/utils";
@@ -215,27 +215,20 @@ export default function ProjectsPage() {
             </div>
             <div>
               <Label>Client</Label>
-              <Select
-                required
+              <Dropdown
                 value={editing.client_id ?? ""}
-                onChange={(e) => setEditing({ ...editing, client_id: e.target.value })}
-              >
-                <option value="" disabled>Select client</option>
-                {clients.map((c) => (
-                  <option key={c.id} value={c.id}>{c.company}</option>
-                ))}
-              </Select>
+                placeholder="Select client"
+                options={clients.map((c) => ({ value: c.id, label: c.company }))}
+                onChange={(v) => setEditing({ ...editing, client_id: v })}
+              />
             </div>
             <div>
               <Label>Status</Label>
-              <Select
+              <Dropdown
                 value={editing.status ?? "Planning"}
-                onChange={(e) => setEditing({ ...editing, status: e.target.value as Project["status"] })}
-              >
-                {PROJECT_STATUSES.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </Select>
+                options={PROJECT_STATUSES.map((s) => ({ value: s, label: s }))}
+                onChange={(v) => setEditing({ ...editing, status: v as Project["status"] })}
+              />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -255,15 +248,14 @@ export default function ProjectsPage() {
             </div>
             <div>
               <Label>Owner</Label>
-              <Select
+              <Dropdown
                 value={editing.owner ?? ""}
-                onChange={(e) => setEditing({ ...editing, owner: e.target.value || null })}
-              >
-                <option value="">Unassigned</option>
-                {profiles.map((p) => (
-                  <option key={p.id} value={p.id}>{p.full_name}</option>
-                ))}
-              </Select>
+                options={[
+                  { value: "", label: "Unassigned" },
+                  ...profiles.map((p) => ({ value: p.id, label: p.full_name })),
+                ]}
+                onChange={(v) => setEditing({ ...editing, owner: v || null })}
+              />
             </div>
             <div>
               <Label>Description</Label>
