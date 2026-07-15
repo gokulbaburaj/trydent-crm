@@ -34,6 +34,38 @@ const COLORS = [
   "#eb5757",
 ];
 
+/** shadcn-style chart tooltip: dark card, colored swatch, tabular value. */
+function ChartTip({
+  active,
+  payload,
+  label,
+  format,
+}: {
+  active?: boolean;
+  payload?: { name?: string; value?: number | string; payload?: { fill?: string } }[];
+  label?: string;
+  format?: (v: number) => string;
+}) {
+  if (!active || !payload || payload.length === 0) return null;
+  return (
+    <div className="rounded-md border border-border bg-surface px-3 py-2 shadow-xl shadow-black/50">
+      {label && <p className="mb-1 text-[11px] font-medium text-muted">{label}</p>}
+      {payload.map((p, i) => (
+        <div key={i} className="flex items-center gap-2 text-[13px]">
+          <span
+            className="h-2 w-2 shrink-0 rounded-[2px]"
+            style={{ background: p.payload?.fill ?? "var(--accent)" }}
+          />
+          <span className="text-muted">{p.name}</span>
+          <span className="ml-auto pl-4 font-medium tabular-nums text-foreground">
+            {format ? format(Number(p.value)) : String(p.value)}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const { format: formatCurrency } = useCurrency();
   const { rows: deals, loading: dealsLoading } = useSupabaseTable<Deal>("deals");
@@ -141,22 +173,30 @@ export default function DashboardPage() {
                   data={stageData}
                   dataKey="value"
                   nameKey="name"
-                  innerRadius={55}
-                  outerRadius={90}
-                  paddingAngle={3}
+                  innerRadius={62}
+                  outerRadius={86}
+                  paddingAngle={4}
+                  cornerRadius={6}
+                  stroke="none"
                 >
                   {stageData.map((_, i) => (
                     <Cell key={i} fill={COLORS[i % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip
-                  contentStyle={{
-                    background: "#18181b",
-                    border: "1px solid #27272a",
-                    borderRadius: 12,
-                    color: "#f4f4f5",
-                  }}
-                />
+                <text
+                  x="50%"
+                  y="47%"
+                  textAnchor="middle"
+                  fill="var(--foreground)"
+                  fontSize="24"
+                  fontWeight="600"
+                >
+                  {stageData.reduce((sum, s) => sum + s.value, 0)}
+                </text>
+                <text x="50%" y="58%" textAnchor="middle" fill="var(--muted)" fontSize="10">
+                  deals
+                </text>
+                <Tooltip content={<ChartTip />} />
               </PieChart>
             </ResponsiveContainer>
           ) : (
@@ -181,21 +221,40 @@ export default function DashboardPage() {
           </h3>
           {monthlyRevenue.length > 0 ? (
             <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={monthlyRevenue}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
-                <XAxis dataKey="month" stroke="#9a9aa2" fontSize={12} />
-                <YAxis stroke="#9a9aa2" fontSize={12} />
-                <Tooltip
-                  cursor={{ fill: "rgba(34,197,94,0.08)" }}
-                  contentStyle={{
-                    background: "#18181b",
-                    border: "1px solid #27272a",
-                    borderRadius: 12,
-                    color: "#f4f4f5",
-                  }}
-                  formatter={(v) => formatCurrency(Number(v))}
+              <BarChart data={monthlyRevenue} barCategoryGap="25%">
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                <XAxis
+                  dataKey="month"
+                  stroke="var(--muted)"
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={10}
                 />
-                <Bar dataKey="revenue" fill="var(--accent)" radius={[4, 4, 0, 0]} />
+                <YAxis
+                  stroke="var(--muted)"
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
+                  width={44}
+                  tickFormatter={(v) =>
+                    new Intl.NumberFormat("en", { notation: "compact" }).format(Number(v))
+                  }
+                />
+                <Tooltip
+                  cursor={{ fill: "rgba(255,255,255,0.04)", radius: 6 }}
+                  content={<ChartTip format={(v) => formatCurrency(v)} />}
+                />
+                <Bar
+                  dataKey="revenue"
+                  name="Revenue"
+                  fill="var(--accent)"
+                  fillOpacity={0.9}
+                  radius={[6, 6, 0, 0]}
+                  maxBarSize={44}
+                  activeBar={{ fillOpacity: 1 }}
+                />
               </BarChart>
             </ResponsiveContainer>
           ) : (
