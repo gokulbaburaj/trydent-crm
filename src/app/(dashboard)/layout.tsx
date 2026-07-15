@@ -58,7 +58,7 @@ export default function DashboardLayout({
   // never render the dashboard shell (prevents the dashboard-then-login flash).
   if (loading || (isSupabaseConfigured && !profile)) {
     return (
-      <div className="flex min-h-screen items-center justify-center text-muted">
+      <div className="flex min-h-screen items-center justify-center text-muted-foreground">
         Loading...
       </div>
     );

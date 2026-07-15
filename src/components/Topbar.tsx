@@ -22,7 +22,7 @@ export function Topbar({
       <div className="flex min-w-0 items-center gap-2">
         <button
           onClick={onMenuClick}
-          className="rounded p-1.5 text-muted hover:bg-white/5 hover:text-foreground md:hidden"
+          className="rounded p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground md:hidden"
           title="Menu"
         >
           <Menu className="h-4 w-4" />
@@ -35,7 +35,7 @@ export function Topbar({
       <div className="flex items-center gap-2">
         <button
           onClick={openCommandMenu}
-          className="hidden w-52 items-center gap-2 rounded border border-border bg-surface py-1.5 pl-2.5 pr-2 text-left text-[13px] text-muted hover:bg-white/5 hover:text-foreground-secondary sm:flex"
+          className="hidden w-52 items-center gap-2 rounded border border-border bg-surface py-1.5 pl-2.5 pr-2 text-left text-[13px] text-muted-foreground hover:bg-white/5 hover:text-foreground-secondary sm:flex"
         >
           <Search className="h-3.5 w-3.5 shrink-0" />
           <span className="flex-1">Search...</span>
@@ -43,7 +43,7 @@ export function Topbar({
         </button>
         <button
           onClick={openCommandMenu}
-          className="rounded p-1.5 text-muted hover:bg-white/5 hover:text-foreground sm:hidden"
+          className="rounded p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground sm:hidden"
           title="Search"
         >
           <Search className="h-4 w-4" />
@@ -67,12 +67,12 @@ export function Topbar({
                     <p className="truncate text-[13px] font-medium text-foreground">
                       {profile.full_name}
                     </p>
-                    <p className="truncate text-xs text-muted">{profile.email}</p>
+                    <p className="truncate text-xs text-muted-foreground">{profile.email}</p>
                   </div>
                 </div>
                 <div className="px-2 pb-1.5">
                   <span className="inline-flex items-center gap-1.5 rounded bg-white/5 px-1.5 py-0.5 text-[11px] font-medium capitalize text-foreground-secondary">
-                    <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                     {profile.role}
                   </span>
                 </div>

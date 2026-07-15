@@ -226,13 +226,13 @@ export default function ProjectDetailPage() {
   }
 
   if (loading) {
-    return <p className="py-20 text-center text-sm text-muted">Loading...</p>;
+    return <p className="py-20 text-center text-sm text-muted-foreground">Loading...</p>;
   }
   if (!project) {
     return (
-      <div className="py-20 text-center text-sm text-muted">
+      <div className="py-20 text-center text-sm text-muted-foreground">
         Project not found.{" "}
-        <Link href="/projects" className="text-accent hover:underline">
+        <Link href="/projects" className="text-primary hover:underline">
           Back to projects
         </Link>
       </div>
@@ -264,7 +264,7 @@ export default function ProjectDetailPage() {
 
       {/* Breadcrumb */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1 text-[13px] text-muted">
+        <div className="flex items-center gap-1 text-[13px] text-muted-foreground">
           <Link href="/projects" className="rounded px-1 py-0.5 hover:bg-white/5 hover:text-foreground">
             Projects
           </Link>
@@ -274,7 +274,7 @@ export default function ProjectDetailPage() {
         <Popover
           align="right"
           trigger={
-            <button className="rounded p-1.5 text-muted hover:bg-white/5 hover:text-foreground">
+            <button className="rounded p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground">
               <MoreHorizontal className="h-4 w-4" />
             </button>
           }
@@ -298,8 +298,8 @@ export default function ProjectDetailPage() {
       <Card className="p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-accent/15">
-              <Box className="h-5 w-5 text-accent" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/15">
+              <Box className="h-5 w-5 text-primary" />
             </div>
             <h1 className="truncate text-[24px] font-semibold tracking-tight">{project.name}</h1>
           </div>
@@ -320,11 +320,11 @@ export default function ProjectDetailPage() {
               updateProject({ description });
             }
           }}
-          className="mt-3 w-full resize-none rounded border border-transparent bg-transparent px-1 py-0.5 text-sm leading-relaxed text-foreground-secondary placeholder:text-muted-2 hover:border-border focus:border-accent/60 focus:outline-none focus:ring-1 focus:ring-accent/30"
+          className="mt-3 w-full resize-none rounded border border-transparent bg-transparent px-1 py-0.5 text-sm leading-relaxed text-foreground-secondary placeholder:text-muted-2 hover:border-border focus:border-primary/60 focus:outline-none focus:ring-1 focus:ring-primary/30"
         />
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
           <div className="flex items-center gap-1.5">
-            <CalendarDays className="h-3.5 w-3.5 text-muted" />
+            <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
             <div className="w-36">
               <DatePicker
                 value={project.start_date}
@@ -332,7 +332,7 @@ export default function ProjectDetailPage() {
                 onChange={(d) => updateProject({ start_date: d })}
               />
             </div>
-            <span className="text-muted">→</span>
+            <span className="text-muted-foreground">→</span>
             <div className="w-36">
               <DatePicker
                 value={project.due_date}
@@ -349,14 +349,14 @@ export default function ProjectDetailPage() {
               <button className="flex items-center gap-2 rounded border border-white/5 bg-white/5 px-2 py-1 text-xs font-medium text-foreground-secondary hover:bg-white/10">
                 {project.owner ? (
                   <>
-                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-accent/15 text-[8px] font-semibold text-accent">
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary/15 text-[8px] font-semibold text-primary">
                       {initials(personName(project.owner))}
                     </span>
                     {personName(project.owner)}
                   </>
                 ) : (
                   <>
-                    <User className="h-3 w-3 text-muted" /> Assign lead
+                    <User className="h-3 w-3 text-muted-foreground" /> Assign lead
                   </>
                 )}
               </button>
@@ -402,7 +402,7 @@ export default function ProjectDetailPage() {
               <h3 className="text-sm font-semibold">Project Progress</h3>
               <button
                 onClick={() => setTab("tasks")}
-                className="flex items-center gap-1 text-xs font-medium text-accent hover:underline"
+                className="flex items-center gap-1 text-xs font-medium text-primary hover:underline"
               >
                 Manage <ChevronRight className="h-3 w-3" />
               </button>
@@ -413,7 +413,7 @@ export default function ProjectDetailPage() {
             <div className="mt-2 grid grid-cols-3 gap-2 text-center">
               <StatusCount count={done.length} label="Done" dotClass="bg-success" />
               <StatusCount count={inProgress.length} label="In progress" dotClass="bg-blue-400" />
-              <StatusCount count={notStarted.length} label="To do" dotClass="bg-muted" />
+              <StatusCount count={notStarted.length} label="To do" dotClass="bg-muted-foreground" />
             </div>
           </Card>
           )},
@@ -422,13 +422,13 @@ export default function ProjectDetailPage() {
             <div className="mb-3 flex items-center justify-between">
               <h3 className="flex items-center gap-2 text-sm font-semibold">
                 Tasks
-                <span className="rounded bg-white/5 px-1.5 py-0.5 text-xs font-normal text-muted">
+                <span className="rounded bg-white/5 px-1.5 py-0.5 text-xs font-normal text-muted-foreground">
                   {active.length - done.length} open
                 </span>
               </h3>
               <button
                 onClick={() => setTab("tasks")}
-                className="flex items-center gap-1 text-xs font-medium text-accent hover:underline"
+                className="flex items-center gap-1 text-xs font-medium text-primary hover:underline"
               >
                 Manage <ChevronRight className="h-3 w-3" />
               </button>
@@ -447,7 +447,7 @@ export default function ProjectDetailPage() {
             </form>
             <div className="flex flex-col">
               {active.length === 0 && (
-                <p className="py-6 text-center text-sm text-muted">No tasks yet.</p>
+                <p className="py-6 text-center text-sm text-muted-foreground">No tasks yet.</p>
               )}
               {[...notStarted, ...inProgress, ...done].slice(0, 7).map((t) => (
                 <div
@@ -461,26 +461,26 @@ export default function ProjectDetailPage() {
                     className={cn(
                       "flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors",
                       t.status === "Done"
-                        ? "border-accent bg-accent"
-                        : "border-muted-2 hover:border-muted"
+                        ? "border-primary bg-primary"
+                        : "border-muted-2 hover:border-muted-foreground"
                     )}
                     title={t.status === "Done" ? "Mark as not started" : "Mark as done"}
                   >
                     {t.status === "Done" && (
-                      <Check className="h-3 w-3 text-accent-foreground" />
+                      <Check className="h-3 w-3 text-primary-foreground" />
                     )}
                   </button>
                   <button
                     onClick={() => setDetailTaskId(t.id)}
                     className={cn(
                       "min-w-0 flex-1 truncate text-left text-sm hover:underline",
-                      t.status === "Done" && "text-muted line-through"
+                      t.status === "Done" && "text-muted-foreground line-through"
                     )}
                   >
                     {t.name}
                   </button>
                   {t.due_date && (
-                    <span className="shrink-0 text-[11px] text-muted">
+                    <span className="shrink-0 text-[11px] text-muted-foreground">
                       {format(parseISO(t.due_date), "MMM d")}
                     </span>
                   )}
@@ -494,19 +494,19 @@ export default function ProjectDetailPage() {
           <Card>
             <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold">
               Upcoming Meetings
-              <span className="rounded bg-white/5 px-1.5 py-0.5 text-xs font-normal text-muted">
+              <span className="rounded bg-white/5 px-1.5 py-0.5 text-xs font-normal text-muted-foreground">
                 {upcomingSchedule.length}
               </span>
             </h3>
             {upcomingSchedule.length === 0 && (
-              <p className="py-6 text-center text-sm text-muted">
+              <p className="py-6 text-center text-sm text-muted-foreground">
                 Nothing scheduled with {clientName(project.client_id)}.
               </p>
             )}
             <div className="flex flex-col gap-1">
               {upcomingSchedule.map((a, i) =>
                 i === 0 ? (
-                  <div key={a.id} className="rounded-md bg-accent p-3 text-accent-foreground">
+                  <div key={a.id} className="rounded-md bg-primary p-3 text-primary-foreground">
                     <p className="flex items-center gap-2 text-sm font-semibold">
                       {format(parseISO(a.activity_date), "HH:mm")}
                       <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-[10px] font-medium">
@@ -522,11 +522,11 @@ export default function ProjectDetailPage() {
                   >
                     <p className="text-sm font-medium text-foreground-secondary">
                       {format(parseISO(a.activity_date), "HH:mm")}
-                      <span className="ml-2 text-[11px] font-normal text-muted">
+                      <span className="ml-2 text-[11px] font-normal text-muted-foreground">
                         {format(parseISO(a.activity_date), "EEE, MMM d")}
                       </span>
                     </p>
-                    <p className="truncate text-xs text-muted">{a.description}</p>
+                    <p className="truncate text-xs text-muted-foreground">{a.description}</p>
                   </div>
                 )
               )}
@@ -573,7 +573,7 @@ export default function ProjectDetailPage() {
                   )}
                   <p className="text-sm font-medium">{t.name}</p>
                   {t.description && (
-                    <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted">
+                    <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
                       {t.description}
                     </p>
                   )}
@@ -581,15 +581,15 @@ export default function ProjectDetailPage() {
                     {t.assigned_to && (
                       <span
                         title={personName(t.assigned_to) ?? undefined}
-                        className="flex h-5 w-5 items-center justify-center rounded-full bg-accent/15 text-[9px] font-semibold text-accent"
+                        className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/15 text-[9px] font-semibold text-primary"
                       >
                         {initials(personName(t.assigned_to))}
                       </span>
                     )}
                     {t.due_date && (
-                      <span className="text-[11px] text-muted">{formatDate(t.due_date)}</span>
+                      <span className="text-[11px] text-muted-foreground">{formatDate(t.due_date)}</span>
                     )}
-                    <span className="ml-auto flex items-center gap-2.5 text-[11px] text-muted">
+                    <span className="ml-auto flex items-center gap-2.5 text-[11px] text-muted-foreground">
                       {linkCount > 0 && (
                         <span className="flex items-center gap-1">
                           <Link2 className="h-3 w-3" /> {linkCount}
@@ -624,7 +624,7 @@ export default function ProjectDetailPage() {
           </form>
           <div className="overflow-hidden rounded border border-border bg-surface">
             {tasks.length === 0 && (
-              <p className="py-8 text-center text-sm text-muted">No tasks yet.</p>
+              <p className="py-8 text-center text-sm text-muted-foreground">No tasks yet.</p>
             )}
             {tasks.map((t) => (
               <div
@@ -644,14 +644,14 @@ export default function ProjectDetailPage() {
                     className={cn(
                       "min-w-0 truncate text-sm hover:underline",
                       (t.status === "Done" || t.status === "Archived") &&
-                        "text-muted line-through decoration-muted-2"
+                        "text-muted-foreground line-through decoration-muted-2"
                     )}
                   >
                     {t.name}
                   </span>
                   {t.label && <LabelChip label={t.label} />}
                   {Array.isArray(t.links) && t.links.length > 0 && (
-                    <span className="flex shrink-0 items-center gap-1 text-[11px] text-muted">
+                    <span className="flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground">
                       <Link2 className="h-3 w-3" /> {t.links.length}
                     </span>
                   )}
@@ -659,7 +659,7 @@ export default function ProjectDetailPage() {
                 {t.assigned_to && (
                   <span
                     title={personName(t.assigned_to) ?? undefined}
-                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent/15 text-[9px] font-semibold text-accent"
+                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[9px] font-semibold text-primary"
                   >
                     {initials(personName(t.assigned_to))}
                   </span>
@@ -675,7 +675,7 @@ export default function ProjectDetailPage() {
                 <Popover
                   align="right"
                   trigger={
-                    <button className="rounded p-1 text-muted opacity-0 hover:bg-white/5 hover:text-foreground group-hover:opacity-100">
+                    <button className="rounded p-1 text-muted-foreground opacity-0 hover:bg-white/5 hover:text-foreground group-hover:opacity-100">
                       <MoreHorizontal className="h-3.5 w-3.5" />
                     </button>
                   }
@@ -737,7 +737,7 @@ function ProgressRing({ pct }: { pct: number }) {
     const t = requestAnimationFrame(() => requestAnimationFrame(() => setDrawn(pct)));
     return () => cancelAnimationFrame(t);
   }, [pct]);
-  const color = pct >= 100 ? "var(--success)" : "var(--accent)";
+  const color = pct >= 100 ? "var(--success)" : "var(--primary)";
   return (
     <svg viewBox="0 0 120 120" className="h-36 w-36">
       <circle cx="60" cy="60" r={r} fill="none" stroke="var(--border)" strokeWidth="10" />
@@ -756,7 +756,7 @@ function ProgressRing({ pct }: { pct: number }) {
       <text x="60" y="58" textAnchor="middle" fill="var(--foreground)" fontSize="22" fontWeight="600">
         {pct}%
       </text>
-      <text x="60" y="76" textAnchor="middle" fill="var(--muted)" fontSize="9">
+      <text x="60" y="76" textAnchor="middle" fill="var(--muted-foreground)" fontSize="9">
         completed
       </text>
     </svg>
@@ -767,7 +767,7 @@ function StatusCount({ count, label, dotClass }: { count: number; label: string;
   return (
     <div>
       <p className="text-lg font-semibold tabular-nums">{count}</p>
-      <p className="flex items-center justify-center gap-1.5 text-[11px] text-muted">
+      <p className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
         <span className={cn("h-1.5 w-1.5 rounded-full", dotClass)} /> {label}
       </p>
     </div>
@@ -795,14 +795,14 @@ function MiniCalendar({ tasks }: { tasks: ProjectTask[] }) {
         <div className="flex items-center gap-1">
           <button
             onClick={() => setMonth((m) => subMonths(m, 1))}
-            className="rounded p-1 text-muted hover:bg-white/5 hover:text-foreground"
+            className="rounded p-1 text-muted-foreground hover:bg-white/5 hover:text-foreground"
           >
             <ChevronLeft className="h-3.5 w-3.5" />
           </button>
           <span className="text-xs font-medium">{format(month, "MMM yyyy")}</span>
           <button
             onClick={() => setMonth((m) => addMonths(m, 1))}
-            className="rounded p-1 text-muted hover:bg-white/5 hover:text-foreground"
+            className="rounded p-1 text-muted-foreground hover:bg-white/5 hover:text-foreground"
           >
             <ChevronRight className="h-3.5 w-3.5" />
           </button>
@@ -820,9 +820,9 @@ function MiniCalendar({ tasks }: { tasks: ProjectTask[] }) {
               className={cn(
                 "relative mx-auto flex h-8 w-8 items-center justify-center rounded-full text-xs",
                 isToday(day)
-                  ? "bg-accent font-semibold text-accent-foreground"
+                  ? "bg-primary font-semibold text-primary-foreground"
                   : hasDue
-                    ? "bg-accent/20 font-medium text-foreground"
+                    ? "bg-primary/20 font-medium text-foreground"
                     : isSameMonth(day, month)
                       ? "text-foreground"
                       : "text-muted-2"
@@ -830,7 +830,7 @@ function MiniCalendar({ tasks }: { tasks: ProjectTask[] }) {
             >
               {format(day, "d")}
               {hasDue && !isToday(day) && (
-                <span className="absolute bottom-0.5 h-1 w-1 rounded-full bg-accent" />
+                <span className="absolute bottom-0.5 h-1 w-1 rounded-full bg-primary" />
               )}
             </span>
           );
@@ -865,19 +865,19 @@ function ProjectCalendar({
         <div className="mb-3 flex items-center justify-between">
           <button
             onClick={() => setMonth((m) => subMonths(m, 1))}
-            className="rounded p-1.5 text-muted hover:bg-white/5 hover:text-foreground"
+            className="rounded p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
           <h3 className="text-sm font-semibold">{format(month, "MMMM yyyy")}</h3>
           <button
             onClick={() => setMonth((m) => addMonths(m, 1))}
-            className="rounded p-1.5 text-muted hover:bg-white/5 hover:text-foreground"
+            className="rounded p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground"
           >
             <ChevronRight className="h-4 w-4" />
           </button>
         </div>
-        <div className="grid grid-cols-7 gap-1 text-center text-xs text-muted">
+        <div className="grid grid-cols-7 gap-1 text-center text-xs text-muted-foreground">
           {WEEKDAYS.map((d) => (
             <div key={d} className="py-1">{d}</div>
           ))}
@@ -893,7 +893,7 @@ function ProjectCalendar({
                 className={cn(
                   "flex h-20 flex-col items-stretch gap-0.5 overflow-hidden rounded border p-1 text-left transition-colors",
                   isSelected
-                    ? "border-accent bg-accent/10"
+                    ? "border-primary bg-primary/10"
                     : "border-transparent hover:bg-white/5",
                   !isSameMonth(day, month) && "opacity-40"
                 )}
@@ -902,8 +902,8 @@ function ProjectCalendar({
                   className={cn(
                     "self-end text-xs",
                     isToday(day)
-                      ? "flex h-5 w-5 items-center justify-center rounded-full bg-accent font-semibold text-accent-foreground"
-                      : "px-1 text-muted"
+                      ? "flex h-5 w-5 items-center justify-center rounded-full bg-primary font-semibold text-primary-foreground"
+                      : "px-1 text-muted-foreground"
                   )}
                 >
                   {format(day, "d")}
@@ -921,7 +921,7 @@ function ProjectCalendar({
                   </span>
                 ))}
                 {dayTasks.length > 2 && (
-                  <span className="px-1 text-[10px] text-muted">+{dayTasks.length - 2}</span>
+                  <span className="px-1 text-[10px] text-muted-foreground">+{dayTasks.length - 2}</span>
                 )}
               </button>
             );
@@ -930,7 +930,7 @@ function ProjectCalendar({
       </Card>
 
       <Card>
-        <h3 className="mb-3 text-sm font-semibold text-muted">
+        <h3 className="mb-3 text-sm font-semibold text-muted-foreground">
           {selected ? format(selected, "MMMM d, yyyy") : "Tasks with due dates"}
         </h3>
 
@@ -972,7 +972,7 @@ function ProjectCalendar({
 
         <div className="flex flex-col divide-y divide-border-subtle">
           {(selected ? tasksOn(selected) : tasks.filter((t) => t.due_date)).length === 0 && (
-            <p className="py-6 text-center text-sm text-muted">No tasks here.</p>
+            <p className="py-6 text-center text-sm text-muted-foreground">No tasks here.</p>
           )}
           {(selected
             ? tasksOn(selected)
@@ -983,7 +983,7 @@ function ProjectCalendar({
             <div key={t.id} className="flex items-center gap-2.5 py-2.5">
               <Badge tone={statusTone(t.status)} dot>{t.status}</Badge>
               <span className="min-w-0 flex-1 truncate text-sm">{t.name}</span>
-              <span className="shrink-0 text-xs text-muted">{formatDate(t.due_date)}</span>
+              <span className="shrink-0 text-xs text-muted-foreground">{formatDate(t.due_date)}</span>
             </div>
           ))}
         </div>
@@ -1007,7 +1007,7 @@ function TasksTimeline({ tasks }: { tasks: ProjectTask[] }) {
 
   if (rows.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-muted">
+      <p className="py-8 text-center text-sm text-muted-foreground">
         Give tasks due dates and they&apos;ll appear here as a timeline.
       </p>
     );
@@ -1021,10 +1021,10 @@ function TasksTimeline({ tasks }: { tasks: ProjectTask[] }) {
     <div className="relative pt-1">
       {/* Today line */}
       <div
-        className="pointer-events-none absolute bottom-7 top-0 z-10 w-px bg-accent"
+        className="pointer-events-none absolute bottom-7 top-0 z-10 w-px bg-primary"
         style={{ left: `${todayPct}%` }}
       >
-        <span className="absolute -left-[3px] -top-1 h-2 w-2 rounded-full border-2 border-accent bg-panel" />
+        <span className="absolute -left-[3px] -top-1 h-2 w-2 rounded-full border-2 border-primary bg-panel" />
       </div>
 
       <div className="flex flex-col gap-2.5">
@@ -1066,7 +1066,7 @@ const LABEL_STYLES = [
   "bg-warning/15 text-warning",
   "bg-success/15 text-success",
   "bg-blue-400/15 text-blue-400",
-  "bg-accent/15 text-accent",
+  "bg-primary/15 text-primary",
   "bg-pink-400/15 text-pink-400",
   "bg-danger/15 text-danger",
 ];
@@ -1108,7 +1108,7 @@ function PageTabButton({
         "flex items-center gap-1.5 rounded px-2.5 py-1.5 text-[13px] font-medium transition-colors",
         active
           ? "bg-white/10 text-foreground"
-          : "text-muted hover:bg-white/5 hover:text-foreground-secondary"
+          : "text-muted-foreground hover:bg-white/5 hover:text-foreground-secondary"
       )}
     >
       <Icon className="h-3.5 w-3.5" /> {label}

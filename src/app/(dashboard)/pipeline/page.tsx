@@ -93,7 +93,7 @@ export default function PipelinePage() {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm text-muted">
+        <h2 className="text-sm text-muted-foreground">
           {deals.length} deal{deals.length !== 1 ? "s" : ""} in pipeline
         </h2>
         <div className="flex items-center gap-2">
@@ -102,7 +102,7 @@ export default function PipelinePage() {
             trigger={
               <button className="flex items-center gap-1.5 rounded border border-border bg-surface px-2.5 py-1.5 text-xs font-medium text-foreground-secondary hover:bg-white/5 hover:text-foreground">
                 {CURRENCIES.find((c) => c.code === currency)?.symbol} {currency}
-                <ChevronDown className="h-3 w-3 text-muted" />
+                <ChevronDown className="h-3 w-3 text-muted-foreground" />
               </button>
             }
           >
@@ -113,7 +113,7 @@ export default function PipelinePage() {
                   <MenuItem
                     key={c.code}
                     selected={c.code === currency}
-                    icon={<span className="text-[11px] text-muted">{c.symbol}</span>}
+                    icon={<span className="text-[11px] text-muted-foreground">{c.symbol}</span>}
                     onClick={() => {
                       setCurrency(c.code);
                       close();
@@ -149,8 +149,8 @@ export default function PipelinePage() {
         renderCard={(d) => (
           <div onClick={() => setSelected(d)}>
             <p className="text-sm font-medium">{d.deal_name}</p>
-            <p className="mt-0.5 text-xs text-muted">{clientName(d.client_id)}</p>
-            <p className="mt-2 text-sm font-semibold text-accent">
+            <p className="mt-0.5 text-xs text-muted-foreground">{clientName(d.client_id)}</p>
+            <p className="mt-2 text-sm font-semibold text-primary">
               {formatCurrency(Number(d.deal_value))}
             </p>
           </div>
@@ -285,7 +285,7 @@ export default function PipelinePage() {
 function Info({ label, value }: { label: string; value?: string | null }) {
   return (
     <div>
-      <p className="text-xs font-medium text-muted">{label}</p>
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
       <p className="text-sm">{value || "—"}</p>
     </div>
   );

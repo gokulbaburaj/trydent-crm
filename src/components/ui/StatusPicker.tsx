@@ -9,7 +9,7 @@ const dotColor: Record<string, string> = {
   yellow: "bg-warning",
   red: "bg-danger",
   blue: "bg-blue-400",
-  gray: "bg-muted",
+  gray: "bg-muted-foreground",
 };
 
 /**

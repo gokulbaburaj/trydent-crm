@@ -52,9 +52,9 @@ export function DatePicker({
       trigger={
         <button
           type="button"
-          className="flex h-9 w-full items-center gap-2 rounded-md border border-white/15 bg-transparent px-3 py-1 text-sm text-foreground shadow-sm hover:bg-white/5 focus:outline-none focus:border-accent/60 focus:ring-[3px] focus:ring-accent/20"
+          className="flex h-9 w-full items-center gap-2 rounded-md border border-white/15 bg-transparent px-3 py-1 text-sm text-foreground shadow-sm hover:bg-white/5 focus:outline-none focus:border-primary/60 focus:ring-[3px] focus:ring-primary/20"
         >
-          <Calendar className="h-3.5 w-3.5 shrink-0 text-muted" />
+          <Calendar className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
           <span className={cn("flex-1 text-left", !selected && "text-muted-2")}>
             {selected ? format(selected, "MMM d, yyyy") : placeholder}
           </span>
@@ -66,7 +66,7 @@ export function DatePicker({
                 e.stopPropagation();
                 onChange(null);
               }}
-              className="rounded p-0.5 text-muted hover:bg-white/10 hover:text-foreground"
+              className="rounded p-0.5 text-muted-foreground hover:bg-white/10 hover:text-foreground"
             >
               <X className="h-3 w-3" />
             </span>
@@ -80,18 +80,18 @@ export function DatePicker({
             <button
               type="button"
               onClick={() => setMonth((m) => subMonths(m, 1))}
-              className="rounded p-1 text-muted hover:bg-white/5 hover:text-foreground"
+              className="rounded p-1 text-muted-foreground hover:bg-white/5 hover:text-foreground"
             >
               <ChevronLeft className="h-3.5 w-3.5" />
             </button>
             <span className="text-[13px] font-medium">
               {format(month, "MMMM")}{" "}
-              <span className="font-normal text-muted">{format(month, "yyyy")}</span>
+              <span className="font-normal text-muted-foreground">{format(month, "yyyy")}</span>
             </span>
             <button
               type="button"
               onClick={() => setMonth((m) => addMonths(m, 1))}
-              className="rounded p-1 text-muted hover:bg-white/5 hover:text-foreground"
+              className="rounded p-1 text-muted-foreground hover:bg-white/5 hover:text-foreground"
             >
               <ChevronRight className="h-3.5 w-3.5" />
             </button>
@@ -115,9 +115,9 @@ export function DatePicker({
                   className={cn(
                     "mx-auto flex h-7 w-7 items-center justify-center rounded text-xs transition-colors",
                     isSelected
-                      ? "bg-accent font-semibold text-accent-foreground"
+                      ? "bg-primary font-semibold text-primary-foreground"
                       : isToday(day)
-                        ? "font-semibold text-accent hover:bg-white/5"
+                        ? "font-semibold text-primary hover:bg-white/5"
                         : isSameMonth(day, month)
                           ? "text-foreground hover:bg-white/5"
                           : "text-muted-2 hover:bg-white/5"
@@ -135,7 +135,7 @@ export function DatePicker({
                 onChange(format(new Date(), "yyyy-MM-dd"));
                 close();
               }}
-              className="rounded px-1.5 py-1 text-xs font-medium text-muted hover:bg-white/5 hover:text-foreground"
+              className="rounded px-1.5 py-1 text-xs font-medium text-muted-foreground hover:bg-white/5 hover:text-foreground"
             >
               Today
             </button>
@@ -145,7 +145,7 @@ export function DatePicker({
                 onChange(null);
                 close();
               }}
-              className="rounded px-1.5 py-1 text-xs text-muted hover:bg-white/5 hover:text-foreground"
+              className="rounded px-1.5 py-1 text-xs text-muted-foreground hover:bg-white/5 hover:text-foreground"
             >
               Clear
             </button>

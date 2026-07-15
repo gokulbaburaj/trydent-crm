@@ -140,7 +140,7 @@ export function TaskDetailDrawer({
               const n = name.trim();
               if (n && n !== task.name) onUpdate(task.id, { name: n });
             }}
-            className="w-full rounded border border-transparent bg-transparent px-1 py-1 text-xl font-semibold tracking-tight text-foreground hover:border-border focus:border-accent/60 focus:outline-none focus:ring-1 focus:ring-accent/30"
+            className="w-full rounded border border-transparent bg-transparent px-1 py-1 text-xl font-semibold tracking-tight text-foreground hover:border-border focus:border-primary/60 focus:outline-none focus:ring-1 focus:ring-primary/30"
           />
           <button
             title="Delete task"
@@ -150,7 +150,7 @@ export function TaskDetailDrawer({
                 onClose();
               }
             }}
-            className="mt-1 shrink-0 rounded p-2 text-muted hover:bg-danger/10 hover:text-danger"
+            className="mt-1 shrink-0 rounded p-2 text-muted-foreground hover:bg-danger/10 hover:text-danger"
           >
             <Trash2 className="h-4 w-4" />
           </button>
@@ -174,14 +174,14 @@ export function TaskDetailDrawer({
                 <button className="flex w-full items-center gap-2 rounded border border-border bg-surface px-3 py-2 text-sm text-foreground hover:bg-white/5">
                   {task.assigned_to ? (
                     <>
-                      <span className="flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full bg-accent/15 text-[8px] font-semibold text-accent">
+                      <span className="flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[8px] font-semibold text-primary">
                         {initials(personName(task.assigned_to))}
                       </span>
                       <span className="min-w-0 truncate">{personName(task.assigned_to)}</span>
                     </>
                   ) : (
                     <>
-                      <User className="h-3.5 w-3.5 shrink-0 text-muted" />
+                      <User className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                       <span className="text-muted-2">Unassigned</span>
                     </>
                   )}
@@ -242,7 +242,7 @@ export function TaskDetailDrawer({
                 onUpdate(task.id, { description });
               }
             }}
-            className="w-full resize-none rounded border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-2 focus:border-accent/60 focus:outline-none focus:ring-1 focus:ring-accent/30"
+            className="w-full resize-none rounded border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-2 focus:border-primary/60 focus:outline-none focus:ring-1 focus:ring-primary/30"
           />
         </div>
 
@@ -251,7 +251,7 @@ export function TaskDetailDrawer({
           <Label>Deliverables & links</Label>
           <div className="flex flex-col gap-1.5">
             {links.length === 0 && (
-              <p className="rounded border border-dashed border-border px-3 py-3 text-center text-xs text-muted">
+              <p className="rounded border border-dashed border-border px-3 py-3 text-center text-xs text-muted-foreground">
                 No links yet — add the Google Drive folder, Figma file, or wherever the
                 deliverable lives.
               </p>
@@ -261,23 +261,23 @@ export function TaskDetailDrawer({
                 key={`${l.url}-${idx}`}
                 className="group flex items-center gap-2.5 rounded border border-border bg-surface px-3 py-2"
               >
-                <Link2 className="h-3.5 w-3.5 shrink-0 text-muted" />
+                <Link2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{l.title}</p>
-                  <p className="truncate text-xs text-muted">{l.url}</p>
+                  <p className="truncate text-xs text-muted-foreground">{l.url}</p>
                 </div>
                 <a
                   href={l.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="rounded p-1.5 text-muted hover:bg-white/5 hover:text-foreground"
+                  className="rounded p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground"
                   title="Open link"
                 >
                   <ExternalLink className="h-3.5 w-3.5" />
                 </a>
                 <button
                   onClick={() => removeLink(idx)}
-                  className="rounded p-1.5 text-muted opacity-0 hover:bg-white/5 hover:text-danger group-hover:opacity-100"
+                  className="rounded p-1.5 text-muted-foreground opacity-0 hover:bg-white/5 hover:text-danger group-hover:opacity-100"
                   title="Remove link"
                 >
                   <X className="h-3.5 w-3.5" />
@@ -316,7 +316,7 @@ export function TaskDetailDrawer({
             </Button>
           </form>
           {subtasks.length === 0 ? (
-            <p className="rounded border border-dashed border-border px-3 py-4 text-center text-xs text-muted">
+            <p className="rounded border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">
               Break this task down — subtasks get their own mini board.
             </p>
           ) : (
@@ -334,7 +334,7 @@ export function TaskDetailDrawer({
                       e.stopPropagation();
                       deleteSubtask(s.id);
                     }}
-                    className="rounded p-0.5 text-muted opacity-0 hover:text-danger group-hover/sub:opacity-100"
+                    className="rounded p-0.5 text-muted-foreground opacity-0 hover:text-danger group-hover/sub:opacity-100"
                   >
                     <X className="h-3 w-3" />
                   </button>

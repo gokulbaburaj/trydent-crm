@@ -96,7 +96,7 @@ export default function ProjectsPage() {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm text-muted">
+        <h2 className="text-sm text-muted-foreground">
           {projects.length} project{projects.length !== 1 ? "s" : ""} across{" "}
           {grouped.length} client{grouped.length !== 1 ? "s" : ""}
         </h2>
@@ -110,7 +110,7 @@ export default function ProjectsPage() {
 
       {grouped.length === 0 && (
         <Card>
-          <p className="py-10 text-center text-sm text-muted">
+          <p className="py-10 text-center text-sm text-muted-foreground">
             No projects yet. Create your first one to see it organized by client here.
           </p>
         </Card>
@@ -127,9 +127,9 @@ export default function ProjectsPage() {
               >
                 <div className="flex min-w-0 items-center gap-3">
                   {isCollapsed ? (
-                    <ChevronRight className="h-4 w-4 shrink-0 text-muted" />
+                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                   ) : (
-                    <ChevronDown className="h-4 w-4 shrink-0 text-muted" />
+                    <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
                   )}
                   <span className="truncate text-sm font-semibold">
                     {client?.company ?? "Unknown Client"}
@@ -139,7 +139,7 @@ export default function ProjectsPage() {
                       {client.status}
                     </Badge>
                   )}
-                  <span className="shrink-0 text-xs text-muted">
+                  <span className="shrink-0 text-xs text-muted-foreground">
                     {items.length} project{items.length !== 1 ? "s" : ""}
                   </span>
                 </div>
@@ -173,7 +173,7 @@ export default function ProjectsPage() {
                         </div>
                         {pct !== null && (
                           <div className="mt-2.5 flex items-center gap-2">
-                            <span className="text-xs tabular-nums text-muted">
+                            <span className="text-xs tabular-nums text-muted-foreground">
                               {pct.toFixed(0)}%
                             </span>
                             <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/10">
@@ -185,9 +185,9 @@ export default function ProjectsPage() {
                           </div>
                         )}
                         {p.due_date && (
-                          <p className="mt-2 text-xs text-muted">Due {formatDate(p.due_date)}</p>
+                          <p className="mt-2 text-xs text-muted-foreground">Due {formatDate(p.due_date)}</p>
                         )}
-                        <p className="mt-1 text-xs text-muted">Owner: {ownerName(p.owner)}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">Owner: {ownerName(p.owner)}</p>
                       </button>
                     );
                   })}

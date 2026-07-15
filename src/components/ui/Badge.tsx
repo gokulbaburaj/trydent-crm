@@ -1,3 +1,4 @@
+import { Badge as ShadBadge } from "@/components/shadcn/badge";
 import { cn } from "@/lib/utils";
 
 type Tone = "green" | "yellow" | "red" | "blue" | "gray";
@@ -15,7 +16,7 @@ const dotClasses: Record<Tone, string> = {
   yellow: "bg-warning",
   red: "bg-danger",
   blue: "bg-blue-400",
-  gray: "bg-muted",
+  gray: "bg-muted-foreground",
 };
 
 export function statusTone(status: string): Tone {
@@ -27,6 +28,7 @@ export function statusTone(status: string): Tone {
   return "gray";
 }
 
+/** shadcn/ui Badge with our status tone system layered on top. */
 export function Badge({
   children,
   tone = "gray",
@@ -39,15 +41,12 @@ export function Badge({
   className?: string;
 }) {
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border border-white/5 px-2.5 py-0.5 text-xs font-medium",
-        toneClasses[tone],
-        className
-      )}
+    <ShadBadge
+      variant="outline"
+      className={cn("gap-1.5 border-white/5 px-2.5 py-0.5", toneClasses[tone], className)}
     >
       {dot && <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", dotClasses[tone])} />}
       {children}
-    </span>
+    </ShadBadge>
   );
 }

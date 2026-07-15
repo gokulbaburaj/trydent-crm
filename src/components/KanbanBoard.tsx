@@ -79,7 +79,7 @@ export function KanbanBoard<T extends { id: string }>({
                 </h3>
                 <div className="flex shrink-0 items-center gap-1.5">
                   {columnMeta?.(col.id, colItems)}
-                  <span className="rounded bg-white/5 px-1.5 py-0.5 text-xs text-muted">
+                  <span className="rounded bg-white/5 px-1.5 py-0.5 text-xs text-muted-foreground">
                     {colItems.length}
                   </span>
                 </div>
@@ -104,7 +104,7 @@ export function KanbanBoard<T extends { id: string }>({
           dropAnimation={{ duration: 200, easing: "cubic-bezier(0.16, 1, 0.3, 1)" }}
         >
           {activeItem ? (
-            <div className="rotate-2 scale-[1.03] cursor-grabbing rounded border border-accent/50 bg-surface p-3 shadow-2xl shadow-black/60">
+            <div className="rotate-2 scale-[1.03] cursor-grabbing rounded border border-primary/50 bg-surface p-3 shadow-2xl shadow-black/60">
               {renderCard(activeItem)}
             </div>
           ) : null}
@@ -139,7 +139,7 @@ function KanbanColumnDroppable({
       className={cn(
         "w-72 shrink-0 rounded-md border border-border bg-white/[0.02] p-3 transition-colors",
         className,
-        isOver && "border-accent bg-accent/5"
+        isOver && "border-primary bg-primary/5"
       )}
     >
       {children}

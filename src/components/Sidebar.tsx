@@ -47,7 +47,7 @@ function NavGroup({
   return (
     <div className="flex flex-col gap-px">
       {label && (
-        <div className="flex items-center gap-1 px-2 pb-1.5 pt-4 text-xs font-medium text-muted">
+        <div className="flex items-center gap-1 px-2 pb-1.5 pt-4 text-xs font-medium text-muted-foreground">
           {label}
           <ChevronDown className="h-3 w-3" />
         </div>
@@ -66,7 +66,7 @@ function NavGroup({
                 : "text-foreground-secondary hover:bg-white/5 hover:text-foreground"
             )}
           >
-            <item.icon className="h-4 w-4 shrink-0 text-muted" />
+            <item.icon className="h-4 w-4 shrink-0 text-muted-foreground" />
             {item.label}
           </Link>
         );
@@ -93,23 +93,23 @@ export function Sidebar({
     >
       <div className="flex items-center justify-between gap-2 px-3 py-3.5">
         <button className="flex min-w-0 items-center gap-1.5 rounded px-1 py-1 text-[13px] font-medium text-foreground hover:bg-white/5">
-          <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-accent text-[10px] font-medium text-accent-foreground">
+          <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-primary text-[10px] font-medium text-primary-foreground">
             TL
           </div>
           <span className="truncate">Trydent Labs</span>
-          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted" />
+          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
         </button>
         <div className="flex shrink-0 items-center gap-0.5">
           <button
             title="Search (⌘K)"
             onClick={openCommandMenu}
-            className="rounded p-1.5 text-muted hover:bg-white/5 hover:text-foreground"
+            className="rounded p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground"
           >
             <Search className="h-3.5 w-3.5" />
           </button>
           <button
             title="New"
-            className="rounded p-1.5 text-muted hover:bg-white/5 hover:text-foreground"
+            className="rounded p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground"
           >
             <SquarePen className="h-3.5 w-3.5" />
           </button>

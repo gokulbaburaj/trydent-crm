@@ -1,14 +1,18 @@
 "use client";
 
-import { ReactNode, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { ReactNode, useState } from "react";
 import { Check } from "lucide-react";
+import {
+  Popover as ShadPopover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/shadcn/popover";
 import { cn } from "@/lib/utils";
 
 /**
- * Linear-style popover: dark elevated panel, 6px radius, soft shadow.
- * Rendered through a portal so it never gets clipped by scroll containers.
- * Trigger click toggles; outside click / Escape / scroll closes.
+ * Radix-powered popover (via shadcn/ui) with our legacy render-prop API.
+ * Positioning, portaling, collision handling, and nesting inside sheets
+ * are all handled by Radix.
  */
 export function Popover({
   trigger,
@@ -24,80 +28,30 @@ export function Popover({
   fullWidth?: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState<{ top: number; left?: number; right?: number } | null>(null);
-  const triggerRef = useRef<HTMLDivElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
-
-  function toggle() {
-    if (open) {
-      setOpen(false);
-      return;
-    }
-    const rect = triggerRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    setPos(
-      align === "right"
-        ? { top: rect.bottom + 4, right: window.innerWidth - rect.right }
-        : { top: rect.bottom + 4, left: rect.left }
-    );
-    setOpen(true);
-  }
-
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => {
-      const t = e.target as Node;
-      if (!triggerRef.current?.contains(t) && !panelRef.current?.contains(t)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    const onScroll = (e: Event) => {
-      if (panelRef.current?.contains(e.target as Node)) return;
-      setOpen(false);
-    };
-    document.addEventListener("mousedown", onDown);
-    document.addEventListener("keydown", onKey);
-    window.addEventListener("scroll", onScroll, true);
-    window.addEventListener("resize", onScroll);
-    return () => {
-      document.removeEventListener("mousedown", onDown);
-      document.removeEventListener("keydown", onKey);
-      window.removeEventListener("scroll", onScroll, true);
-      window.removeEventListener("resize", onScroll);
-    };
-  }, [open]);
 
   return (
-    <>
-      <div
-        ref={triggerRef}
-        className={fullWidth ? "block w-full" : "inline-block"}
-        onClick={(e) => {
-          e.stopPropagation();
-          toggle();
-        }}
-      >
-        {trigger}
-      </div>
-      {open &&
-        pos &&
-        createPortal(
-          <div
-            ref={panelRef}
-            onClick={(e) => e.stopPropagation()}
-            style={{ position: "fixed", top: pos.top, left: pos.left, right: pos.right, zIndex: 100 }}
-            className={cn(
-              "animate-pop min-w-[190px] rounded-lg border border-border bg-surface p-1 shadow-xl shadow-black/60",
-              align === "right" ? "origin-top-right" : "origin-top-left",
-              className
-            )}
-          >
-            {typeof children === "function" ? children(() => setOpen(false)) : children}
-          </div>,
-          document.body
+    <ShadPopover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className={fullWidth ? "block w-full" : "inline-block"}
+        >
+          {trigger}
+        </div>
+      </PopoverTrigger>
+      <PopoverContent
+        align={align === "right" ? "end" : "start"}
+        sideOffset={4}
+        onClick={(e) => e.stopPropagation()}
+        className={cn(
+          "min-w-[190px] w-auto rounded-lg border-border bg-popover p-1 shadow-xl shadow-black/60",
+          fullWidth && "w-[var(--radix-popover-trigger-width)]",
+          className
         )}
-    </>
+      >
+        {typeof children === "function" ? children(() => setOpen(false)) : children}
+      </PopoverContent>
+    </ShadPopover>
   );
 }
 
@@ -118,7 +72,7 @@ export function MenuItem({
     <button
       onClick={onClick}
       className={cn(
-        "flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[13px] transition-colors",
+        "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors",
         danger
           ? "text-danger hover:bg-danger/10"
           : "text-foreground-secondary hover:bg-white/5 hover:text-foreground"
@@ -126,7 +80,7 @@ export function MenuItem({
     >
       {icon && <span className="flex w-4 shrink-0 items-center justify-center">{icon}</span>}
       <span className="min-w-0 flex-1 truncate">{children}</span>
-      {selected && <Check className="h-3.5 w-3.5 shrink-0 text-muted" />}
+      {selected && <Check className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
     </button>
   );
 }
@@ -136,5 +90,5 @@ export function MenuSeparator() {
 }
 
 export function MenuLabel({ children }: { children: ReactNode }) {
-  return <div className="px-2 pb-1 pt-1.5 text-[11px] font-medium text-muted">{children}</div>;
+  return <div className="px-2 pb-1 pt-1.5 text-[11px] font-medium text-muted-foreground">{children}</div>;
 }

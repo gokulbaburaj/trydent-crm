@@ -49,11 +49,11 @@ export default function LoginPage() {
     <div className="flex min-h-screen flex-1 items-center justify-center bg-background px-4">
       <Card className="animate-page w-full max-w-sm">
         <div className="mb-6 flex flex-col items-center gap-2 text-center">
-          <div className="flex h-9 w-9 items-center justify-center rounded bg-accent text-xs font-medium text-accent-foreground">
+          <div className="flex h-9 w-9 items-center justify-center rounded bg-primary text-xs font-medium text-primary-foreground">
             TL
           </div>
           <h1 className="text-[17px] font-semibold text-foreground">Trydent Labs</h1>
-          <p className="text-sm text-muted">Sign in to your CRM account</p>
+          <p className="text-sm text-muted-foreground">Sign in to your CRM account</p>
         </div>
 
         {!isSupabaseConfigured && (

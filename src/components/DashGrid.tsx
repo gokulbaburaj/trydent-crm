@@ -156,7 +156,7 @@ function DashCell({
       style={{ gridColumn: span > 1 ? `span ${span} / span ${span}` : undefined }}
       className={cn(
         "group/dash relative rounded-md transition-[box-shadow,opacity] duration-150",
-        (isOver || resizing) && "ring-1 ring-accent/60",
+        (isOver || resizing) && "ring-1 ring-primary/60",
         isDragging && "opacity-40"
       )}
     >
@@ -168,7 +168,7 @@ function DashCell({
         {...listeners}
         {...attributes}
         title="Drag to rearrange"
-        className="absolute left-1 top-1 z-10 cursor-grab rounded bg-surface/80 p-1 text-muted opacity-0 shadow-sm transition-opacity hover:bg-white/10 hover:text-foreground active:cursor-grabbing group-hover/dash:opacity-100"
+        className="absolute left-1 top-1 z-10 cursor-grab rounded bg-surface/80 p-1 text-muted-foreground opacity-0 shadow-sm transition-opacity hover:bg-white/10 hover:text-foreground active:cursor-grabbing group-hover/dash:opacity-100"
       >
         <GripVertical className="h-3.5 w-3.5" />
       </button>
@@ -178,7 +178,7 @@ function DashCell({
         <div
           onPointerDown={startResize}
           title="Drag to resize"
-          className="absolute bottom-1 right-1 z-10 h-3.5 w-3.5 cursor-se-resize rounded-br border-b-2 border-r-2 border-muted-2 opacity-0 transition-opacity hover:border-accent group-hover/dash:opacity-100"
+          className="absolute bottom-1 right-1 z-10 h-3.5 w-3.5 cursor-se-resize rounded-br border-b-2 border-r-2 border-muted-2 opacity-0 transition-opacity hover:border-primary group-hover/dash:opacity-100"
         />
       )}
     </div>

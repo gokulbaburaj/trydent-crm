@@ -1,22 +1,59 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
+/*
+  shadcn/ui token convention (https://ui.shadcn.com/docs/theming)
+  Dark-only app: dark values live directly in :root.
+  --primary is user-adjustable from Settings (see src/lib/theme.tsx).
+*/
 :root {
-  /* shadcn dark (neutral base) — adapted to keep the sidebar/canvas split */
-  --background: #0a0a0a;                    /* app shell + sidebar */
-  --panel: #101010;                         /* main canvas — slightly elevated */
-  --surface: #171717;                       /* cards, menus, elevated solids */
-  --border: rgba(255, 255, 255, 0.1);
-  --border-subtle: rgba(255, 255, 255, 0.06);
+  --radius: 0.625rem;
+
+  --background: #0a0a0a;
   --foreground: #fafafa;
+  --card: #171717;
+  --card-foreground: #fafafa;
+  --popover: #171717;
+  --popover-foreground: #fafafa;
+  --primary: #5e6ad2;
+  --primary-foreground: #ffffff;
+  --secondary: #262626;
+  --secondary-foreground: #fafafa;
+  --muted: #262626;
+  --muted-foreground: #a3a3a3;
+  --accent: #262626;
+  --accent-foreground: #fafafa;
+  --destructive: #eb5757;
+  --destructive-foreground: #ffffff;
+  --border: rgba(255, 255, 255, 0.1);
+  --input: rgba(255, 255, 255, 0.15);
+  --ring: var(--primary);
+
+  --chart-1: var(--primary);
+  --chart-2: #4ea7e0;
+  --chart-3: #4cb782;
+  --chart-4: #d9a53f;
+  --chart-5: #d95c8a;
+
+  --sidebar: #0a0a0a;
+  --sidebar-foreground: #fafafa;
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: rgba(255, 255, 255, 0.06);
+  --sidebar-accent-foreground: #fafafa;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: var(--ring);
+
+  /* ---- Trydent extras (kept alongside the shadcn set) ---- */
+  --panel: #101010;                          /* main canvas between sidebar and cards */
+  --border-subtle: rgba(255, 255, 255, 0.06);
   --foreground-secondary: #d4d4d4;
-  --muted: #a3a3a3;                         /* shadcn muted-foreground */
   --muted-2: #737373;
-  --accent: #5e6ad2;
-  --accent-foreground: #ffffff;
-  --danger: #eb5757;
-  --warning: #f2994a;
   --success: #4cb782;
-  /* Calendar event palette — pastel blocks with dark text, like Linear's calendar */
+  --warning: #f2994a;
+  --danger: var(--destructive);
+
+  /* Calendar event palette — pastel blocks with dark text */
   --event-blue-bg: #c7e3f5;
   --event-blue-bar: #4ea7e0;
   --event-purple-bg: #d6d4f2;
@@ -31,40 +68,72 @@
 
 @theme inline {
   --color-background: var(--background);
-  --color-panel: var(--panel);
-  --color-surface: var(--surface);
-  --color-border: var(--border);
-  --color-border-subtle: var(--border-subtle);
   --color-foreground: var(--foreground);
-  --color-foreground-secondary: var(--foreground-secondary);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
-  --color-muted-2: var(--muted-2);
+  --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
-  --color-danger: var(--danger);
-  --color-warning: var(--warning);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Trydent aliases so existing markup keeps working */
+  --color-panel: var(--panel);
+  --color-surface: var(--card);
+  --color-border-subtle: var(--border-subtle);
+  --color-foreground-secondary: var(--foreground-secondary);
+  --color-muted-2: var(--muted-2);
   --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+
   --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
 
-  /* shadcn radius scale — one base token drives every corner in the app */
-  --radius: 0.625rem;
+  /* shadcn radius scale — one base token drives every corner */
   --radius-xs: calc(var(--radius) * 0.4);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) * 1.4);
   --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-size: 14px;
-  -webkit-font-smoothing: antialiased;
-}
+@layer base {
+  * {
+    border-color: var(--border);
+    outline-color: color-mix(in oklab, var(--ring) 50%, transparent);
+  }
 
-* {
-  border-color: var(--border);
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+  }
 }
 
 ::-webkit-scrollbar {
@@ -80,7 +149,7 @@ body {
 }
 
 /* ============ Motion ============ */
-/* Linear-style: fast, small distances, ease-out-expo curves. */
+/* Fast, small distances, ease-out-expo curves. */
 
 @keyframes fade-in {
   from { opacity: 0; }

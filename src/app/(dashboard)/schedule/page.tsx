@@ -149,7 +149,7 @@ export default function SchedulePage() {
         a.follow_up_required ? (
           <Badge tone="yellow" dot>Required</Badge>
         ) : (
-          <span className="text-muted">—</span>
+          <span className="text-muted-foreground">—</span>
         ),
     },
   ];
@@ -289,26 +289,26 @@ export default function SchedulePage() {
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold tracking-tight">
               {format(anchor, "MMMM")}{" "}
-              <span className="font-normal text-muted">{format(anchor, "yyyy")}</span>
+              <span className="font-normal text-muted-foreground">{format(anchor, "yyyy")}</span>
             </h2>
             <div className="flex items-center gap-2">
               <div className="flex items-center rounded border border-border bg-surface">
                 <button
                   onClick={goPrev}
-                  className="flex h-7 w-7 items-center justify-center text-muted hover:bg-white/5 hover:text-foreground"
+                  className="flex h-7 w-7 items-center justify-center text-muted-foreground hover:bg-white/5 hover:text-foreground"
                   aria-label="Previous"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
                 <button
                   onClick={() => setAnchor(new Date())}
-                  className="px-2.5 text-xs font-medium text-muted hover:text-foreground"
+                  className="px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground"
                 >
                   Today
                 </button>
                 <button
                   onClick={goNext}
-                  className="flex h-7 w-7 items-center justify-center text-muted hover:bg-white/5 hover:text-foreground"
+                  className="flex h-7 w-7 items-center justify-center text-muted-foreground hover:bg-white/5 hover:text-foreground"
                   aria-label="Next"
                 >
                   <ChevronRight className="h-4 w-4" />
@@ -318,7 +318,7 @@ export default function SchedulePage() {
                 <button
                   onClick={() => setCalView("week")}
                   className={`rounded px-2.5 py-1 text-xs font-medium ${
-                    calView === "week" ? "bg-white/10 text-foreground" : "text-muted hover:text-foreground-secondary"
+                    calView === "week" ? "bg-white/10 text-foreground" : "text-muted-foreground hover:text-foreground-secondary"
                   }`}
                 >
                   Week
@@ -326,7 +326,7 @@ export default function SchedulePage() {
                 <button
                   onClick={() => setCalView("month")}
                   className={`rounded px-2.5 py-1 text-xs font-medium ${
-                    calView === "month" ? "bg-white/10 text-foreground" : "text-muted hover:text-foreground-secondary"
+                    calView === "month" ? "bg-white/10 text-foreground" : "text-muted-foreground hover:text-foreground-secondary"
                   }`}
                 >
                   Month
@@ -469,7 +469,7 @@ export default function SchedulePage() {
                 type="checkbox"
                 checked={!!editing.follow_up_required}
                 onChange={(e) => setEditing({ ...editing, follow_up_required: e.target.checked })}
-                className="h-4 w-4 rounded accent-accent"
+                className="h-4 w-4 rounded accent-primary"
               />
               Follow-up required
             </label>
@@ -563,7 +563,7 @@ function WeekGrid({
             key={day.toISOString()}
             className="flex items-center justify-center gap-1.5 border-l border-border-subtle pb-2 pt-3 text-[13px]"
           >
-            <span className={isToday(day) ? "font-medium text-foreground" : "text-muted"}>
+            <span className={isToday(day) ? "font-medium text-foreground" : "text-muted-foreground"}>
               {format(day, "EEE")}
             </span>
             <span
@@ -615,7 +615,7 @@ function WeekGrid({
                 </Link>
               ))}
               {dts.length > 3 && (
-                <span className="px-1.5 text-[10px] text-muted">+{dts.length - 3} more</span>
+                <span className="px-1.5 text-[10px] text-muted-foreground">+{dts.length - 3} more</span>
               )}
             </div>
           );
@@ -691,7 +691,7 @@ function WeekDayColumn({
       ref={setNodeRef}
       className={cn(
         "relative border-l border-border-subtle transition-colors",
-        isOver && "bg-accent/5"
+        isOver && "bg-primary/5"
       )}
       style={{ height: 24 * HOUR_HEIGHT }}
       onClick={(e) => {
@@ -847,7 +847,7 @@ function MonthGridPro({
         <div className="min-w-[760px]">
           <div className="grid grid-cols-7 border-b border-border text-center">
             {WEEKDAYS.map((d) => (
-              <div key={d} className="py-2 text-[11px] font-medium text-muted">{d}</div>
+              <div key={d} className="py-2 text-[11px] font-medium text-muted-foreground">{d}</div>
             ))}
           </div>
           <div className="grid grid-cols-7">
@@ -897,7 +897,7 @@ function MonthGridPro({
                     />
                   ))}
                   {extra > 0 && (
-                    <span className="px-1 text-[10px] text-muted">+{extra} more</span>
+                    <span className="px-1 text-[10px] text-muted-foreground">+{extra} more</span>
                   )}
                 </MonthDayCell>
               );
@@ -921,7 +921,7 @@ function MonthGridPro({
             style={{ top: Math.min(menu.y, window.innerHeight - 90), left: Math.min(menu.x, window.innerWidth - 220) }}
             onClick={(e) => e.stopPropagation()}
           >
-            <p className="mb-2 text-[11px] font-medium text-muted">Event color</p>
+            <p className="mb-2 text-[11px] font-medium text-muted-foreground">Event color</p>
             <div className="flex items-center gap-1.5">
               {CHIP_COLORS.map((c) => (
                 <button
@@ -943,7 +943,7 @@ function MonthGridPro({
                   onRecolor(menu.id, null);
                   setMenu(null);
                 }}
-                className="flex h-5 w-5 items-center justify-center rounded-full border border-border text-[9px] font-medium text-muted hover:text-foreground"
+                className="flex h-5 w-5 items-center justify-center rounded-full border border-border text-[9px] font-medium text-muted-foreground hover:text-foreground"
               >
                 A
               </button>
@@ -971,15 +971,15 @@ function MonthDayCell({
       className={cn(
         "flex min-h-[104px] flex-col gap-1 border-b border-r border-border-subtle p-1.5 transition-colors [&:nth-child(7n)]:border-r-0",
         !inMonth && "opacity-40",
-        isOver && "bg-accent/10"
+        isOver && "bg-primary/10"
       )}
     >
       <span
         className={cn(
           "self-end text-xs",
           isToday(day)
-            ? "flex h-5 w-5 items-center justify-center rounded-full bg-accent font-semibold text-accent-foreground"
-            : "px-1 text-muted"
+            ? "flex h-5 w-5 items-center justify-center rounded-full bg-primary font-semibold text-primary-foreground"
+            : "px-1 text-muted-foreground"
         )}
       >
         {format(day, "d")}
@@ -1052,7 +1052,7 @@ function TabButton({
     <button
       onClick={onClick}
       className={`flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium ${
-        active ? "bg-white/10 text-foreground" : "text-muted hover:text-foreground-secondary"
+        active ? "bg-white/10 text-foreground" : "text-muted-foreground hover:text-foreground-secondary"
       }`}
     >
       <Icon className="h-3.5 w-3.5" /> {label}

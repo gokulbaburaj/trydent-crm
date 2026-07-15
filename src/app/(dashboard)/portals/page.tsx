@@ -115,11 +115,11 @@ export default function PortalsPage() {
       render: (p) =>
         p.portal_username ? (
           <span className="inline-flex items-center gap-1.5 text-xs text-foreground-secondary">
-            <KeyRound className="h-3 w-3 text-muted" />
+            <KeyRound className="h-3 w-3 text-muted-foreground" />
             {p.portal_username}
           </span>
         ) : (
-          <span className="text-xs text-muted">—</span>
+          <span className="text-xs text-muted-foreground">—</span>
         ),
     },
     {
@@ -128,7 +128,7 @@ export default function PortalsPage() {
         p.last_opened_at ? (
           <span className="text-xs text-success">{formatDate(p.last_opened_at)}</span>
         ) : (
-          <span className="text-xs text-muted">Never</span>
+          <span className="text-xs text-muted-foreground">Never</span>
         ),
     },
     { header: "Notes", render: (p) => p.notes || "—" },
@@ -249,7 +249,7 @@ export default function PortalsPage() {
             {editing.id && (
               <div className="flex flex-col gap-3 rounded border border-border bg-white/[0.02] p-3">
                 <div className="flex items-center gap-2">
-                  <KeyRound className="h-3.5 w-3.5 text-muted" />
+                  <KeyRound className="h-3.5 w-3.5 text-muted-foreground" />
                   <span className="text-[13px] font-medium">Portal login</span>
                   {editing.last_opened_at && (
                     <span className="ml-auto text-[11px] text-success">
@@ -259,7 +259,7 @@ export default function PortalsPage() {
                 </div>
 
                 {editing.portal_username && !loginCreated && (
-                  <p className="text-xs text-muted">
+                  <p className="text-xs text-muted-foreground">
                     This client signs in with username{" "}
                     <span className="rounded bg-white/5 px-1 py-0.5 font-medium text-foreground-secondary">
                       {editing.portal_username}

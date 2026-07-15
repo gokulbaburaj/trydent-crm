@@ -30,7 +30,7 @@ export function Avatar({
   return (
     <div
       className={cn(
-        "flex items-center justify-center rounded-full bg-accent/15 text-accent font-semibold",
+        "flex items-center justify-center rounded-full bg-primary/15 text-primary font-semibold",
         sizeClasses
       )}
     >
@@ -54,7 +54,7 @@ export function PersonCell({
       <div className="min-w-0">
         <div className="truncate text-[13px] font-medium text-foreground">{name}</div>
         {subtitle && (
-          <div className="truncate text-xs text-muted">{subtitle}</div>
+          <div className="truncate text-xs text-muted-foreground">{subtitle}</div>
         )}
       </div>
     </div>

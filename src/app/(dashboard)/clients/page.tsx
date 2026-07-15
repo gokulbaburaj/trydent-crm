@@ -145,7 +145,7 @@ export default function ClientsPage() {
           <button
             onClick={() => setView("table")}
             className={`flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium ${
-              view === "table" ? "bg-white/10 text-foreground" : "text-muted hover:text-foreground-secondary"
+              view === "table" ? "bg-white/10 text-foreground" : "text-muted-foreground hover:text-foreground-secondary"
             }`}
           >
             <List className="h-3.5 w-3.5" /> Table
@@ -153,7 +153,7 @@ export default function ClientsPage() {
           <button
             onClick={() => setView("kanban")}
             className={`flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium ${
-              view === "kanban" ? "bg-white/10 text-foreground" : "text-muted hover:text-foreground-secondary"
+              view === "kanban" ? "bg-white/10 text-foreground" : "text-muted-foreground hover:text-foreground-secondary"
             }`}
           >
             <LayoutGrid className="h-3.5 w-3.5" /> Kanban
@@ -193,7 +193,7 @@ export default function ClientsPage() {
           renderCard={(c) => (
             <div onClick={() => setSelected(c)}>
               <p className="text-sm font-medium">{c.company}</p>
-              <p className="mt-0.5 text-xs text-muted">{c.point_person || "No contact"}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">{c.point_person || "No contact"}</p>
             </div>
           )}
         />
@@ -228,7 +228,7 @@ export default function ClientsPage() {
 
             {selected.address && (
               <div>
-                <p className="text-xs font-medium text-muted">Address</p>
+                <p className="text-xs font-medium text-muted-foreground">Address</p>
                 <p className="text-sm">{selected.address}</p>
               </div>
             )}
@@ -250,11 +250,11 @@ export default function ClientsPage() {
                       <span className="font-medium">{d.deal_name}</span>
                       <Badge tone={statusTone(d.deal_stage)}>{d.deal_stage}</Badge>
                     </div>
-                    <p className="mt-1 text-xs text-muted">${Number(d.deal_value).toLocaleString()}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">${Number(d.deal_value).toLocaleString()}</p>
                   </div>
                 ))}
                 {selectedDeals.length === 0 && (
-                  <p className="text-xs text-muted">No deals linked.</p>
+                  <p className="text-xs text-muted-foreground">No deals linked.</p>
                 )}
               </div>
             </div>
@@ -265,11 +265,11 @@ export default function ClientsPage() {
                 {selectedActivities.map((a) => (
                   <div key={a.id} className="rounded border border-border p-3 text-sm">
                     <p>{a.description}</p>
-                    <p className="mt-1 text-xs text-muted">{formatDate(a.activity_date)}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{formatDate(a.activity_date)}</p>
                   </div>
                 ))}
                 {selectedActivities.length === 0 && (
-                  <p className="text-xs text-muted">No activities linked.</p>
+                  <p className="text-xs text-muted-foreground">No activities linked.</p>
                 )}
               </div>
             </div>
@@ -281,7 +281,7 @@ export default function ClientsPage() {
                   {selectedPortal.status}
                 </Badge>
               ) : (
-                <p className="text-xs text-muted">No portal set up.</p>
+                <p className="text-xs text-muted-foreground">No portal set up.</p>
               )}
             </div>
           </div>
@@ -407,7 +407,7 @@ export default function ClientsPage() {
 function Info({ label, value }: { label: string; value?: string | null }) {
   return (
     <div>
-      <p className="text-xs font-medium text-muted">{label}</p>
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
       <p className="text-sm">{value || "—"}</p>
     </div>
   );
@@ -423,7 +423,7 @@ function TagInput({ tags, onChange }: { tags: string[]; onChange: (tags: string[
   }
 
   return (
-    <div className="flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border border-white/15 bg-transparent px-2 py-1.5 shadow-sm focus-within:border-accent/60 focus-within:ring-[3px] focus-within:ring-accent/20">
+    <div className="flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border border-white/15 bg-transparent px-2 py-1.5 shadow-sm focus-within:border-primary/60 focus-within:ring-[3px] focus-within:ring-primary/20">
       {tags.map((t) => (
         <span
           key={t}
@@ -433,7 +433,7 @@ function TagInput({ tags, onChange }: { tags: string[]; onChange: (tags: string[
           <button
             type="button"
             onClick={() => onChange(tags.filter((x) => x !== t))}
-            className="rounded text-muted hover:text-danger"
+            className="rounded text-muted-foreground hover:text-danger"
           >
             <X className="h-3 w-3" />
           </button>

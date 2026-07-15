@@ -1,13 +1,12 @@
 import { HTMLAttributes } from "react";
+import { Card as ShadCard } from "@/components/shadcn/card";
 import { cn } from "@/lib/utils";
 
+/** shadcn/ui Card, densified to our app's p-4 block layout. */
 export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
-    <div
-      className={cn(
-        "rounded-xl bg-surface border border-border p-4 shadow-sm shadow-black/20 transition-colors duration-200",
-        className
-      )}
+    <ShadCard
+      className={cn("block gap-0 p-4 transition-colors duration-200", className)}
       {...props}
     />
   );

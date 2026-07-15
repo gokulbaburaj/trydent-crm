@@ -60,7 +60,7 @@ export default function TeamPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <p className="text-sm text-muted">
+      <p className="text-sm text-muted-foreground">
         {isAdmin
           ? "As an admin, you can change team member roles."
           : "Only admins can edit roles."}

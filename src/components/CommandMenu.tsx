@@ -140,12 +140,12 @@ export function CommandMenu() {
     const themeItems: Item[] = ACCENT_PRESETS.filter((p) =>
       match(`theme ${p.name}`)
     ).map((p) => ({
-      id: `theme-${p.accent}`,
+      id: `theme-${p.primary}`,
       label: `Theme: ${p.name}`,
       hint: "Action",
       icon: Palette,
       run: () => {
-        setAccent(p.accent);
+        setAccent(p.primary);
         setOpen(false);
       },
     }));
@@ -186,7 +186,7 @@ export function CommandMenu() {
     >
       <div className="animate-pop w-full max-w-lg overflow-hidden rounded-lg border border-border bg-surface shadow-2xl shadow-black/60">
         <div className="flex items-center gap-2.5 border-b border-border px-3.5 py-3">
-          <Search className="h-4 w-4 shrink-0 text-muted" />
+          <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
           <input
             ref={inputRef}
             value={query}
@@ -196,19 +196,19 @@ export function CommandMenu() {
             }}
             onKeyDown={onKeyDown}
             placeholder="Search pages, clients, projects, deals..."
-            className="w-full bg-transparent text-sm text-foreground placeholder:text-muted focus:outline-none"
+            className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
           />
-          <kbd className="rounded border border-border bg-white/5 px-1.5 py-0.5 text-[10px] text-muted">
+          <kbd className="rounded border border-border bg-white/5 px-1.5 py-0.5 text-[10px] text-muted-foreground">
             esc
           </kbd>
         </div>
         <div className="max-h-[50vh] overflow-y-auto p-1.5">
           {flat.length === 0 && (
-            <p className="py-8 text-center text-sm text-muted">No results.</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">No results.</p>
           )}
           {groups.map((g) => (
             <div key={g.label}>
-              <p className="px-2 pb-1 pt-2 text-[11px] font-medium text-muted">{g.label}</p>
+              <p className="px-2 pb-1 pt-2 text-[11px] font-medium text-muted-foreground">{g.label}</p>
               {g.items.map((item) => {
                 const i = flat.indexOf(item);
                 return (
@@ -223,9 +223,9 @@ export function CommandMenu() {
                         : "text-foreground-secondary"
                     )}
                   >
-                    <item.icon className="h-3.5 w-3.5 shrink-0 text-muted" />
+                    <item.icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                     <span className="min-w-0 flex-1 truncate">{item.label}</span>
-                    <span className="shrink-0 text-[11px] text-muted">{item.hint}</span>
+                    <span className="shrink-0 text-[11px] text-muted-foreground">{item.hint}</span>
                   </button>
                 );
               })}

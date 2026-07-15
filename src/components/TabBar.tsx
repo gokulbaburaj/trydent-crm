@@ -51,14 +51,14 @@ export function TabBar() {
       <button
         title="Back"
         onClick={() => router.back()}
-        className="rounded p-1.5 text-muted hover:bg-white/5 hover:text-foreground"
+        className="rounded p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
       </button>
       <button
         title="Forward"
         onClick={() => router.forward()}
-        className="rounded p-1.5 text-muted hover:bg-white/5 hover:text-foreground"
+        className="rounded p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground"
       >
         <ArrowRight className="h-3.5 w-3.5" />
       </button>
@@ -75,10 +75,10 @@ export function TabBar() {
                 "animate-pop group flex min-w-0 max-w-[200px] cursor-pointer items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[13px] transition-colors",
                 active
                   ? "border border-border bg-surface text-foreground"
-                  : "border border-transparent text-muted hover:bg-white/5 hover:text-foreground-secondary"
+                  : "border border-transparent text-muted-foreground hover:bg-white/5 hover:text-foreground-secondary"
               )}
             >
-              <Icon className={cn("h-3.5 w-3.5 shrink-0", active ? "text-foreground-secondary" : "text-muted")} />
+              <Icon className={cn("h-3.5 w-3.5 shrink-0", active ? "text-foreground-secondary" : "text-muted-foreground")} />
               <span className="min-w-0 flex-1 truncate">{tab.title}</span>
               {tabs.length > 1 && (
                 <button
@@ -88,7 +88,7 @@ export function TabBar() {
                     close(tab.id);
                   }}
                   className={cn(
-                    "rounded p-0.5 text-muted hover:bg-white/10 hover:text-foreground",
+                    "rounded p-0.5 text-muted-foreground hover:bg-white/10 hover:text-foreground",
                     active ? "opacity-60 hover:opacity-100" : "opacity-0 group-hover:opacity-100"
                   )}
                 >
@@ -101,7 +101,7 @@ export function TabBar() {
         <button
           title="New tab"
           onClick={newTab}
-          className="rounded p-1.5 text-muted hover:bg-white/5 hover:text-foreground"
+          className="rounded p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground"
         >
           <Plus className="h-3.5 w-3.5" />
         </button>

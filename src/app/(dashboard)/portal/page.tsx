@@ -15,7 +15,7 @@ export default function ClientPortalPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center text-muted">Loading...</div>
+        <div className="flex min-h-screen items-center justify-center text-muted-foreground">Loading...</div>
       }
     >
       <PortalInner />
@@ -88,19 +88,19 @@ function PortalInner() {
   }
 
   if (loading) {
-    return <div className="flex min-h-screen items-center justify-center text-muted">Loading...</div>;
+    return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Loading...</div>;
   }
 
   return (
     <div className="min-h-screen bg-background">
       <header className="flex items-center justify-between border-b border-border px-6 py-3.5">
         <div className="flex items-center gap-2">
-          <div className="flex h-6 w-6 items-center justify-center rounded bg-accent text-[10px] font-medium text-accent-foreground">
+          <div className="flex h-6 w-6 items-center justify-center rounded bg-primary text-[10px] font-medium text-primary-foreground">
             TL
           </div>
           <span className="text-[13px] font-medium text-foreground">Trydent Labs</span>
-          <ChevronRight className="h-3.5 w-3.5 text-muted" />
-          <span className="text-[13px] text-muted">{client?.company ?? "Client Portal"}</span>
+          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="text-[13px] text-muted-foreground">{client?.company ?? "Client Portal"}</span>
           {isPreview && (
             <span className="ml-2 inline-flex items-center gap-1 rounded border border-warning/30 bg-warning/10 px-1.5 py-0.5 text-[11px] font-medium text-warning">
               <Eye className="h-3 w-3" /> Preview — what your client sees
@@ -110,7 +110,7 @@ function PortalInner() {
         <button
           onClick={signOut}
           title="Sign out"
-          className="rounded p-2 text-muted hover:bg-white/5 hover:text-foreground"
+          className="rounded p-2 text-muted-foreground hover:bg-white/5 hover:text-foreground"
         >
           <LogOut className="h-4 w-4" />
         </button>
@@ -119,7 +119,7 @@ function PortalInner() {
       <main className="animate-page mx-auto flex max-w-4xl flex-col gap-6 p-6">
         {!client ? (
           <Card>
-            <p className="text-sm text-muted">
+            <p className="text-sm text-muted-foreground">
               Your account isn&apos;t linked to a client record yet. Please contact your
               account manager at Trydent Labs.
             </p>
@@ -127,11 +127,11 @@ function PortalInner() {
         ) : (
           <>
             {/* Welcome */}
-            <div className="border-l-2 border-accent pl-4">
+            <div className="border-l-2 border-primary pl-4">
               <h1 className="text-xl font-semibold tracking-tight">
                 Welcome to your client portal, {client.point_person || client.company}!
               </h1>
-              <p className="mt-1.5 max-w-2xl text-sm text-muted">
+              <p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">
                 Here you can follow progress on your projects, see what&apos;s being worked on
                 right now, and keep track of payments — all in one place. Reach out to your
                 account manager any time you need a hand.
@@ -143,7 +143,7 @@ function PortalInner() {
               <h2 className="mb-3 text-[15px] font-semibold">Projects</h2>
               {projects.length === 0 ? (
                 <Card>
-                  <p className="py-4 text-center text-sm text-muted">No projects yet.</p>
+                  <p className="py-4 text-center text-sm text-muted-foreground">No projects yet.</p>
                 </Card>
               ) : (
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -163,7 +163,7 @@ function PortalInner() {
                         </div>
                         {pct !== null && (
                           <div className="mt-3 flex items-center gap-2">
-                            <span className="text-xs tabular-nums text-muted">
+                            <span className="text-xs tabular-nums text-muted-foreground">
                               {pct.toFixed(0)}%
                             </span>
                             <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/10">
@@ -175,7 +175,7 @@ function PortalInner() {
                           </div>
                         )}
                         {p.due_date && (
-                          <p className="mt-2 text-xs text-muted">Due {formatDate(p.due_date)}</p>
+                          <p className="mt-2 text-xs text-muted-foreground">Due {formatDate(p.due_date)}</p>
                         )}
                       </button>
                     );
@@ -199,21 +199,21 @@ function PortalInner() {
                           className="flex w-full items-center gap-2 px-3.5 py-2.5 text-left hover:bg-white/[0.03]"
                         >
                           {open ? (
-                            <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted" />
+                            <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                           ) : (
-                            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted" />
+                            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                           )}
                           <span className="min-w-0 flex-1 truncate text-sm font-medium">
                             {p.name}
                           </span>
-                          <span className="shrink-0 text-xs text-muted">
+                          <span className="shrink-0 text-xs text-muted-foreground">
                             {pts.filter((t) => t.status === "Done").length}/{pts.length} done
                           </span>
                         </button>
                         {open && (
                           <div className="flex flex-col border-t border-border-subtle">
                             {pts.length === 0 && (
-                              <p className="px-9 py-3 text-xs text-muted">No tasks yet.</p>
+                              <p className="px-9 py-3 text-xs text-muted-foreground">No tasks yet.</p>
                             )}
                             {pts.map((t) => (
                               <div
@@ -225,13 +225,13 @@ function PortalInner() {
                                 </Badge>
                                 <span
                                   className={`min-w-0 flex-1 truncate ${
-                                    t.status === "Done" ? "text-muted line-through" : ""
+                                    t.status === "Done" ? "text-muted-foreground line-through" : ""
                                   }`}
                                 >
                                   {t.name}
                                 </span>
                                 {t.due_date && (
-                                  <span className="shrink-0 text-xs text-muted">
+                                  <span className="shrink-0 text-xs text-muted-foreground">
                                     {formatDate(t.due_date)}
                                   </span>
                                 )}
@@ -251,7 +251,7 @@ function PortalInner() {
               <h2 className="mb-3 text-[15px] font-semibold">Payments</h2>
               <div className="overflow-hidden rounded border border-border bg-surface">
                 {deals.length === 0 && (
-                  <p className="py-6 text-center text-sm text-muted">No engagements yet.</p>
+                  <p className="py-6 text-center text-sm text-muted-foreground">No engagements yet.</p>
                 )}
                 {deals.map((d) => (
                   <div
@@ -260,11 +260,11 @@ function PortalInner() {
                   >
                     <span className="min-w-0 flex-1 truncate font-medium">{d.deal_name}</span>
                     <Badge tone={statusTone(d.deal_stage)}>{d.deal_stage}</Badge>
-                    <span className="text-xs text-muted">
+                    <span className="text-xs text-muted-foreground">
                       {formatCurrency(Number(d.paid))} paid of {formatCurrency(Number(d.deal_value))}
                     </span>
                     {d.close_date && (
-                      <span className="text-xs text-muted">Close {formatDate(d.close_date)}</span>
+                      <span className="text-xs text-muted-foreground">Close {formatDate(d.close_date)}</span>
                     )}
                   </div>
                 ))}
@@ -273,7 +273,7 @@ function PortalInner() {
 
             {portal?.notes && (
               <Card>
-                <h3 className="mb-1.5 text-sm font-semibold text-muted">Notes from your team</h3>
+                <h3 className="mb-1.5 text-sm font-semibold text-muted-foreground">Notes from your team</h3>
                 <p className="text-sm">{portal.notes}</p>
               </Card>
             )}
