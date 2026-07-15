@@ -1,6 +1,7 @@
 "use client";
 
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   DndContext,
   DragEndEvent,
@@ -96,18 +97,30 @@ export function KanbanBoard<T extends { id: string }>({
         })}
       </div>
 
-      {/* Floating clone while dragging — the original stays as a dimmed placeholder */}
-      <DragOverlay
-        dropAnimation={{ duration: 200, easing: "cubic-bezier(0.16, 1, 0.3, 1)" }}
-      >
-        {activeItem ? (
-          <div className="rotate-2 scale-[1.03] cursor-grabbing rounded border border-accent/50 bg-surface p-3 shadow-2xl shadow-black/60">
-            {renderCard(activeItem)}
-          </div>
-        ) : null}
-      </DragOverlay>
+      {/* Floating clone while dragging — portaled to <body> so page transforms
+          and overflow clipping can never strand or offset it. */}
+      <BodyPortal>
+        <DragOverlay
+          dropAnimation={{ duration: 200, easing: "cubic-bezier(0.16, 1, 0.3, 1)" }}
+        >
+          {activeItem ? (
+            <div className="rotate-2 scale-[1.03] cursor-grabbing rounded border border-accent/50 bg-surface p-3 shadow-2xl shadow-black/60">
+              {renderCard(activeItem)}
+            </div>
+          ) : null}
+        </DragOverlay>
+      </BodyPortal>
     </DndContext>
   );
+}
+
+function BodyPortal({ children }: { children: ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    queueMicrotask(() => setMounted(true));
+  }, []);
+  if (!mounted) return null;
+  return createPortal(children, document.body);
 }
 
 function KanbanColumnDroppable({

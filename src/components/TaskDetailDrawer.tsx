@@ -131,90 +131,102 @@ export function TaskDetailDrawer({
   return (
     <Drawer open={!!task} onClose={onClose} title="Task details" wide>
       <div className="flex flex-col gap-6">
-        {/* Name */}
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          onBlur={() => {
-            const n = name.trim();
-            if (n && n !== task.name) onUpdate(task.id, { name: n });
-          }}
-          className="w-full rounded border border-transparent bg-transparent px-1 py-1 text-xl font-semibold tracking-tight text-foreground hover:border-border focus:border-accent/60 focus:outline-none focus:ring-1 focus:ring-accent/30"
-        />
-
-        {/* Property row */}
-        <div className="flex flex-wrap items-center gap-2">
-          <StatusPicker
-            value={task.status}
-            options={TASK_STATUSES}
-            onChange={(status) => onUpdate(task.id, { status })}
-          />
-          <Popover
-            trigger={
-              <button className="flex items-center gap-1.5 rounded border border-white/5 bg-white/5 px-2 py-1 text-xs font-medium text-foreground-secondary hover:bg-white/10">
-                {task.assigned_to ? (
-                  <>
-                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-accent/15 text-[8px] font-semibold text-accent">
-                      {initials(personName(task.assigned_to))}
-                    </span>
-                    {personName(task.assigned_to)}
-                  </>
-                ) : (
-                  <>
-                    <User className="h-3 w-3 text-muted" /> Assign
-                  </>
-                )}
-              </button>
-            }
-          >
-            {(close) => (
-              <>
-                <MenuLabel>Assign to</MenuLabel>
-                <MenuItem selected={!task.assigned_to} onClick={() => { onUpdate(task.id, { assigned_to: null }); close(); }}>
-                  Unassigned
-                </MenuItem>
-                {profiles.map((p) => (
-                  <MenuItem
-                    key={p.id}
-                    selected={task.assigned_to === p.id}
-                    onClick={() => { onUpdate(task.id, { assigned_to: p.id }); close(); }}
-                  >
-                    {p.full_name}
-                  </MenuItem>
-                ))}
-              </>
-            )}
-          </Popover>
-          <div className="w-44">
-            <DatePicker
-              value={task.due_date}
-              placeholder="Due date"
-              onChange={(d) => onUpdate(task.id, { due_date: d })}
-            />
-          </div>
-          <Input
-            placeholder="Label (e.g. UI design)"
-            value={label}
-            onChange={(e) => setLabel(e.target.value)}
+        {/* Name + delete */}
+        <div className="flex items-start gap-2">
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
             onBlur={() => {
-              const l = label.trim();
-              if (l !== (task.label ?? "")) onUpdate(task.id, { label: l || null });
+              const n = name.trim();
+              if (n && n !== task.name) onUpdate(task.id, { name: n });
             }}
-            className="max-w-[160px]"
+            className="w-full rounded border border-transparent bg-transparent px-1 py-1 text-xl font-semibold tracking-tight text-foreground hover:border-border focus:border-accent/60 focus:outline-none focus:ring-1 focus:ring-accent/30"
           />
-          <Button
-            size="sm"
-            variant="ghost"
-            className="ml-auto text-danger hover:bg-danger/10"
+          <button
+            title="Delete task"
             onClick={() => {
               if (confirm("Delete this task and its subtasks?")) {
                 onDelete(task.id);
                 onClose();
               }
             }}
+            className="mt-1 shrink-0 rounded p-2 text-muted hover:bg-danger/10 hover:text-danger"
           >
-            <Trash2 className="h-3.5 w-3.5" /> Delete
-          </Button>
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Properties grid */}
+        <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+          <div>
+            <Label>Status</Label>
+            <StatusPicker
+              value={task.status}
+              options={TASK_STATUSES}
+              onChange={(status) => onUpdate(task.id, { status })}
+            />
+          </div>
+          <div>
+            <Label>Assignee</Label>
+            <Popover
+              fullWidth
+              trigger={
+                <button className="flex w-full items-center gap-2 rounded border border-border bg-surface px-3 py-2 text-sm text-foreground hover:bg-white/5">
+                  {task.assigned_to ? (
+                    <>
+                      <span className="flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full bg-accent/15 text-[8px] font-semibold text-accent">
+                        {initials(personName(task.assigned_to))}
+                      </span>
+                      <span className="min-w-0 truncate">{personName(task.assigned_to)}</span>
+                    </>
+                  ) : (
+                    <>
+                      <User className="h-3.5 w-3.5 shrink-0 text-muted" />
+                      <span className="text-muted-2">Unassigned</span>
+                    </>
+                  )}
+                </button>
+              }
+            >
+              {(close) => (
+                <>
+                  <MenuLabel>Assign to</MenuLabel>
+                  <MenuItem selected={!task.assigned_to} onClick={() => { onUpdate(task.id, { assigned_to: null }); close(); }}>
+                    Unassigned
+                  </MenuItem>
+                  {profiles.map((p) => (
+                    <MenuItem
+                      key={p.id}
+                      selected={task.assigned_to === p.id}
+                      onClick={() => { onUpdate(task.id, { assigned_to: p.id }); close(); }}
+                    >
+                      {p.full_name}
+                    </MenuItem>
+                  ))}
+                </>
+              )}
+            </Popover>
+          </div>
+          <div>
+            <Label>Due date</Label>
+            <DatePicker
+              value={task.due_date}
+              placeholder="Due date"
+              onChange={(d) => onUpdate(task.id, { due_date: d })}
+            />
+          </div>
+          <div>
+            <Label>Label</Label>
+            <Input
+              placeholder="e.g. UI design"
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+              onBlur={() => {
+                const l = label.trim();
+                if (l !== (task.label ?? "")) onUpdate(task.id, { label: l || null });
+              }}
+            />
+          </div>
         </div>
 
         {/* Description */}
@@ -273,12 +285,11 @@ export function TaskDetailDrawer({
               </div>
             ))}
           </div>
-          <form onSubmit={addLink} className="mt-2 flex items-center gap-2">
+          <form onSubmit={addLink} className="mt-2 grid grid-cols-[1fr_1.6fr_auto] items-center gap-2">
             <Input
               placeholder="Title (e.g. Drive folder)"
               value={linkTitle}
               onChange={(e) => setLinkTitle(e.target.value)}
-              className="max-w-[180px]"
             />
             <Input
               placeholder="https://..."

@@ -38,6 +38,7 @@ import {
   User,
 } from "lucide-react";
 import { KanbanBoard } from "@/components/KanbanBoard";
+import { DashGrid } from "@/components/DashGrid";
 import { TaskDetailDrawer } from "@/components/TaskDetailDrawer";
 import { Button } from "@/components/ui/Button";
 import { Badge, statusTone } from "@/components/ui/Badge";
@@ -392,8 +393,10 @@ export default function ProjectDetailPage() {
 
       {/* ============ OVERVIEW ============ */}
       {tab === "overview" && (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          {/* Progress */}
+        <DashGrid
+          storageKey={`trydent-overview-layout:${projectId}`}
+          cards={[
+          { id: "progress", defaultSpan: 1, render: () => (
           <Card>
             <div className="mb-2 flex items-center justify-between">
               <h3 className="text-sm font-semibold">Project Progress</h3>
@@ -413,8 +416,8 @@ export default function ProjectDetailPage() {
               <StatusCount count={notStarted.length} label="To do" dotClass="bg-muted" />
             </div>
           </Card>
-
-          {/* Tasks checklist */}
+          )},
+          { id: "tasks", defaultSpan: 1, render: () => (
           <Card>
             <div className="mb-3 flex items-center justify-between">
               <h3 className="flex items-center gap-2 text-sm font-semibold">
@@ -485,11 +488,9 @@ export default function ProjectDetailPage() {
               ))}
             </div>
           </Card>
-
-          {/* Mini calendar */}
-          <MiniCalendar tasks={active} />
-
-          {/* Upcoming meetings for this client */}
+          )},
+          { id: "calendar", defaultSpan: 1, render: () => <MiniCalendar tasks={active} /> },
+          { id: "meetings", defaultSpan: 1, render: () => (
           <Card>
             <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold">
               Upcoming Meetings
@@ -531,13 +532,15 @@ export default function ProjectDetailPage() {
               )}
             </div>
           </Card>
-
-          {/* Tasks timeline */}
-          <Card className="lg:col-span-2">
+          )},
+          { id: "timeline", defaultSpan: 2, render: () => (
+          <Card>
             <h3 className="mb-3 text-sm font-semibold">Tasks Timeline</h3>
             <TasksTimeline tasks={active} />
           </Card>
-        </div>
+          )},
+          ]}
+        />
       )}
 
       {/* ============ BOARD ============ */}
