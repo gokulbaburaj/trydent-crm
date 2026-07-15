@@ -120,8 +120,8 @@ function KanbanCardDraggable({
       {...listeners}
       {...attributes}
       className={cn(
-        "cursor-grab rounded border border-border bg-surface p-3 active:cursor-grabbing hover:bg-white/5",
-        isDragging && "opacity-70 shadow-xl"
+        "animate-row cursor-grab rounded border border-border bg-surface p-3 transition-[border-color,background-color,box-shadow,translate] duration-150 hover:-translate-y-px hover:border-white/15 hover:bg-white/5 hover:shadow-lg hover:shadow-black/20 active:cursor-grabbing",
+        isDragging && "rotate-1 opacity-80 shadow-2xl shadow-black/50"
       )}
     >
       {children}

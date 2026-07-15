@@ -72,7 +72,7 @@ export function TabBar() {
               key={tab.id}
               onClick={() => activate(tab.id)}
               className={cn(
-                "group flex min-w-0 max-w-[200px] cursor-pointer items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[13px] transition-colors",
+                "animate-pop group flex min-w-0 max-w-[200px] cursor-pointer items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[13px] transition-colors",
                 active
                   ? "border border-border bg-surface text-foreground"
                   : "border border-transparent text-muted hover:bg-white/5 hover:text-foreground-secondary"

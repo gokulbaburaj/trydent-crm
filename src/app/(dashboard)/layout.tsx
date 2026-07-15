@@ -75,7 +75,10 @@ export default function DashboardLayout({
           <div className="min-h-0 min-w-0 flex-1 pb-2 pr-2">
             <div className="flex h-full min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-panel">
               <Topbar profile={profile} onSignOut={signOut} title={pageTitleFor(pathname)} />
-              <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-6">
+              <main
+                key={pathname}
+                className="animate-page min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-6"
+              >
                 {children}
               </main>
             </div>

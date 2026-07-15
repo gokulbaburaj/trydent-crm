@@ -615,6 +615,11 @@ export default function ProjectDetailPage() {
 function ProgressRing({ pct }: { pct: number }) {
   const r = 50;
   const c = 2 * Math.PI * r;
+  const [drawn, setDrawn] = useState(0);
+  useEffect(() => {
+    const t = requestAnimationFrame(() => setDrawn(pct));
+    return () => cancelAnimationFrame(t);
+  }, [pct]);
   return (
     <svg viewBox="0 0 120 120" className="h-36 w-36">
       <circle cx="60" cy="60" r={r} fill="none" stroke="var(--border)" strokeWidth="10" />
@@ -626,8 +631,9 @@ function ProgressRing({ pct }: { pct: number }) {
         stroke="var(--accent)"
         strokeWidth="10"
         strokeLinecap="round"
-        strokeDasharray={`${(pct / 100) * c} ${c}`}
+        strokeDasharray={`${(drawn / 100) * c} ${c}`}
         transform="rotate(-90 60 60)"
+        style={{ transition: "stroke-dasharray 700ms cubic-bezier(0.16, 1, 0.3, 1)" }}
       />
       <text x="60" y="58" textAnchor="middle" fill="var(--foreground)" fontSize="22" fontWeight="600">
         {pct}%

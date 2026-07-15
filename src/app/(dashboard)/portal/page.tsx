@@ -87,7 +87,7 @@ export default function ClientPortalPage() {
         </button>
       </header>
 
-      <main className="mx-auto flex max-w-4xl flex-col gap-6 p-6">
+      <main className="animate-page mx-auto flex max-w-4xl flex-col gap-6 p-6">
         {!client ? (
           <Card>
             <p className="text-sm text-muted">

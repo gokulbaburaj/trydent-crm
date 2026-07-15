@@ -163,7 +163,7 @@ export default function ProjectsPage() {
                       <button
                         key={p.id}
                         onClick={() => openInNewTab(`/projects/${p.id}`, p.name)}
-                        className="rounded border border-border bg-white/[0.02] p-3 text-left transition-colors hover:bg-white/5"
+                        className="rounded border border-border bg-white/[0.02] p-3 text-left transition-[border-color,background-color,box-shadow,translate] duration-150 hover:-translate-y-px hover:border-white/15 hover:bg-white/5 hover:shadow-lg hover:shadow-black/20"
                       >
                         <div className="flex items-center justify-between gap-2">
                           <span className="truncate text-sm font-medium">{p.name}</span>

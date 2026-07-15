@@ -562,7 +562,7 @@ function WeekGrid({
                       key={a.id}
                       data-event
                       onClick={() => onEventClick(a)}
-                      className="absolute overflow-hidden rounded px-1.5 py-1 text-left"
+                      className="absolute overflow-hidden rounded px-1.5 py-1 text-left transition-[filter,box-shadow] duration-150 hover:brightness-105 hover:shadow-md hover:shadow-black/20"
                       style={{
                         top: top + 1,
                         height: (EVENT_MINUTES / 60) * HOUR_HEIGHT - 2,

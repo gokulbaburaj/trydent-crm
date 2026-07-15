@@ -41,7 +41,7 @@ export function Drawer({
       />
       <div
         className={cn(
-          "absolute right-0 top-0 h-full w-full max-w-md bg-background border-l border-border shadow-2xl transition-transform duration-300 flex flex-col",
+          "absolute right-0 top-0 h-full w-full max-w-md bg-background border-l border-border shadow-2xl transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] flex flex-col",
           open ? "translate-x-0" : "translate-x-full"
         )}
       >

@@ -45,12 +45,13 @@ export function DataTable<T>({
               </td>
             </tr>
           )}
-          {rows.map((row) => (
+          {rows.map((row, idx) => (
             <tr
               key={rowKey(row)}
               onClick={() => onRowClick?.(row)}
+              style={{ animationDelay: `${Math.min(idx, 12) * 22}ms` }}
               className={cn(
-                "border-b border-border-subtle last:border-0 transition-colors",
+                "animate-row border-b border-border-subtle last:border-0 transition-colors",
                 onRowClick && "cursor-pointer hover:bg-white/5"
               )}
             >

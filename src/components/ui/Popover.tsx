@@ -86,7 +86,8 @@ export function Popover({
             onClick={(e) => e.stopPropagation()}
             style={{ position: "fixed", top: pos.top, left: pos.left, right: pos.right, zIndex: 100 }}
             className={cn(
-              "min-w-[190px] rounded-md border border-border bg-surface p-1 shadow-xl shadow-black/60",
+              "animate-pop min-w-[190px] rounded-md border border-border bg-surface p-1 shadow-xl shadow-black/60",
+              align === "right" ? "origin-top-right" : "origin-top-left",
               className
             )}
           >
