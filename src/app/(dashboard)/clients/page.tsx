@@ -423,7 +423,7 @@ function TagInput({ tags, onChange }: { tags: string[]; onChange: (tags: string[
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5 rounded border border-border bg-surface px-2 py-1.5 focus-within:border-accent/60 focus-within:ring-1 focus-within:ring-accent/30">
+    <div className="flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border border-white/15 bg-transparent px-2 py-1.5 shadow-sm focus-within:border-accent/60 focus-within:ring-[3px] focus-within:ring-accent/20">
       {tags.map((t) => (
         <span
           key={t}

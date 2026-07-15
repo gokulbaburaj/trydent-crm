@@ -26,7 +26,7 @@ export function DataTable<T>({
     <div className="overflow-x-auto rounded-md border border-border">
       <table className="w-full min-w-max text-[13px]">
         <thead>
-          <tr className="border-b border-border-subtle text-left text-[11px] uppercase tracking-wide text-muted">
+          <tr className="border-b border-border-subtle text-left text-xs text-muted">
             {columns.map((col, i) => (
               <th key={i} className={cn("px-4 py-2.5 font-medium", col.className)}>
                 {col.header}

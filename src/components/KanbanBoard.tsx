@@ -163,10 +163,11 @@ function KanbanCardDraggable({
       {...attributes}
       className={cn(
         "animate-row cursor-grab rounded border border-border bg-surface p-3 transition-[border-color,background-color,box-shadow,translate,opacity] duration-150 hover:-translate-y-px hover:border-white/15 hover:bg-white/5 hover:shadow-lg hover:shadow-black/20 active:cursor-grabbing",
-        isDragging && "border-dashed border-white/15 opacity-30"
+        isDragging && "border-dashed border-white/15 bg-transparent"
       )}
     >
-      {children}
+      {/* While dragging, the clone follows the cursor — the origin becomes an empty dashed slot. */}
+      <div className={isDragging ? "invisible" : undefined}>{children}</div>
     </div>
   );
 }

@@ -36,7 +36,7 @@ export function Dropdown({
       trigger={
         <button
           type="button"
-          className="flex w-full items-center gap-2 rounded border border-border bg-surface px-3 py-2 text-sm text-foreground hover:bg-white/5 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30"
+          className="flex h-9 w-full items-center gap-2 rounded-md border border-white/15 bg-transparent px-3 py-1 text-sm text-foreground shadow-sm hover:bg-white/5 focus:outline-none focus:border-accent/60 focus:ring-[3px] focus:ring-accent/20"
         >
           <span className={cn("min-w-0 flex-1 truncate text-left", !selected && "text-muted-2")}>
             {selected?.label ?? placeholder}

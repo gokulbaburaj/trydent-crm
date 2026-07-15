@@ -290,7 +290,7 @@ export default function PortalsPage() {
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <Label>Username (auto-generated)</Label>
-                        <div className="flex h-[38px] items-center rounded border border-border bg-white/[0.03] px-3 text-sm text-foreground-secondary">
+                        <div className="flex h-9 items-center rounded-md border border-white/15 bg-white/[0.03] px-3 text-sm text-foreground-secondary">
                           {loginUsername}
                         </div>
                       </div>
