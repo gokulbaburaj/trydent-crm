@@ -51,7 +51,9 @@ export default function DashboardLayout({
     }
   }, [loading, profile, isSupabaseConfigured, router, pathname]);
 
-  if (loading) {
+  // While checking the session — or when signed out and about to redirect —
+  // never render the dashboard shell (prevents the dashboard-then-login flash).
+  if (loading || (isSupabaseConfigured && !profile)) {
     return (
       <div className="flex min-h-screen items-center justify-center text-muted">
         Loading...

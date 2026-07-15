@@ -29,7 +29,26 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const path = request.nextUrl.pathname;
+  const isPublic = path.startsWith("/login") || path.startsWith("/api");
+
+  // Signed out → straight to login (server-side, so the dashboard never flashes).
+  if (!user && !isPublic) {
+    const redirect = NextResponse.redirect(new URL("/login", request.url));
+    response.cookies.getAll().forEach((c) => redirect.cookies.set(c.name, c.value));
+    return redirect;
+  }
+
+  // Signed in → skip the login page.
+  if (user && path.startsWith("/login")) {
+    const redirect = NextResponse.redirect(new URL("/dashboard", request.url));
+    response.cookies.getAll().forEach((c) => redirect.cookies.set(c.name, c.value));
+    return redirect;
+  }
 
   return response;
 }

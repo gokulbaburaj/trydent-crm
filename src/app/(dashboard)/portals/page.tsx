@@ -33,7 +33,7 @@ export default function PortalsPage() {
   const [loginPassword, setLoginPassword] = useState("");
   const [loginBusy, setLoginBusy] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
-  const [loginCreated, setLoginCreated] = useState<{ username: string; password: string } | null>(null);
+  const [loginCreated, setLoginCreated] = useState<{ username: string; password: string; reset?: boolean } | null>(null);
   const [copied, setCopied] = useState(false);
 
   const clientName = (id: string) => clients.find((c) => c.id === id)?.company ?? "Unknown";
@@ -82,7 +82,7 @@ export default function PortalsPage() {
       }
       return;
     }
-    setLoginCreated({ username: json.username, password: loginPassword });
+    setLoginCreated({ username: json.username, password: loginPassword, reset: json.reset });
     setEditing((prev) => (prev ? { ...prev, portal_username: json.username } : prev));
     setRows((prev) =>
       prev.map((p) => (p.id === editing.id ? { ...p, portal_username: json.username } : p))
@@ -230,8 +230,10 @@ export default function PortalsPage() {
                 {loginCreated ? (
                   <div className="flex flex-col gap-2 rounded border border-success/30 bg-success/10 p-3">
                     <p className="text-xs font-medium text-success">
-                      Login created — share these with your client. The password won&apos;t be
-                      shown again.
+                      {loginCreated.reset
+                        ? "Password reset — share the new credentials with your client."
+                        : "Login created — share these with your client."}{" "}
+                      The password won&apos;t be shown again.
                     </p>
                     <p className="text-xs text-foreground-secondary">
                       Username: <span className="font-medium text-foreground">{loginCreated.username}</span>
@@ -271,9 +273,9 @@ export default function PortalsPage() {
                       onClick={createLogin}
                     >
                       {loginBusy
-                        ? "Creating..."
+                        ? "Working..."
                         : editing.portal_username
-                          ? "Create another login"
+                          ? "Reset password / new login"
                           : "Create login"}
                     </Button>
                   </>

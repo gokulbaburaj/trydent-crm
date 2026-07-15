@@ -68,21 +68,57 @@ export async function POST(req: Request) {
     auth: { autoRefreshToken: false, persistSession: false },
   });
   const email = portalEmail(username);
+  const metadata = { full_name: fullName, role: "client", client_id: clientId };
+
   const { error: createError } = await admin.auth.admin.createUser({
     email,
     password,
     email_confirm: true,
-    user_metadata: { full_name: fullName, role: "client", client_id: clientId },
+    user_metadata: metadata,
   });
+
+  let reset = false;
   if (createError) {
-    const msg = createError.message.includes("already been registered")
-      ? "That username is already taken."
-      : createError.message;
-    return NextResponse.json({ error: msg }, { status: 400 });
+    const alreadyExists =
+      createError.message.toLowerCase().includes("already") ||
+      createError.status === 422;
+    if (!alreadyExists) {
+      return NextResponse.json({ error: createError.message }, { status: 400 });
+    }
+    // The login already exists — reset its password instead so credentials
+    // can always be regenerated from the Portals tab.
+    const { data: list, error: listError } = await admin.auth.admin.listUsers({
+      page: 1,
+      perPage: 1000,
+    });
+    const existing = list?.users.find(
+      (u) => u.email?.toLowerCase() === email.toLowerCase()
+    );
+    if (listError || !existing) {
+      return NextResponse.json(
+        { error: "That username exists but the account could not be found to reset." },
+        { status: 400 }
+      );
+    }
+    const { error: updateError } = await admin.auth.admin.updateUserById(existing.id, {
+      password,
+      email_confirm: true,
+      user_metadata: metadata,
+    });
+    if (updateError) {
+      return NextResponse.json({ error: updateError.message }, { status: 400 });
+    }
+    // Make sure the profile is linked to the right client even if the
+    // signup trigger predates client_id support.
+    await admin
+      .from("profiles")
+      .update({ role: "client", client_id: clientId })
+      .eq("id", existing.id);
+    reset = true;
   }
 
   // 4. Remember the username on the portal record.
   await admin.from("client_portals").update({ portal_username: username }).eq("id", portalId);
 
-  return NextResponse.json({ ok: true, email, username });
+  return NextResponse.json({ ok: true, email, username, reset });
 }
