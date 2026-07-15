@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronDown, ChevronRight, Plus } from "lucide-react";
+import { ChevronRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Badge, statusTone } from "@/components/ui/Badge";
@@ -11,7 +11,7 @@ import { DatePicker } from "@/components/ui/DatePicker";
 import { Dropdown } from "@/components/ui/Dropdown";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { createClient } from "@/lib/supabase/client";
-import { formatDate } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 import type { Project, ProjectTask, Client, Profile } from "@/lib/types";
 import { PROJECT_STATUSES } from "@/lib/types";
 import { useTabs } from "@/lib/tabs";
@@ -126,11 +126,12 @@ export default function ProjectsPage() {
                 className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3"
               >
                 <div className="flex min-w-0 items-center gap-3">
-                  {isCollapsed ? (
-                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
-                  )}
+                  <ChevronRight
+                    className={cn(
+                      "h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200",
+                      !isCollapsed && "rotate-90"
+                    )}
+                  />
                   <span className="truncate text-sm font-semibold">
                     {client?.company ?? "Unknown Client"}
                   </span>

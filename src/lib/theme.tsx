@@ -42,9 +42,18 @@ export function getStoredAccent(): string {
 
 export function applyAccent(hex: string) {
   if (!isHex(hex)) return;
-  const root = document.documentElement;
-  root.style.setProperty("--primary", hex);
-  root.style.setProperty("--primary-foreground", foregroundFor(hex));
+  const apply = () => {
+    const root = document.documentElement;
+    root.style.setProperty("--primary", hex);
+    root.style.setProperty("--primary-foreground", foregroundFor(hex));
+  };
+  // Cross-fade the whole UI to the new color when supported.
+  const doc = document as Document & { startViewTransition?: (cb: () => void) => void };
+  if (typeof doc.startViewTransition === "function") {
+    doc.startViewTransition(apply);
+  } else {
+    apply();
+  }
 }
 
 export function setAccent(hex: string) {

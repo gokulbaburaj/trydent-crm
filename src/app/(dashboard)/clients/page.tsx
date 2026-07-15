@@ -164,6 +164,7 @@ export default function ClientsPage() {
         </Button>
       </div>
 
+      <div key={view} className="animate-fade">
       {view === "table" ? (
         <DataTable
           columns={columns}
@@ -198,6 +199,7 @@ export default function ClientsPage() {
           )}
         />
       )}
+      </div>
 
       {/* Detail drawer */}
       <Drawer open={!!selected} onClose={() => setSelected(null)} title={selected?.company ?? ""}>

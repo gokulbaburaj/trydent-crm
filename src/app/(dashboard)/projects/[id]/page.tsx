@@ -391,6 +391,7 @@ export default function ProjectDetailPage() {
         <PageTabButton active={tab === "calendar"} onClick={() => setTab("calendar")} icon={CalendarIcon} label="Calendar" />
       </div>
 
+      <div key={tab} className="animate-page">
       {/* ============ OVERVIEW ============ */}
       {tab === "overview" && (
         <DashGrid
@@ -713,6 +714,7 @@ export default function ProjectDetailPage() {
 
       {/* ============ CALENDAR ============ */}
       {tab === "calendar" && <ProjectCalendar tasks={active} onQuickAdd={quickAdd} />}
+      </div>
 
       {/* Task detail */}
       <TaskDetailDrawer

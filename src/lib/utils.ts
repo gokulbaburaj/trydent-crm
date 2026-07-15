@@ -26,6 +26,29 @@ export function formatDate(value: string | null | undefined) {
   }
 }
 
+/**
+ * Run a state update inside a View Transition when the browser supports it —
+ * elements with a `view-transition-name` morph smoothly to their new position
+ * instead of jumping. Falls back to an instant update.
+ */
+export function withViewTransition(update: () => void) {
+  if (typeof document === "undefined") {
+    update();
+    return;
+  }
+  const doc = document as Document & {
+    startViewTransition?: (cb: () => void) => void;
+  };
+  const reduced =
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (typeof doc.startViewTransition === "function" && !reduced) {
+    doc.startViewTransition(update);
+  } else {
+    update();
+  }
+}
+
 export function initials(name: string | null | undefined) {
   if (!name) return "?";
   const parts = name.trim().split(/\s+/);

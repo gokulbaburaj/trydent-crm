@@ -31,7 +31,7 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { DatePicker } from "@/components/ui/DatePicker";
-import { cn } from "@/lib/utils";
+import { cn, withViewTransition } from "@/lib/utils";
 import { DataTable, Column } from "@/components/DataTable";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -335,6 +335,7 @@ export default function SchedulePage() {
             </div>
           </div>
 
+          <div key={calView} className="animate-fade">
           {calView === "week" ? (
             <WeekGrid
               anchor={anchor}
@@ -365,6 +366,7 @@ export default function SchedulePage() {
               onRecolor={recolorActivity}
             />
           )}
+          </div>
         </>
       )}
 
@@ -546,7 +548,7 @@ function WeekGrid({
       23 * 60 + 30
     );
     const hh = `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
-    onEventMove(a, `${day}T${hh}`);
+    withViewTransition(() => onEventMove(a, `${day}T${hh}`));
   }
 
   return (
@@ -834,9 +836,12 @@ function MonthGridPro({
     const day = String(over.id).replace("mday:", "");
     const data = active.data.current as MonthDrag | undefined;
     if (!data) return;
-    if (data.kind === "act" && data.activity) onMoveActivity(data.activity, day);
-    if (data.kind === "task") onMoveTask(data.id, day);
-    if (data.kind === "proj") onMoveProject(data.id, day);
+    // Morph the chip into its new day instead of teleporting.
+    withViewTransition(() => {
+      if (data.kind === "act" && data.activity) onMoveActivity(data.activity, day);
+      if (data.kind === "task") onMoveTask(data.id, day);
+      if (data.kind === "proj") onMoveProject(data.id, day);
+    });
   }
 
   const now = new Date();
@@ -1022,14 +1027,17 @@ function MonthChip({
         past && "line-through opacity-45",
         isDragging && "z-30 opacity-90 shadow-lg shadow-black/50"
       )}
-      style={{
-        borderColor: `${color}55`,
-        color,
-        background: `${color}14`,
-        transform: transform
-          ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
-          : undefined,
-      }}
+      style={
+        {
+          borderColor: `${color}55`,
+          color,
+          background: `${color}14`,
+          transform: transform
+            ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
+            : undefined,
+          viewTransitionName: isDragging ? undefined : `chip-${drag.kind}-${drag.id}`,
+        } as React.CSSProperties
+      }
     >
       <span className="min-w-0 truncate">{title}</span>
       {hint && <span className="shrink-0 text-[10px] opacity-75">{hint}</span>}

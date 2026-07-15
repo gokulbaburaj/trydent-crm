@@ -11,7 +11,7 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { GripVertical } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, withViewTransition } from "@/lib/utils";
 
 export interface DashCardDef {
   id: string;
@@ -78,11 +78,14 @@ export function DashGrid({ storageKey, cards }: { storageKey: string; cards: Das
   function handleDragEnd(e: DragEndEvent) {
     const { active, over } = e;
     if (!over || active.id === over.id) return;
-    setOrder((prev) => {
-      const next = prev.filter((id) => id !== active.id);
-      const idx = next.indexOf(String(over.id));
-      next.splice(idx === -1 ? next.length : idx, 0, String(active.id));
-      return next;
+    // View transition makes the cards morph to their new spots.
+    withViewTransition(() => {
+      setOrder((prev) => {
+        const next = prev.filter((id) => id !== active.id);
+        const idx = next.indexOf(String(over.id));
+        next.splice(idx === -1 ? next.length : idx, 0, String(active.id));
+        return next;
+      });
     });
   }
 
@@ -153,7 +156,12 @@ function DashCell({
   return (
     <div
       ref={dropRef}
-      style={{ gridColumn: span > 1 ? `span ${span} / span ${span}` : undefined }}
+      style={
+        {
+          gridColumn: span > 1 ? `span ${span} / span ${span}` : undefined,
+          viewTransitionName: `dash-${id}`,
+        } as React.CSSProperties
+      }
       className={cn(
         "group/dash relative rounded-md transition-[box-shadow,opacity] duration-150",
         (isOver || resizing) && "ring-1 ring-primary/60",
