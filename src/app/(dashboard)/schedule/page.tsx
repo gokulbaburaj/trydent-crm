@@ -37,7 +37,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Drawer } from "@/components/ui/Drawer";
 import { Input, Label, Textarea } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
+import { Dropdown } from "@/components/ui/Dropdown";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/useAuth";
@@ -402,39 +402,36 @@ export default function SchedulePage() {
             </div>
             <div>
               <Label>Client</Label>
-              <Select
+              <Dropdown
                 value={editing.client_id ?? ""}
-                onChange={(e) => setEditing({ ...editing, client_id: e.target.value || null })}
-              >
-                <option value="">—</option>
-                {clients.map((c) => (
-                  <option key={c.id} value={c.id}>{c.company}</option>
-                ))}
-              </Select>
+                options={[
+                  { value: "", label: "—" },
+                  ...clients.map((c) => ({ value: c.id, label: c.company })),
+                ]}
+                onChange={(v) => setEditing({ ...editing, client_id: v || null })}
+              />
             </div>
             <div>
               <Label>Deal</Label>
-              <Select
+              <Dropdown
                 value={editing.deal_id ?? ""}
-                onChange={(e) => setEditing({ ...editing, deal_id: e.target.value || null })}
-              >
-                <option value="">—</option>
-                {deals.map((d) => (
-                  <option key={d.id} value={d.id}>{d.deal_name}</option>
-                ))}
-              </Select>
+                options={[
+                  { value: "", label: "—" },
+                  ...deals.map((d) => ({ value: d.id, label: d.deal_name })),
+                ]}
+                onChange={(v) => setEditing({ ...editing, deal_id: v || null })}
+              />
             </div>
             <div>
               <Label>Assigned To</Label>
-              <Select
+              <Dropdown
                 value={editing.assigned_to ?? ""}
-                onChange={(e) => setEditing({ ...editing, assigned_to: e.target.value || null })}
-              >
-                <option value="">Unassigned</option>
-                {profiles.map((p) => (
-                  <option key={p.id} value={p.id}>{p.full_name}</option>
-                ))}
-              </Select>
+                options={[
+                  { value: "", label: "Unassigned" },
+                  ...profiles.map((p) => ({ value: p.id, label: p.full_name })),
+                ]}
+                onChange={(v) => setEditing({ ...editing, assigned_to: v || null })}
+              />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -451,19 +448,19 @@ export default function SchedulePage() {
               </div>
               <div>
                 <Label>Time</Label>
-                <Select
+                <Dropdown
                   value={timePart(editing.activity_date)}
-                  onChange={(e) =>
+                  options={timeOptions(timePart(editing.activity_date)).map((t) => ({
+                    value: t,
+                    label: formatTimeLabel(t),
+                  }))}
+                  onChange={(v) =>
                     setEditing({
                       ...editing,
-                      activity_date: `${datePart(editing.activity_date) ?? format(new Date(), "yyyy-MM-dd")}T${e.target.value}`,
+                      activity_date: `${datePart(editing.activity_date) ?? format(new Date(), "yyyy-MM-dd")}T${v}`,
                     })
                   }
-                >
-                  {timeOptions(timePart(editing.activity_date)).map((t) => (
-                    <option key={t} value={t}>{formatTimeLabel(t)}</option>
-                  ))}
-                </Select>
+                />
               </div>
             </div>
             <label className="flex items-center gap-2 text-sm">

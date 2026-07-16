@@ -13,10 +13,11 @@ import { DatePicker } from "@/components/ui/DatePicker";
 import { PersonCell } from "@/components/ui/Avatar";
 import { Drawer } from "@/components/ui/Drawer";
 import { Input, Label, Textarea } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
+import { Dropdown } from "@/components/ui/Dropdown";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { createClient } from "@/lib/supabase/client";
 import { formatDate } from "@/lib/utils";
+import { useCurrency } from "@/lib/currency";
 import type { Client, Deal, Activity, ClientPortal, Profile } from "@/lib/types";
 import { CLIENT_STATUSES, LEAD_SOURCES } from "@/lib/types";
 
@@ -44,6 +45,7 @@ export default function ClientsPage() {
   const { rows: profiles } = useSupabaseTable<Profile>("profiles");
 
   const [view, setView] = useState<View>("table");
+  const { format: formatCurrency } = useCurrency();
   const [selected, setSelected] = useState<Client | null>(null);
   const [editing, setEditing] = useState<Partial<Client> | null>(null);
   const [saving, setSaving] = useState(false);
@@ -252,7 +254,7 @@ export default function ClientsPage() {
                       <span className="font-medium">{d.deal_name}</span>
                       <Badge tone={statusTone(d.deal_stage)}>{d.deal_stage}</Badge>
                     </div>
-                    <p className="mt-1 text-xs text-muted-foreground">${Number(d.deal_value).toLocaleString()}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{formatCurrency(Number(d.deal_value))}</p>
                   </div>
                 ))}
                 {selectedDeals.length === 0 && (
@@ -338,30 +340,24 @@ export default function ClientsPage() {
             </div>
             <div>
               <Label>Status</Label>
-              <Select
+              <Dropdown
                 value={editing.status ?? "Lead"}
-                onChange={(e) =>
-                  setEditing({ ...editing, status: e.target.value as Client["status"] })
-                }
-              >
-                {CLIENT_STATUSES.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </Select>
+                options={CLIENT_STATUSES.map((s) => ({ value: s, label: s }))}
+                onChange={(v) => setEditing({ ...editing, status: v as Client["status"] })}
+              />
             </div>
             <div>
               <Label>Lead Source</Label>
-              <Select
+              <Dropdown
                 value={editing.lead_source ?? ""}
-                onChange={(e) =>
-                  setEditing({ ...editing, lead_source: (e.target.value || null) as Client["lead_source"] })
+                options={[
+                  { value: "", label: "—" },
+                  ...LEAD_SOURCES.map((s) => ({ value: s, label: s })),
+                ]}
+                onChange={(v) =>
+                  setEditing({ ...editing, lead_source: (v || null) as Client["lead_source"] })
                 }
-              >
-                <option value="">—</option>
-                {LEAD_SOURCES.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </Select>
+              />
             </div>
             <div>
               <Label>Tags</Label>
@@ -372,17 +368,14 @@ export default function ClientsPage() {
             </div>
             <div>
               <Label>Account Owner</Label>
-              <Select
+              <Dropdown
                 value={editing.account_owner ?? ""}
-                onChange={(e) =>
-                  setEditing({ ...editing, account_owner: e.target.value || null })
-                }
-              >
-                <option value="">Unassigned</option>
-                {profiles.map((p) => (
-                  <option key={p.id} value={p.id}>{p.full_name}</option>
-                ))}
-              </Select>
+                options={[
+                  { value: "", label: "Unassigned" },
+                  ...profiles.map((p) => ({ value: p.id, label: p.full_name })),
+                ]}
+                onChange={(v) => setEditing({ ...editing, account_owner: v || null })}
+              />
             </div>
             <div>
               <Label>Last Contact</Label>

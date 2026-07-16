@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge, statusTone } from "@/components/ui/Badge";
 import { Drawer } from "@/components/ui/Drawer";
 import { Input, Label } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
+import { Dropdown } from "@/components/ui/Dropdown";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { Popover, MenuItem, MenuLabel } from "@/components/ui/Popover";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
@@ -206,27 +206,20 @@ export default function PipelinePage() {
             </div>
             <div>
               <Label>Client</Label>
-              <Select
-                required
+              <Dropdown
                 value={editing.client_id ?? ""}
-                onChange={(e) => setEditing({ ...editing, client_id: e.target.value })}
-              >
-                <option value="" disabled>Select client</option>
-                {clients.map((c) => (
-                  <option key={c.id} value={c.id}>{c.company}</option>
-                ))}
-              </Select>
+                placeholder="Select client"
+                options={clients.map((c) => ({ value: c.id, label: c.company }))}
+                onChange={(v) => setEditing({ ...editing, client_id: v })}
+              />
             </div>
             <div>
               <Label>Stage</Label>
-              <Select
+              <Dropdown
                 value={editing.deal_stage ?? "Lead"}
-                onChange={(e) => setEditing({ ...editing, deal_stage: e.target.value as Deal["deal_stage"] })}
-              >
-                {DEAL_STAGES.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </Select>
+                options={DEAL_STAGES.map((s) => ({ value: s, label: s }))}
+                onChange={(v) => setEditing({ ...editing, deal_stage: v as Deal["deal_stage"] })}
+              />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -257,15 +250,14 @@ export default function PipelinePage() {
             </div>
             <div>
               <Label>Owner</Label>
-              <Select
+              <Dropdown
                 value={editing.account_owner ?? ""}
-                onChange={(e) => setEditing({ ...editing, account_owner: e.target.value || null })}
-              >
-                <option value="">Unassigned</option>
-                {profiles.map((p) => (
-                  <option key={p.id} value={p.id}>{p.full_name}</option>
-                ))}
-              </Select>
+                options={[
+                  { value: "", label: "Unassigned" },
+                  ...profiles.map((p) => ({ value: p.id, label: p.full_name })),
+                ]}
+                onChange={(v) => setEditing({ ...editing, account_owner: v || null })}
+              />
             </div>
             <div className="flex gap-2 pt-2">
               <Button type="submit" disabled={saving} className="flex-1">

@@ -3,7 +3,7 @@
 import { DataTable, Column } from "@/components/DataTable";
 import { PersonCell } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
-import { Select } from "@/components/ui/Select";
+import { Dropdown } from "@/components/ui/Dropdown";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/useAuth";
@@ -41,16 +41,17 @@ export default function TeamPage() {
       header: "Role",
       render: (p) =>
         isAdmin ? (
-          <Select
-            value={p.role}
-            onClick={(e) => e.stopPropagation()}
-            onChange={(e) => updateRole(p.id, e.target.value as UserRole)}
-            className="w-32"
-          >
-            <option value="admin">Admin</option>
-            <option value="rep">Rep</option>
-            <option value="client">Client</option>
-          </Select>
+          <div className="w-32" onClick={(e) => e.stopPropagation()}>
+            <Dropdown
+              value={p.role}
+              options={[
+                { value: "admin", label: "Admin" },
+                { value: "rep", label: "Rep" },
+                { value: "client", label: "Client" },
+              ]}
+              onChange={(v) => updateRole(p.id, v as UserRole)}
+            />
+          </div>
         ) : (
           <Badge tone={roleTone[p.role]}>{p.role}</Badge>
         ),

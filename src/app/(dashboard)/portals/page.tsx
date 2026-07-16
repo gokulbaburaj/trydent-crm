@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge, statusTone } from "@/components/ui/Badge";
 import { Drawer } from "@/components/ui/Drawer";
 import { Input, Label, Textarea } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
+import { Dropdown } from "@/components/ui/Dropdown";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { createClient } from "@/lib/supabase/client";
 import { formatDate } from "@/lib/utils";
@@ -192,27 +192,20 @@ export default function PortalsPage() {
           <form onSubmit={handleSave} className="flex flex-col gap-4">
             <div>
               <Label>Client</Label>
-              <Select
-                required
+              <Dropdown
                 value={editing.client_id ?? ""}
-                onChange={(e) => setEditing({ ...editing, client_id: e.target.value })}
-              >
-                <option value="" disabled>Select client</option>
-                {clients.map((c) => (
-                  <option key={c.id} value={c.id}>{c.company}</option>
-                ))}
-              </Select>
+                placeholder="Select client"
+                options={clients.map((c) => ({ value: c.id, label: c.company }))}
+                onChange={(v) => setEditing({ ...editing, client_id: v })}
+              />
             </div>
             <div>
               <Label>Status</Label>
-              <Select
+              <Dropdown
                 value={editing.status ?? "Not Started"}
-                onChange={(e) => setEditing({ ...editing, status: e.target.value as ClientPortal["status"] })}
-              >
-                {PORTAL_STATUSES.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </Select>
+                options={PORTAL_STATUSES.map((s) => ({ value: s, label: s }))}
+                onChange={(v) => setEditing({ ...editing, status: v as ClientPortal["status"] })}
+              />
             </div>
             <div>
               <Label>Notes</Label>
