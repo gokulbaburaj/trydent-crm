@@ -17,6 +17,7 @@ import {
   X,
 } from "lucide-react";
 import { useTabs } from "@/lib/tabs";
+import { Tip } from "@/components/ui/Tooltip";
 import { cn } from "@/lib/utils";
 
 const TAB_ICONS: [string, React.ComponentType<{ className?: string }>][] = [
@@ -42,26 +43,27 @@ export function TabBar() {
 
   return (
     <div className="flex h-11 shrink-0 items-center gap-1 px-2">
-      <button
-        title="History"
-        className="rounded p-1.5 text-muted-2 hover:bg-white/5 hover:text-foreground"
-      >
-        <History className="h-3.5 w-3.5" />
-      </button>
-      <button
-        title="Back"
-        onClick={() => router.back()}
-        className="rounded p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground"
-      >
-        <ArrowLeft className="h-3.5 w-3.5" />
-      </button>
-      <button
-        title="Forward"
-        onClick={() => router.forward()}
-        className="rounded p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground"
-      >
-        <ArrowRight className="h-3.5 w-3.5" />
-      </button>
+      <Tip label="History">
+        <button className="rounded p-1.5 text-muted-2 hover:bg-white/5 hover:text-foreground">
+          <History className="h-3.5 w-3.5" />
+        </button>
+      </Tip>
+      <Tip label="Back">
+        <button
+          onClick={() => router.back()}
+          className="rounded p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+        </button>
+      </Tip>
+      <Tip label="Forward">
+        <button
+          onClick={() => router.forward()}
+          className="rounded p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground"
+        >
+          <ArrowRight className="h-3.5 w-3.5" />
+        </button>
+      </Tip>
 
       <div className="ml-1 flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
         {tabs.map((tab) => {
@@ -98,13 +100,14 @@ export function TabBar() {
             </div>
           );
         })}
-        <button
-          title="New tab"
-          onClick={newTab}
-          className="rounded p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground"
-        >
-          <Plus className="h-3.5 w-3.5" />
-        </button>
+        <Tip label="New tab">
+          <button
+            onClick={newTab}
+            className="rounded p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground"
+          >
+            <Plus className="h-3.5 w-3.5" />
+          </button>
+        </Tip>
       </div>
     </div>
   );

@@ -39,6 +39,7 @@ import {
 } from "lucide-react";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { DashGrid } from "@/components/DashGrid";
+import { ProjectPageSkeleton } from "@/components/ui/Skeletons";
 import { TaskDetailDrawer } from "@/components/TaskDetailDrawer";
 import { Button } from "@/components/ui/Button";
 import { Badge, statusTone } from "@/components/ui/Badge";
@@ -226,7 +227,7 @@ export default function ProjectDetailPage() {
   }
 
   if (loading) {
-    return <p className="py-20 text-center text-sm text-muted-foreground">Loading...</p>;
+    return <ProjectPageSkeleton />;
   }
   if (!project) {
     return (

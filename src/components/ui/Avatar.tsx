@@ -1,6 +1,24 @@
 import { cn } from "@/lib/utils";
 import { initials } from "@/lib/utils";
 
+/** Deterministic two-color gradient per name — richer than flat tints. */
+const GRADIENTS: [string, string][] = [
+  ["#5e6ad2", "#9333ea"],
+  ["#4ea7e0", "#5e6ad2"],
+  ["#4cb782", "#4ea7e0"],
+  ["#d9a53f", "#eb5757"],
+  ["#d95c8a", "#9333ea"],
+  ["#eb5757", "#d95c8a"],
+  ["#0ea5e9", "#4cb782"],
+];
+
+function gradientFor(name: string) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) | 0;
+  const [a, b] = GRADIENTS[Math.abs(hash) % GRADIENTS.length];
+  return `linear-gradient(135deg, ${a}, ${b})`;
+}
+
 export function Avatar({
   name,
   url,
@@ -30,9 +48,10 @@ export function Avatar({
   return (
     <div
       className={cn(
-        "flex items-center justify-center rounded-full bg-primary/15 text-primary font-semibold",
+        "flex shrink-0 items-center justify-center rounded-full font-semibold text-white shadow-sm",
         sizeClasses
       )}
+      style={{ background: gradientFor(name) }}
     >
       {initials(name)}
     </div>

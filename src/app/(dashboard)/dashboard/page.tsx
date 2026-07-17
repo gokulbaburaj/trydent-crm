@@ -21,6 +21,8 @@ import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { useCurrency } from "@/lib/currency";
+import { useAuth } from "@/lib/useAuth";
+import { DashboardSkeleton } from "@/components/ui/Skeletons";
 import type { Deal, Client, Activity } from "@/lib/types";
 import { DEAL_STAGES } from "@/lib/types";
 
@@ -68,6 +70,7 @@ function ChartTip({
 
 export default function DashboardPage() {
   const { format: formatCurrency } = useCurrency();
+  const { profile } = useAuth();
   const { rows: deals, loading: dealsLoading } = useSupabaseTable<Deal>("deals");
   const { rows: clients, loading: clientsLoading } = useSupabaseTable<Client>("clients");
   const { rows: activities, loading: activitiesLoading } = useSupabaseTable<Activity>(
@@ -136,8 +139,37 @@ export default function DashboardPage() {
       .slice(0, 6);
   }, [activities]);
 
+  if (loading) return <DashboardSkeleton />;
+
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const firstName =
+    profile?.full_name?.split(/[@\s.]/)[0]?.replace(/^\w/, (c) => c.toUpperCase()) ?? "there";
+
   return (
-    <div className="flex flex-col gap-6">
+    <div className="relative flex flex-col gap-6">
+      {/* Whisper of brand color behind the header */}
+      <div
+        className="pointer-events-none absolute -inset-x-6 -top-6 h-44"
+        style={{
+          background:
+            "radial-gradient(55% 100% at 50% 0%, color-mix(in oklab, var(--primary) 9%, transparent), transparent)",
+        }}
+      />
+
+      <div className="relative">
+        <h2 className="text-xl font-semibold tracking-tight">
+          {greeting}, {firstName}
+        </h2>
+        <p className="mt-0.5 text-sm text-muted-foreground">
+          {new Date().toLocaleDateString("en-US", {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+          })}
+        </p>
+      </div>
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Total Pipeline Value"

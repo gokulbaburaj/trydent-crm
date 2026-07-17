@@ -8,6 +8,7 @@ import { TabBar } from "@/components/TabBar";
 import { Toaster } from "@/components/Toaster";
 import { CommandMenu } from "@/components/CommandMenu";
 import { TabsProvider } from "@/lib/tabs";
+import { TooltipProvider } from "@/components/ui/Tooltip";
 import { useAuth } from "@/lib/useAuth";
 
 const PAGE_TITLES: Record<string, string> = {
@@ -71,6 +72,7 @@ export default function DashboardLayout({
 
   return (
     <TabsProvider>
+      <TooltipProvider delayDuration={350}>
       <div className="flex h-screen overflow-hidden bg-background">
         <Sidebar />
 
@@ -110,6 +112,7 @@ export default function DashboardLayout({
         <Toaster />
         <CommandMenu />
       </div>
+      </TooltipProvider>
     </TabsProvider>
   );
 }

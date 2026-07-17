@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { LayoutGrid, List, Plus, X } from "lucide-react";
 import { toast } from "@/components/Toaster";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { TableSkeleton } from "@/components/ui/Skeletons";
 import { DataTable, Column } from "@/components/DataTable";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { Button } from "@/components/ui/Button";
@@ -175,7 +176,7 @@ export default function ClientsPage() {
           onRowClick={setSelected}
           emptyMessage={
             loading ? (
-              "Loading..."
+              <TableSkeleton />
             ) : (
               <EmptyState
                 icon={List}

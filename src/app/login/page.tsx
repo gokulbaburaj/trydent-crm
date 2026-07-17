@@ -46,8 +46,16 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-1 items-center justify-center bg-background px-4">
-      <Card className="animate-page w-full max-w-sm">
+    <div className="relative flex min-h-screen flex-1 items-center justify-center overflow-hidden bg-background px-4">
+      {/* Brand glow backdrop */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(45% 35% at 50% 0%, color-mix(in oklab, var(--primary) 16%, transparent), transparent), radial-gradient(35% 30% at 85% 90%, color-mix(in oklab, var(--primary) 8%, transparent), transparent)",
+        }}
+      />
+      <Card className="animate-page relative w-full max-w-sm border-white/10 shadow-2xl shadow-black/50">
         <div className="mb-6 flex flex-col items-center gap-2 text-center">
           <div className="flex h-9 w-9 items-center justify-center rounded bg-primary text-xs font-medium text-primary-foreground">
             TL
