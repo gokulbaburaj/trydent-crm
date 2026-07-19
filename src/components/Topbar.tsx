@@ -4,6 +4,7 @@ import { Search, LogOut, Menu } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Popover, MenuItem, MenuSeparator } from "@/components/ui/Popover";
 import { openCommandMenu } from "@/components/CommandMenu";
+import { NotificationsBell } from "@/components/NotificationsBell";
 import type { Profile } from "@/lib/types";
 
 export function Topbar({
@@ -48,6 +49,8 @@ export function Topbar({
         >
           <Search className="h-4 w-4" />
         </button>
+
+        <NotificationsBell />
 
         {profile && (
           <Popover

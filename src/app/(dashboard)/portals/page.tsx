@@ -13,8 +13,11 @@ import { Dropdown } from "@/components/ui/Dropdown";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { createClient } from "@/lib/supabase/client";
 import { formatDate } from "@/lib/utils";
-import type { ClientPortal, Client } from "@/lib/types";
+import type { ClientPortal, Client, PortalUpdate } from "@/lib/types";
 import { PORTAL_STATUSES } from "@/lib/types";
+import { useAuth } from "@/lib/useAuth";
+import { formatDistanceToNow, parseISO } from "date-fns";
+import { Megaphone } from "lucide-react";
 
 const emptyForm: Partial<ClientPortal> = {
   client_id: "",
@@ -28,6 +31,12 @@ export default function PortalsPage() {
     { column: "created_at", ascending: false }
   );
   const { rows: clients } = useSupabaseTable<Client>("clients");
+  const { rows: updates, setRows: setUpdates } = useSupabaseTable<PortalUpdate>(
+    "portal_updates",
+    { column: "created_at", ascending: false }
+  );
+  const { profile } = useAuth();
+  const [updateDraft, setUpdateDraft] = useState("");
 
   const [editing, setEditing] = useState<Partial<ClientPortal> | null>(null);
   const [saving, setSaving] = useState(false);
@@ -89,6 +98,26 @@ export default function PortalsPage() {
     setRows((prev) =>
       prev.map((p) => (p.id === editing.id ? { ...p, portal_username: json.username } : p))
     );
+  }
+
+  async function postUpdate() {
+    if (!editing?.client_id || !profile) return;
+    const body = updateDraft.trim();
+    if (!body) return;
+    const supabase = createClient();
+    if (!supabase) return;
+    const { data, error } = await supabase
+      .from("portal_updates")
+      .insert({ client_id: editing.client_id, author_id: profile.id, body })
+      .select()
+      .single();
+    if (error) {
+      toast.error(`Couldn't post: ${error.message}`);
+      return;
+    }
+    setUpdates((prev) => [data as PortalUpdate, ...prev]);
+    setUpdateDraft("");
+    toast.success("Update posted to the client portal");
   }
 
   function copyCredentials() {
@@ -215,6 +244,41 @@ export default function PortalsPage() {
                 onChange={(e) => setEditing({ ...editing, notes: e.target.value })}
               />
             </div>
+            {editing.id && (
+              <div className="flex flex-col gap-2 rounded-md border border-border bg-white/[0.02] p-3">
+                <div className="flex items-center gap-2">
+                  <Megaphone className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-[13px] font-medium">Portal updates</span>
+                </div>
+                <Textarea
+                  rows={2}
+                  placeholder="Post an update your client will see on their portal..."
+                  value={updateDraft}
+                  onChange={(e) => setUpdateDraft(e.target.value)}
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  disabled={!updateDraft.trim()}
+                  onClick={postUpdate}
+                >
+                  Post update
+                </Button>
+                {updates
+                  .filter((u) => u.client_id === editing.client_id)
+                  .slice(0, 3)
+                  .map((u) => (
+                    <div key={u.id} className="rounded-md border border-border-subtle px-2.5 py-2">
+                      <p className="text-[13px] leading-snug">{u.body}</p>
+                      <p className="mt-1 text-[11px] text-muted-2">
+                        {formatDistanceToNow(parseISO(u.created_at), { addSuffix: true })}
+                      </p>
+                    </div>
+                  ))}
+              </div>
+            )}
+
             {editing.id && (
               <div className="flex items-center gap-2">
                 <Link

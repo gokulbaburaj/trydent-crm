@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ExternalLink, Link2, Plus, Trash2, User, X } from "lucide-react";
+import { CheckCheck, ExternalLink, Link2, MessageSquare, Plus, Trash2, User, X } from "lucide-react";
+import { formatDistanceToNow, parseISO } from "date-fns";
+import { useAuth } from "@/lib/useAuth";
+import { formatDate } from "@/lib/utils";
 import { Drawer } from "@/components/ui/Drawer";
 import { Button } from "@/components/ui/Button";
 import { Input, Label } from "@/components/ui/Input";
@@ -11,7 +14,7 @@ import { KanbanBoard } from "@/components/KanbanBoard";
 import { Popover, MenuItem, MenuLabel } from "@/components/ui/Popover";
 import { createClient } from "@/lib/supabase/client";
 import { initials } from "@/lib/utils";
-import type { Profile, ProjectTask, TaskItem, TaskLink, TaskStatus } from "@/lib/types";
+import type { Profile, ProjectTask, TaskComment, TaskItem, TaskLink, TaskStatus } from "@/lib/types";
 import { TASK_STATUSES } from "@/lib/types";
 
 const SUBTASK_COLUMNS: TaskStatus[] = ["Not Started", "In Progress", "Done"];
@@ -36,6 +39,9 @@ export function TaskDetailDrawer({
   const [linkUrl, setLinkUrl] = useState("");
   const [subtasks, setSubtasks] = useState<TaskItem[]>([]);
   const [newSubtask, setNewSubtask] = useState("");
+  const [comments, setComments] = useState<TaskComment[]>([]);
+  const [newComment, setNewComment] = useState("");
+  const { profile } = useAuth();
 
   const personName = (id: string | null) =>
     profiles.find((p) => p.id === id)?.full_name ?? null;
@@ -54,16 +60,28 @@ export function TaskDetailDrawer({
       setLinkUrl("");
       setNewSubtask("");
       setSubtasks([]);
+      setComments([]);
+      setNewComment("");
     });
     async function load() {
       const supabase = createClient();
       if (!supabase) return;
-      const { data } = await supabase
-        .from("task_items")
-        .select("*")
-        .eq("task_id", taskId)
-        .order("created_at", { ascending: true });
-      if (active) setSubtasks((data as TaskItem[]) ?? []);
+      const [itemsRes, commentsRes] = await Promise.all([
+        supabase
+          .from("task_items")
+          .select("*")
+          .eq("task_id", taskId)
+          .order("created_at", { ascending: true }),
+        supabase
+          .from("task_comments")
+          .select("*")
+          .eq("task_id", taskId)
+          .order("created_at", { ascending: true }),
+      ]);
+      if (active) {
+        setSubtasks((itemsRes.data as TaskItem[]) ?? []);
+        setComments((commentsRes.data as TaskComment[]) ?? []);
+      }
     }
     load();
     return () => {
@@ -128,9 +146,31 @@ export function TaskDetailDrawer({
     await supabase.from("task_items").delete().eq("id", id);
   }
 
+  async function addComment(e: React.FormEvent) {
+    e.preventDefault();
+    if (!task || !profile) return;
+    const body = newComment.trim();
+    if (!body) return;
+    setNewComment("");
+    const supabase = createClient();
+    if (!supabase) return;
+    const { data, error } = await supabase
+      .from("task_comments")
+      .insert({ task_id: task.id, author_id: profile.id, body })
+      .select()
+      .single();
+    if (!error && data) setComments((prev) => [...prev, data as TaskComment]);
+  }
+
   return (
     <Drawer open={!!task} onClose={onClose} title="Task details" wide>
       <div className="flex flex-col gap-6">
+        {task.approved_at && (
+          <div className="flex items-center gap-2 rounded-md border border-success/30 bg-success/10 px-3 py-2 text-[13px] text-success">
+            <CheckCheck className="h-4 w-4 shrink-0" />
+            Approved by the client on {formatDate(task.approved_at)}
+          </div>
+        )}
         {/* Name + delete */}
         <div className="flex items-start gap-2">
           <input
@@ -342,6 +382,58 @@ export function TaskDetailDrawer({
               )}
             />
           )}
+        </div>
+
+        {/* Comments */}
+        <div>
+          <Label>
+            Comments {comments.length > 0 ? `(${comments.length})` : ""}
+          </Label>
+          <div className="flex flex-col gap-2">
+            {comments.length === 0 && (
+              <p className="rounded-md border border-dashed border-border px-3 py-3 text-center text-xs text-muted-foreground">
+                No comments yet — client comments from the portal appear here too.
+              </p>
+            )}
+            {comments.map((c) => {
+              const author = profiles.find((p) => p.id === c.author_id);
+              const isClient = author?.role === "client";
+              return (
+                <div
+                  key={c.id}
+                  className={`rounded-md border px-3 py-2 ${
+                    isClient ? "border-primary/25 bg-primary/[0.06]" : "border-border bg-surface"
+                  }`}
+                >
+                  <div className="mb-1 flex items-center gap-2 text-[11px] text-muted-foreground">
+                    <MessageSquare className="h-3 w-3" />
+                    <span className="font-medium text-foreground-secondary">
+                      {author?.full_name ?? "Unknown"}
+                    </span>
+                    {isClient && (
+                      <span className="rounded-full bg-primary/15 px-1.5 py-px text-[10px] font-medium text-primary">
+                        client
+                      </span>
+                    )}
+                    <span className="ml-auto">
+                      {formatDistanceToNow(parseISO(c.created_at), { addSuffix: true })}
+                    </span>
+                  </div>
+                  <p className="text-sm leading-relaxed">{c.body}</p>
+                </div>
+              );
+            })}
+          </div>
+          <form onSubmit={addComment} className="mt-2 flex items-center gap-2">
+            <Input
+              placeholder="Write a comment..."
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+            />
+            <Button type="submit" size="sm" variant="secondary" disabled={!newComment.trim()}>
+              Send
+            </Button>
+          </form>
         </div>
       </div>
     </Drawer>

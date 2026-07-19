@@ -150,6 +150,8 @@ export interface ProjectTask {
   description: string | null;
   links: TaskLink[];
   label: string | null;
+  approved_at: string | null;
+  approved_by: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -160,6 +162,32 @@ export interface TaskItem {
   name: string;
   status: TaskStatus;
   sort_order: number;
+  created_at: string;
+}
+
+export interface TaskComment {
+  id: string;
+  task_id: string;
+  author_id: string | null;
+  body: string;
+  created_at: string;
+}
+
+export interface PortalUpdate {
+  id: string;
+  client_id: string;
+  author_id: string | null;
+  body: string;
+  created_at: string;
+}
+
+export interface Notification {
+  id: string;
+  recipient_id: string;
+  type: string;
+  body: string;
+  link: string | null;
+  read_at: string | null;
   created_at: string;
 }
 
@@ -187,6 +215,9 @@ export interface Database {
       projects: { Row: Project; Insert: Partial<Project>; Update: Partial<Project> };
       project_tasks: { Row: ProjectTask; Insert: Partial<ProjectTask>; Update: Partial<ProjectTask> };
       task_items: { Row: TaskItem; Insert: Partial<TaskItem>; Update: Partial<TaskItem> };
+      task_comments: { Row: TaskComment; Insert: Partial<TaskComment>; Update: Partial<TaskComment> };
+      portal_updates: { Row: PortalUpdate; Insert: Partial<PortalUpdate>; Update: Partial<PortalUpdate> };
+      notifications: { Row: Notification; Insert: Partial<Notification>; Update: Partial<Notification> };
     };
   };
 }

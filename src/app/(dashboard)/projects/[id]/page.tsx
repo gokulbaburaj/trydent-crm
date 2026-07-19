@@ -25,6 +25,7 @@ import {
   Calendar as CalendarIcon,
   CalendarDays,
   Check,
+  CheckCheck,
   ChevronLeft,
   ChevronRight,
   LayoutGrid,
@@ -568,9 +569,17 @@ export default function ProjectDetailPage() {
               const linkCount = Array.isArray(t.links) ? t.links.length : 0;
               return (
                 <div onClick={() => setDetailTaskId(t.id)}>
-                  {t.label && (
-                    <div className="mb-1.5">
-                      <LabelChip label={t.label} />
+                  {(t.label || t.approved_at) && (
+                    <div className="mb-1.5 flex items-center gap-1.5">
+                      {t.label && <LabelChip label={t.label} />}
+                      {t.approved_at && (
+                        <span
+                          title="Approved by client"
+                          className="inline-flex items-center gap-1 rounded-full bg-success/15 px-1.5 py-0.5 text-[10px] font-medium text-success"
+                        >
+                          <CheckCheck className="h-3 w-3" /> Approved
+                        </span>
+                      )}
                     </div>
                   )}
                   <p className="text-sm font-medium">{t.name}</p>
@@ -651,6 +660,11 @@ export default function ProjectDetailPage() {
                   >
                     {t.name}
                   </span>
+                  {t.approved_at && (
+                    <span title="Approved by client">
+                      <CheckCheck className="h-3.5 w-3.5 shrink-0 text-success" />
+                    </span>
+                  )}
                   {t.label && <LabelChip label={t.label} />}
                   {Array.isArray(t.links) && t.links.length > 0 && (
                     <span className="flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground">
