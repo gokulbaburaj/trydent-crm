@@ -81,7 +81,8 @@ create table client_portals (
   client_id uuid not null references clients(id) on delete cascade,
   status portal_status not null default 'Not Started',
   notes text,
-  portal_username text,        -- login username shown to admins (password never stored)
+  portal_username text,        -- login username shown to admins
+  portal_password text,        -- ⚠️ plaintext by deliberate choice: admin retrieval from Portals page
   last_opened_at timestamptz,  -- set via touch_portal() when the client opens their portal
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()

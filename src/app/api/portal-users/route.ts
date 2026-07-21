@@ -117,8 +117,12 @@ export async function POST(req: Request) {
     reset = true;
   }
 
-  // 4. Remember the username on the portal record.
-  await admin.from("client_portals").update({ portal_username: username }).eq("id", portalId);
+  // 4. Remember the credentials on the portal record so admins can retrieve
+  //    them later from the Portals page (deliberate plaintext tradeoff).
+  await admin
+    .from("client_portals")
+    .update({ portal_username: username, portal_password: password })
+    .eq("id", portalId);
 
   return NextResponse.json({ ok: true, email, username, reset });
 }
