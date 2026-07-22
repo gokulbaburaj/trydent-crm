@@ -3,18 +3,14 @@
 import { useMemo } from "react";
 import Link from "next/link";
 import { parseISO, format as formatDateFns } from "date-fns";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Tooltip,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-} from "recharts";
+import { PieChart } from "@/components/charts/pie-chart";
+import { PieSlice } from "@/components/charts/pie-slice";
+import { PieCenter } from "@/components/charts/pie-center";
+import { BarChart } from "@/components/charts/bar-chart";
+import { Bar } from "@/components/charts/bar";
+import { Grid } from "@/components/charts/grid";
+import { BarXAxis } from "@/components/charts/bar-x-axis";
+import { ChartTooltip } from "@/components/charts/tooltip/chart-tooltip";
 import { DollarSign, TrendingUp, Users, GitBranch, ArrowRight } from "lucide-react";
 import { StatCard } from "@/components/ui/StatCard";
 import { Card } from "@/components/ui/Card";
@@ -35,38 +31,6 @@ const COLORS = [
   "#4cb782",
   "#eb5757",
 ];
-
-/** shadcn-style chart tooltip: dark card, colored swatch, tabular value. */
-function ChartTip({
-  active,
-  payload,
-  label,
-  format,
-}: {
-  active?: boolean;
-  payload?: { name?: string; value?: number | string; payload?: { fill?: string } }[];
-  label?: string;
-  format?: (v: number) => string;
-}) {
-  if (!active || !payload || payload.length === 0) return null;
-  return (
-    <div className="rounded-md border border-border bg-surface px-3 py-2 shadow-xl shadow-black/50">
-      {label && <p className="mb-1 text-[11px] font-medium text-muted-foreground">{label}</p>}
-      {payload.map((p, i) => (
-        <div key={i} className="flex items-center gap-2 text-[13px]">
-          <span
-            className="h-2 w-2 shrink-0 rounded-[2px]"
-            style={{ background: p.payload?.fill ?? "var(--primary)" }}
-          />
-          <span className="text-muted-foreground">{p.name}</span>
-          <span className="ml-auto pl-4 font-medium tabular-nums text-foreground">
-            {format ? format(Number(p.value)) : String(p.value)}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 export default function DashboardPage() {
   const { format: formatCurrency } = useCurrency();
@@ -106,11 +70,13 @@ export default function DashboardPage() {
     (d) => d.deal_stage !== "Closed Won" && d.deal_stage !== "Closed Lost"
   ).length;
 
+  // PieData shape: { label, value, color }
   const stageData = useMemo(
     () =>
-      DEAL_STAGES.map((stage) => ({
-        name: stage,
+      DEAL_STAGES.map((stage, i) => ({
+        label: stage,
         value: deals.filter((d) => d.deal_stage === stage).length,
+        color: COLORS[i % COLORS.length],
       })).filter((d) => d.value > 0),
     [deals]
   );
@@ -199,49 +165,28 @@ export default function DashboardPage() {
             Deals by Stage
           </h3>
           {stageData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={240}>
-              <PieChart>
-                <Pie
-                  data={stageData}
-                  dataKey="value"
-                  nameKey="name"
-                  innerRadius={62}
-                  outerRadius={86}
-                  paddingAngle={4}
-                  cornerRadius={6}
-                  stroke="none"
-                >
-                  {stageData.map((_, i) => (
-                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                  ))}
-                </Pie>
-                <text
-                  x="50%"
-                  y="47%"
-                  textAnchor="middle"
-                  fill="var(--foreground)"
-                  fontSize="24"
-                  fontWeight="600"
-                >
-                  {stageData.reduce((sum, s) => sum + s.value, 0)}
-                </text>
-                <text x="50%" y="58%" textAnchor="middle" fill="var(--muted-foreground)" fontSize="10">
-                  deals
-                </text>
-                <Tooltip content={<ChartTip />} />
+            <div className="flex h-[240px] items-center justify-center">
+              <PieChart
+                data={stageData}
+                size={220}
+                innerRadius={62}
+                padAngle={0.05}
+                cornerRadius={6}
+              >
+                {stageData.map((s, i) => (
+                  <PieSlice key={s.label} index={i} />
+                ))}
+                <PieCenter defaultLabel="deals" />
               </PieChart>
-            </ResponsiveContainer>
+            </div>
           ) : (
             <p className="py-16 text-center text-sm text-muted-foreground">No deals yet.</p>
           )}
           <div className="mt-2 flex flex-wrap gap-2">
-            {stageData.map((s, i) => (
-              <div key={s.name} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <span
-                  className="h-2 w-2 rounded-full"
-                  style={{ background: COLORS[i % COLORS.length] }}
-                />
-                {s.name}
+            {stageData.map((s) => (
+              <div key={s.label} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <span className="h-2 w-2 rounded-full" style={{ background: s.color }} />
+                {s.label}
               </div>
             ))}
           </div>
@@ -252,43 +197,27 @@ export default function DashboardPage() {
             Revenue by Month (Closed Won)
           </h3>
           {monthlyRevenue.length > 0 ? (
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={monthlyRevenue} barCategoryGap="25%">
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                <XAxis
-                  dataKey="month"
-                  stroke="var(--muted-foreground)"
-                  fontSize={11}
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={10}
-                />
-                <YAxis
-                  stroke="var(--muted-foreground)"
-                  fontSize={11}
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={8}
-                  width={44}
-                  tickFormatter={(v) =>
-                    new Intl.NumberFormat("en", { notation: "compact" }).format(Number(v))
-                  }
-                />
-                <Tooltip
-                  cursor={{ fill: "rgba(255,255,255,0.04)", radius: 6 }}
-                  content={<ChartTip format={(v) => formatCurrency(v)} />}
-                />
-                <Bar
-                  dataKey="revenue"
-                  name="Revenue"
-                  fill="var(--primary)"
-                  fillOpacity={0.9}
-                  radius={[6, 6, 0, 0]}
-                  maxBarSize={44}
-                  activeBar={{ fillOpacity: 1 }}
-                />
-              </BarChart>
-            </ResponsiveContainer>
+            <BarChart
+              data={monthlyRevenue}
+              xDataKey="month"
+              aspectRatio="5 / 2"
+              barGap={0.28}
+              margin={{ top: 24, right: 16, bottom: 36, left: 16 }}
+            >
+              <Grid horizontal vertical={false} />
+              <Bar dataKey="revenue" fill="var(--primary)" />
+              <BarXAxis />
+              <ChartTooltip
+                content={({ point }) => (
+                  <div>
+                    <p className="text-[11px] text-muted-foreground">{String(point.month)}</p>
+                    <p className="mt-0.5 text-[13px] font-medium tabular-nums text-foreground">
+                      {formatCurrency(Number(point.revenue))}
+                    </p>
+                  </div>
+                )}
+              />
+            </BarChart>
           ) : (
             <p className="py-16 text-center text-sm text-muted-foreground">
               No closed-won revenue yet.

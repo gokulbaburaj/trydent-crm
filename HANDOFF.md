@@ -189,6 +189,25 @@ backlog mirrors this (TRY-35…39 for Sprints B/C ≈ prompts Sprints 3–4).
   metadata before any app route renders; the layout also refuses to paint a page
   it's about to navigate away from.
 
+## Charts (Bklit UI)
+
+Charts come from the **@bklit** shadcn registry (visx + motion), registered in
+`components.json`. Source lives in `src/components/charts/` — vendored, so it's
+eslint-ignored (regenerating would overwrite fixes); tsc still checks it.
+Install more with `npx shadcn@latest add @bklit/<name>`. Installed: pie, ring,
+area, bar, funnel. Palette comes from the existing `--chart-1…5` tokens, and
+`--chart-1` is wired to `--primary`, so charts follow the brand accent.
+
+Two install gotchas, both already fixed — re-check after any future
+`shadcn add`:
+1. It **overwrote `src/lib/utils.ts`** with the stock shadcn version, wiping
+   `formatDate`, `initials`, `withViewTransition`. Restore them if it happens.
+2. `chart-loading-label.tsx` imported `../components/shimmering-text`, which
+   resolves to `src/components/components/…`. Corrected to
+   `@/components/shimmering-text`.
+
+Recharts is fully removed from `src/` — safe to `npm uninstall recharts`.
+
 ## Known gotchas
 
 - Tailwind v4 silently ignores unknown theme tokens — grep after renames.

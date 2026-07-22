@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { ChevronDown, Plus } from "lucide-react";
 import { FilterBar } from "@/components/FilterBar";
+import { FunnelChart } from "@/components/charts/funnel-chart";
+import { Card } from "@/components/ui/Card";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { Button } from "@/components/ui/Button";
 import { Badge, statusTone } from "@/components/ui/Badge";
@@ -45,6 +47,15 @@ export default function PipelinePage() {
   const ownerName = (id: string | null) => profiles.find((p) => p.id === id)?.full_name ?? "Unassigned";
 
   const { filters, views, setFilters, setViews } = useStoredFilters("pipeline");
+
+  /** Deals flowing through the pipeline — Closed Lost sits outside the funnel. */
+  const funnelData = useMemo(() => {
+    const stages = DEAL_STAGES.filter((s) => s !== "Closed Lost");
+    return stages.map((stage) => ({
+      label: stage,
+      value: deals.filter((d) => d.deal_stage === stage).length,
+    }));
+  }, [deals]);
 
   const visibleDeals = useMemo(
     () =>
@@ -166,6 +177,24 @@ export default function PipelinePage() {
         dueLabel="Close date"
         placeholder="Filter deals…"
       />
+
+      {deals.length > 0 && (
+        <Card className="rounded-xl shadow-sm">
+          <h3 className="mb-1 text-sm font-semibold">Conversion</h3>
+          <p className="mb-3 text-xs text-muted-foreground">
+            How deals flow through your stages. Closed Lost is excluded.
+          </p>
+          <FunnelChart
+            data={funnelData}
+            color="var(--primary)"
+            showPercentage
+            showValues
+            showLabels
+            className="h-[190px] w-full"
+            formatValue={(v) => `${v} deal${v === 1 ? "" : "s"}`}
+          />
+        </Card>
+      )}
 
       <KanbanBoard
         columns={DEAL_STAGES.map((s) => ({ id: s, label: s }))}
