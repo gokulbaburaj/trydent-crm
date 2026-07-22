@@ -408,7 +408,7 @@ function PaymentPlanEditor({
   onTogglePaid: (p: StaffPayment) => void;
   onDelete: (id: string) => void;
 }) {
-  const { format: formatCurrency } = useCurrency();
+  const { format: formatCurrency, base } = useCurrency();
   const [label, setLabel] = useState("");
   const [amount, setAmount] = useState("");
   const [dueDate, setDueDate] = useState<string | null>(null);
@@ -482,7 +482,7 @@ function PaymentPlanEditor({
         <span className="text-[13px] font-medium">Add a payment</span>
         <Input placeholder="Label (e.g. Milestone 1, Monthly retainer)" value={label} onChange={(e) => setLabel(e.target.value)} />
         <div className="grid grid-cols-2 gap-2">
-          <Input type="number" min={0} placeholder="Amount" value={amount} onChange={(e) => setAmount(e.target.value)} />
+          <Input type="number" min={0} placeholder={`Amount (${base})`} value={amount} onChange={(e) => setAmount(e.target.value)} />
           <DatePicker value={dueDate} placeholder="Due date" onChange={setDueDate} />
         </div>
         <Button type="submit" size="sm" variant="secondary" disabled={!label.trim() || !Number(amount)}>

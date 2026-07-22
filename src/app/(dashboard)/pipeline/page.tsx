@@ -39,7 +39,7 @@ export default function PipelinePage() {
   const [selected, setSelected] = useState<Deal | null>(null);
   const [editing, setEditing] = useState<Partial<Deal> | null>(null);
   const [saving, setSaving] = useState(false);
-  const { currency, setCurrency, format: formatCurrency } = useCurrency();
+  const { currency, setCurrency, base, format: formatCurrency } = useCurrency();
 
   const clientName = (id: string) => clients.find((c) => c.id === id)?.company ?? "Unknown";
   const ownerName = (id: string | null) => profiles.find((p) => p.id === id)?.full_name ?? "Unassigned";
@@ -256,7 +256,7 @@ export default function PipelinePage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Deal Value</Label>
+                <Label>Deal Value ({base})</Label>
                 <Input
                   type="number"
                   min={0}
@@ -265,7 +265,7 @@ export default function PipelinePage() {
                 />
               </div>
               <div>
-                <Label>Paid</Label>
+                <Label>Paid ({base})</Label>
                 <Input
                   type="number"
                   min={0}
@@ -274,6 +274,9 @@ export default function PipelinePage() {
                 />
               </div>
             </div>
+            <p className="-mt-1 text-xs text-muted-foreground">
+              Amounts are stored in {base}, the base currency set in Settings.
+            </p>
             <div>
               <Label>Close Date</Label>
               <DatePicker

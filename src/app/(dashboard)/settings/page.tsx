@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Check } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 import { toast } from "@/components/Toaster";
 import { Card } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
@@ -10,11 +11,14 @@ import { Input, Label } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/useAuth";
 import { createClient } from "@/lib/supabase/client";
+import { CURRENCIES, setBaseCurrency, useCurrency } from "@/lib/currency";
+import { cn } from "@/lib/utils";
 import { ACCENT_PRESETS, useAccent } from "@/lib/theme";
 
 export default function SettingsPage() {
   const { profile, isSupabaseConfigured } = useAuth();
   const { primary, setAccent } = useAccent();
+  const { currency, base, converted, ratesFetchedAt } = useCurrency();
   const [customHex, setCustomHex] = useState("");
 
   const [fullName, setFullName] = useState("");
@@ -190,6 +194,49 @@ export default function SettingsPage() {
             style={{ background: /^#[0-9a-fA-F]{6}$/.test(customHex) ? customHex : primary }}
           />
         </div>
+      </Card>
+
+      <Card>
+        <h3 className="mb-1 text-sm font-semibold text-muted-foreground">Base currency</h3>
+        <p className="mb-4 text-xs text-muted-foreground">
+          Every amount in the app — deal values, payments received, staff payment plans — is
+          stored in this currency. The currency toggle converts from it using live rates, so
+          switching display shows real converted values.
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          {CURRENCIES.map((c) => (
+            <button
+              key={c.code}
+              onClick={() => setBaseCurrency(c.code)}
+              className={cn(
+                "rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors",
+                c.code === base
+                  ? "border-primary/40 bg-primary/10 text-primary"
+                  : "border-border bg-surface text-foreground-secondary hover:bg-white/5 hover:text-foreground"
+              )}
+            >
+              {c.symbol} {c.code}
+            </button>
+          ))}
+        </div>
+        <p className="mt-3 text-xs text-muted-foreground">
+          {currency === base ? (
+            <>Showing amounts in the base currency.</>
+          ) : converted ? (
+            <>
+              Showing amounts converted to <span className="text-foreground-secondary">{currency}</span>
+              {ratesFetchedAt && <> · rates updated {formatDistanceToNow(ratesFetchedAt, { addSuffix: true })}</>}
+            </>
+          ) : (
+            <span className="text-warning">
+              Live rates unavailable right now — amounts are shown in {base} until they load.
+            </span>
+          )}
+        </p>
+        <p className="mt-2 text-xs text-warning">
+          Changing the base doesn&apos;t re-value existing records — it changes what the stored
+          numbers mean. Only change this if your stored amounts really are in that currency.
+        </p>
       </Card>
 
       <Card>

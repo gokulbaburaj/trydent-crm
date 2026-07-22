@@ -128,6 +128,15 @@ create table project_tasks (
   updated_at timestamptz not null default now()
 );
 
+-- ============ APP SETTINGS (single row) ============
+-- All money is stored in base_currency; the display toggle converts from it.
+create table app_settings (
+  id boolean primary key default true check (id),
+  base_currency text not null default 'USD',
+  updated_at timestamptz not null default now()
+);
+insert into app_settings (id) values (true) on conflict (id) do nothing;
+
 -- ============ STAFF PAYMENT PLANS (contractor portal) ============
 create table staff_payments (
   id uuid primary key default gen_random_uuid(),
@@ -248,6 +257,7 @@ alter table projects enable row level security;
 alter table project_tasks enable row level security;
 alter table task_items enable row level security;
 alter table staff_payments enable row level security;
+alter table app_settings enable row level security;
 
 -- Profiles: everyone can read all profiles (needed for assignee dropdowns), only admins can edit others
 create policy "profiles_select_all" on profiles for select using (true);
@@ -298,6 +308,11 @@ create policy "project_tasks_contractor_select_own" on project_tasks for select
   using (current_role_name() = 'contractor' and assigned_to = auth.uid());
 create policy "project_tasks_contractor_update_own" on project_tasks for update
   using (current_role_name() = 'contractor' and assigned_to = auth.uid());
+
+-- App settings: everyone reads (money formatting), staff can change
+create policy "app_settings_read" on app_settings for select using (true);
+create policy "app_settings_staff_write" on app_settings for all
+  using (current_role_name() in ('admin', 'rep'));
 
 -- Staff payment plans: staff manage all; a person reads their own
 create policy "staff_payments_staff_all" on staff_payments for all
