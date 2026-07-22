@@ -121,8 +121,10 @@ via `POST /api/team-users` (roles admin/rep/contractor) — this also fixed
 "can't add team members". Team page: "Add member" form + a payment-plan
 editor (CreditCard icon on contractor rows). Contractors are routed to
 `/staff-portal` (my tasks w/ status picker, schedule, payment plan) via the
-dashboard layout, same minimal-shell pattern as clients. Confirm Gokul ran
-BOTH migrations in order. Settings (theme accent picker); notifications bell
+dashboard layout, same minimal-shell pattern as clients. Admins can preview a
+contractor's portal via `/staff-portal?user=<profileId>` (Eye button on
+contractor rows) — read-only status, filters all tables to the target person.
+Confirm Gokul ran BOTH migrations in order. Settings (theme accent picker); notifications bell
 (unread badge, 60s poll, triggers on client comment/approval/first portal
 open); ⌘K command palette (cmdk — pages/clients/projects/deals/theme);
 toasts (sonner); tooltips; skeleton loading; gradient avatars; login-page

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Building2, CreditCard, Network, Plus, Trash2, User, UserPlus, Users } from "lucide-react";
+import { Building2, CreditCard, Eye, Network, Plus, Trash2, User, UserPlus, Users } from "lucide-react";
 import { toast } from "@/components/Toaster";
 import { DataTable, Column } from "@/components/DataTable";
 import { PersonCell } from "@/components/ui/Avatar";
@@ -16,6 +16,7 @@ import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/useAuth";
 import { useCurrency } from "@/lib/currency";
+import { useTabs } from "@/lib/tabs";
 import { formatDate, initials, cn } from "@/lib/utils";
 import type { Profile, StaffPayment, UserRole } from "@/lib/types";
 
@@ -59,6 +60,7 @@ export default function TeamPage() {
     { column: "full_name", ascending: true }
   );
   const { rows: payments, setRows: setPayments } = useSupabaseTable<StaffPayment>("staff_payments");
+  const { openInNewTab } = useTabs();
   const [view, setView] = useState<View>("members");
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [adding, setAdding] = useState<MemberForm | null>(null);
@@ -221,13 +223,22 @@ export default function TeamPage() {
             render: (p: Profile) => (
               <div className="flex items-center justify-end gap-0.5" onClick={(e) => e.stopPropagation()}>
                 {p.role === "contractor" && (
-                  <button
-                    onClick={() => setPayFor(p)}
-                    title="Payment plan"
-                    className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
-                  >
-                    <CreditCard className="h-3.5 w-3.5" />
-                  </button>
+                  <>
+                    <button
+                      onClick={() => openInNewTab(`/staff-portal?user=${p.id}`, `${p.full_name.split(" ")[0]} — preview`)}
+                      title="Preview staff portal"
+                      className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setPayFor(p)}
+                      title="Payment plan"
+                      className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+                    >
+                      <CreditCard className="h-3.5 w-3.5" />
+                    </button>
+                  </>
                 )}
                 {p.id === me?.id ? (
                   <span className="px-1 text-[11px] text-muted-2">You</span>

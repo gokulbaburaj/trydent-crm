@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { endOfWeek, isBefore, isToday, parseISO, startOfDay } from "date-fns";
-import { CalendarClock, CheckCircle2, LogOut, Sparkles, Wallet } from "lucide-react";
+import { CalendarClock, CheckCircle2, Eye, LogOut, Sparkles, Wallet } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { StatusPicker } from "@/components/ui/StatusPicker";
@@ -12,7 +13,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/useAuth";
 import { useCurrency } from "@/lib/currency";
 import { formatDate, cn } from "@/lib/utils";
-import type { Activity, ProjectTask, StaffPayment, TaskStatus } from "@/lib/types";
+import type { Activity, Profile, ProjectTask, StaffPayment, TaskStatus } from "@/lib/types";
 import { PRIORITY_ORDER, TASK_STATUSES } from "@/lib/types";
 
 type Bucket = "Overdue" | "Today" | "This Week" | "Later" | "No date";
@@ -29,18 +30,52 @@ function bucketOf(t: ProjectTask): Bucket {
 }
 
 export default function StaffPortalPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center text-muted-foreground">Loading...</div>
+      }
+    >
+      <StaffPortalInner />
+    </Suspense>
+  );
+}
+
+function StaffPortalInner() {
   const { profile, signOut } = useAuth();
   const { format: formatCurrency } = useCurrency();
+  const searchParams = useSearchParams();
 
-  // RLS scopes all three tables to this contractor's own rows.
-  const { rows: tasks, setRows: setTasks } = useSupabaseTable<ProjectTask>("project_tasks");
-  const { rows: activities } = useSupabaseTable<Activity>("activities", {
+  // Staff (admin/rep) can preview a contractor's portal via ?user=<profileId>.
+  const previewUserId =
+    profile && profile.role !== "contractor" ? searchParams.get("user") : null;
+  const isPreview = !!previewUserId;
+  const targetId = previewUserId ?? profile?.id ?? null;
+
+  // RLS scopes these to the contractor's own rows; for an admin preview it
+  // returns more, so we filter down to the target person either way.
+  const { rows: allTasks, setRows: setTasks } = useSupabaseTable<ProjectTask>("project_tasks");
+  const { rows: allActivities } = useSupabaseTable<Activity>("activities", {
     column: "activity_date",
     ascending: true,
   });
-  const { rows: payments } = useSupabaseTable<StaffPayment>("staff_payments");
+  const { rows: allPayments } = useSupabaseTable<StaffPayment>("staff_payments");
+  const { rows: profiles } = useSupabaseTable<Profile>("profiles");
 
   const [savingId, setSavingId] = useState<string | null>(null);
+
+  const tasks = useMemo(
+    () => allTasks.filter((t) => t.assigned_to === targetId),
+    [allTasks, targetId]
+  );
+  const activities = useMemo(
+    () => allActivities.filter((a) => a.assigned_to === targetId),
+    [allActivities, targetId]
+  );
+  const payments = useMemo(
+    () => allPayments.filter((p) => p.profile_id === targetId),
+    [allPayments, targetId]
+  );
 
   const openTasks = useMemo(
     () => tasks.filter((t) => t.status !== "Done" && t.status !== "Archived"),
@@ -86,7 +121,8 @@ export default function StaffPortalPage() {
     setSavingId(null);
   }
 
-  const name = profile?.full_name?.split(" ")[0] ?? "there";
+  const targetName = profiles.find((p) => p.id === targetId)?.full_name ?? profile?.full_name ?? "there";
+  const firstName = targetName.split(" ")[0];
 
   return (
     <div className="min-h-screen bg-background">
@@ -97,14 +133,21 @@ export default function StaffPortalPage() {
           </div>
           <span className="text-[13px] font-medium text-foreground">Trydent Labs</span>
           <span className="text-[13px] text-muted-foreground">· Staff portal</span>
+          {isPreview && (
+            <span className="ml-2 inline-flex items-center gap-1 rounded border border-warning/30 bg-warning/10 px-1.5 py-0.5 text-[11px] font-medium text-warning">
+              <Eye className="h-3 w-3" /> Preview — what {firstName} sees
+            </span>
+          )}
         </div>
-        <button
-          onClick={signOut}
-          title="Sign out"
-          className="rounded p-2 text-muted-foreground hover:bg-white/5 hover:text-foreground"
-        >
-          <LogOut className="h-4 w-4" />
-        </button>
+        {!isPreview && (
+          <button
+            onClick={signOut}
+            title="Sign out"
+            className="rounded p-2 text-muted-foreground hover:bg-white/5 hover:text-foreground"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
+        )}
       </header>
 
       <main className="animate-page mx-auto flex max-w-4xl flex-col gap-6 p-6">
@@ -116,7 +159,7 @@ export default function StaffPortalPage() {
               <Sparkles className="h-3.5 w-3.5" />
               <span className="text-xs font-medium">Your work hub</span>
             </div>
-            <h1 className="mt-2 text-2xl font-semibold tracking-tight">Hi, {name}</h1>
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight">Hi, {firstName}</h1>
             <p className="mt-1 max-w-xl text-sm text-muted-foreground">
               Everything assigned to you, your schedule, and your payment plan — all in one place.
             </p>
@@ -162,13 +205,17 @@ export default function StaffPortalPage() {
                           className="flex items-center gap-3 border-b border-border-subtle px-3.5 py-2.5 last:border-0"
                         >
                           <PriorityFlag priority={t.priority} showNormal />
-                          <div onClick={(e) => e.stopPropagation()}>
-                            <StatusPicker
-                              value={t.status}
-                              options={TASK_STATUSES}
-                              onChange={(status) => updateStatus(t.id, status)}
-                            />
-                          </div>
+                          {isPreview ? (
+                            <Badge tone={statusToneOf(t.status)} dot>{t.status}</Badge>
+                          ) : (
+                            <div onClick={(e) => e.stopPropagation()}>
+                              <StatusPicker
+                                value={t.status}
+                                options={TASK_STATUSES}
+                                onChange={(status) => updateStatus(t.id, status)}
+                              />
+                            </div>
+                          )}
                           <span className="min-w-0 flex-1 truncate text-sm">{t.name}</span>
                           {savingId === t.id && <span className="text-[11px] text-muted-2">saving…</span>}
                           {t.due_date && (
@@ -245,6 +292,14 @@ export default function StaffPortalPage() {
       </main>
     </div>
   );
+}
+
+/** Local tone mapping so the preview status badge matches the picker's colors. */
+function statusToneOf(status: string): "green" | "blue" | "yellow" | "gray" {
+  if (status === "Done") return "green";
+  if (status === "In Progress") return "blue";
+  if (status === "Archived") return "gray";
+  return "yellow";
 }
 
 function Stat({
