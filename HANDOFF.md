@@ -96,11 +96,19 @@ month view, activities + task due dates + project deadlines, drag to
 reschedule with view-transition morphs, right-click event color picker);
 Portals — MERGED into Clients (July 2026): the standalone Portals page is
 gone (sidebar/⌘K/tab-map entries removed; `/portals` route now redirects to
-`/clients`). Portal management (status, login provisioning + password reset,
-preview, copy link, last-opened, post updates, notes) lives in the wide
-`ClientDetailDrawer` per client; the Clients table has a Portal status
-column (with a "never opened" hint). Clients with no portal get a "Set up
-portal" button. Team (role editing); Settings (theme accent picker); notifications bell
+`/clients`). Client detail is now a full tabbed PAGE that opens in its own tab
+(`clients/[id]/page.tsx`, mirrors project detail: Overview/Portal/Deals/
+Activity, inline-editable fields). The old wide `ClientDetailDrawer` was
+retired (file stubbed to `export {}`); portal management extracted to
+`ClientPortalPanel`. Clients table row/kanban click → `openInNewTab`. Portal
+status column (with "never opened" hint) stays for the overview; clients
+with no portal get a "Set up portal" button. Team (role editing +
+admin-only member removal via `DELETE /api/team-users`, which deletes the
+auth user and cascades the profile — needs `SUPABASE_SERVICE_ROLE_KEY`;
+can't remove yourself). NEXT for team: teams + reporting hierarchy (org
+chart), then a separate restricted staff-login portal (contractors see only
+their own tasks/schedule + their own payment plan, not clients/pipeline/
+revenue). Settings (theme accent picker); notifications bell
 (unread badge, 60s poll, triggers on client comment/approval/first portal
 open); ⌘K command palette (cmdk — pages/clients/projects/deals/theme);
 toasts (sonner); tooltips; skeleton loading; gradient avatars; login-page

@@ -32,6 +32,7 @@ const PAGE_TITLES: [string, string][] = [
 
 export function deriveTitle(pathname: string): string {
   if (/^\/projects\/.+/.test(pathname)) return "Project";
+  if (/^\/clients\/.+/.test(pathname)) return "Client";
   const match = PAGE_TITLES.find(([k]) => pathname === k || pathname.startsWith(k + "/"));
   return match ? match[1] : "Trydent Labs";
 }

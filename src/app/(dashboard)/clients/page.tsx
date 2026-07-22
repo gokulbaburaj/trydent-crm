@@ -6,7 +6,6 @@ import { toast } from "@/components/Toaster";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { TableSkeleton } from "@/components/ui/Skeletons";
 import { BulkActionBar } from "@/components/BulkActionBar";
-import { ClientDetailDrawer } from "@/components/ClientDetailDrawer";
 import { DataTable, Column } from "@/components/DataTable";
 import { FilterBar } from "@/components/FilterBar";
 import { KanbanBoard } from "@/components/KanbanBoard";
@@ -21,9 +20,10 @@ import { Dropdown } from "@/components/ui/Dropdown";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { applyFilters, useStoredFilters } from "@/lib/filters";
 import { useMultiSelect } from "@/lib/useMultiSelect";
+import { useTabs } from "@/lib/tabs";
 import { createClient } from "@/lib/supabase/client";
 import { formatDate } from "@/lib/utils";
-import type { Client, Deal, Activity, ClientPortal, PortalUpdate, Profile } from "@/lib/types";
+import type { Client, ClientPortal, Profile } from "@/lib/types";
 import { CLIENT_STATUSES, LEAD_SOURCES } from "@/lib/types";
 
 type View = "table" | "kanban";
@@ -44,16 +44,15 @@ export default function ClientsPage() {
     "clients",
     { column: "created_at", ascending: false }
   );
-  const { rows: deals } = useSupabaseTable<Deal>("deals");
-  const { rows: activities } = useSupabaseTable<Activity>("activities");
-  const { rows: portals, setRows: setPortals } = useSupabaseTable<ClientPortal>("client_portals");
-  const { rows: updates, setRows: setUpdates } = useSupabaseTable<PortalUpdate>("portal_updates");
+  const { rows: portals } = useSupabaseTable<ClientPortal>("client_portals");
   const { rows: profiles } = useSupabaseTable<Profile>("profiles");
+  const { openInNewTab } = useTabs();
 
   const [view, setView] = useState<View>("table");
-  const [selected, setSelected] = useState<Client | null>(null);
   const [editing, setEditing] = useState<Partial<Client> | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const openClient = (c: Client) => openInNewTab(`/clients/${c.id}`, c.company);
 
   const ownerName = (id: string | null) =>
     profiles.find((p) => p.id === id)?.full_name ?? "Unassigned";
@@ -183,7 +182,6 @@ export default function ClientsPage() {
       if (error) toast.error(`Couldn't save: ${error.message}`);
       if (!error && data) {
         setRows((prev) => prev.map((c) => (c.id === data.id ? (data as Client) : c)));
-        if (selected?.id === data.id) setSelected(data as Client);
         toast.success("Client updated");
       }
     } else {
@@ -202,15 +200,6 @@ export default function ClientsPage() {
     setEditing(null);
   }
 
-  async function handleDelete(id: string) {
-    const supabase = createClient();
-    if (!supabase) return;
-    if (!confirm("Delete this client? This will remove linked deals/activities.")) return;
-    await supabase.from("clients").delete().eq("id", id);
-    setRows((prev) => prev.filter((c) => c.id !== id));
-    setSelected(null);
-  }
-
   async function handleStageMove(client: Client, status: string) {
     setRows((prev) =>
       prev.map((c) => (c.id === client.id ? { ...c, status: status as Client["status"] } : c))
@@ -218,18 +207,6 @@ export default function ClientsPage() {
     const supabase = createClient();
     if (!supabase) return;
     await supabase.from("clients").update({ status }).eq("id", client.id);
-  }
-
-  const selectedPortal = useMemo(
-    () => portals.find((p) => p.client_id === selected?.id) ?? null,
-    [portals, selected]
-  );
-
-  /** Upsert a created/updated portal into list state so the column stays live. */
-  function syncPortal(p: ClientPortal) {
-    setPortals((prev) =>
-      prev.some((x) => x.id === p.id) ? prev.map((x) => (x.id === p.id ? p : x)) : [p, ...prev]
-    );
   }
 
   return (
@@ -277,7 +254,7 @@ export default function ClientsPage() {
           columns={columns}
           rows={visibleClients}
           rowKey={(c) => c.id}
-          onRowClick={setSelected}
+          onRowClick={openClient}
           selection={{ selected: checked, onToggle: toggle, onToggleAll: setMany }}
           emptyMessage={
             loading ? (
@@ -302,7 +279,7 @@ export default function ClientsPage() {
           getColumnId={(c) => c.status}
           onMove={handleStageMove}
           renderCard={(c) => (
-            <div onClick={() => setSelected(c)}>
+            <div onClick={() => openClient(c)}>
               <p className="text-sm font-medium">{c.company}</p>
               <p className="mt-0.5 text-xs text-muted-foreground">{c.point_person || "No contact"}</p>
             </div>
@@ -310,21 +287,6 @@ export default function ClientsPage() {
         />
       )}
       </div>
-
-      {/* Detail drawer — client record + portal management in one place */}
-      <ClientDetailDrawer
-        client={selected}
-        portal={selectedPortal}
-        deals={deals}
-        activities={activities}
-        profiles={profiles}
-        updates={updates}
-        onClose={() => setSelected(null)}
-        onEdit={(c) => setEditing(c)}
-        onDelete={handleDelete}
-        onPortalChange={syncPortal}
-        onUpdatePosted={(u) => setUpdates((prev) => [u, ...prev])}
-      />
 
       {/* Create/edit form drawer */}
       <Drawer
