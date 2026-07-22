@@ -22,6 +22,7 @@ import {
 import {
   AlertTriangle,
   Box,
+  Building2,
   Calendar as CalendarIcon,
   CalendarDays,
   Check,
@@ -458,9 +459,32 @@ export default function ProjectDetailPage() {
               />
             </div>
           </div>
-          <span className="inline-flex items-center gap-1.5 rounded border border-white/5 bg-white/5 px-2 py-1 text-xs font-medium text-foreground-secondary">
-            {clientName(project.client_id)}
-          </span>
+          <Popover
+            trigger={
+              <button className="flex items-center gap-1.5 rounded border border-white/5 bg-white/5 px-2 py-1 text-xs font-medium text-foreground-secondary hover:bg-white/10">
+                <Building2 className="h-3 w-3 text-muted-foreground" />
+                {clientName(project.client_id)}
+              </button>
+            }
+          >
+            {(close) => (
+              <>
+                <MenuLabel>Client</MenuLabel>
+                {clients.map((c) => (
+                  <MenuItem
+                    key={c.id}
+                    selected={project.client_id === c.id}
+                    onClick={() => {
+                      updateProject({ client_id: c.id });
+                      close();
+                    }}
+                  >
+                    {c.company}
+                  </MenuItem>
+                ))}
+              </>
+            )}
+          </Popover>
           <Popover
             trigger={
               <button className="flex items-center gap-2 rounded border border-white/5 bg-white/5 px-2 py-1 text-xs font-medium text-foreground-secondary hover:bg-white/10">
