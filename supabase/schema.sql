@@ -25,6 +25,8 @@ create table profiles (
   avatar_url text,
   -- if role = 'client', this links them to the one client record they can see
   client_id uuid,
+  team text,                                    -- team/department name (staff)
+  reports_to uuid references profiles(id) on delete set null, -- manager
   created_at timestamptz not null default now()
 );
 
@@ -149,6 +151,7 @@ create index idx_project_tasks_project_id on project_tasks(project_id);
 create index idx_project_tasks_due_date on project_tasks(due_date);
 create index idx_project_tasks_recurrence_parent on project_tasks(recurrence_parent_id);
 create index idx_activities_recurrence_parent on activities(recurrence_parent_id);
+create index idx_profiles_reports_to on profiles(reports_to);
 create index idx_task_items_task_id on task_items(task_id);
 
 -- ============ updated_at TRIGGER ============

@@ -97,6 +97,8 @@ export interface Profile {
   role: UserRole;
   avatar_url: string | null;
   client_id: string | null;
+  team: string | null;
+  reports_to: string | null;
   created_at: string;
 }
 

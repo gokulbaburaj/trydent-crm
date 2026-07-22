@@ -105,10 +105,14 @@ status column (with "never opened" hint) stays for the overview; clients
 with no portal get a "Set up portal" button. Team (role editing +
 admin-only member removal via `DELETE /api/team-users`, which deletes the
 auth user and cascades the profile — needs `SUPABASE_SERVICE_ROLE_KEY`;
-can't remove yourself). NEXT for team: teams + reporting hierarchy (org
-chart), then a separate restricted staff-login portal (contractors see only
+can't remove yourself). Team hierarchy DONE: migration
+`2026-07-22_team_hierarchy.sql` adds `team` (text) + `reports_to` (uuid self-FK,
+on delete set null) to `profiles`; confirm Gokul ran it. Team page has
+Members (editable role/team/manager, sortable) and Org chart (teams summary +
+recursive reporting tree, cycle-guarded) views; scoped to staff (role !=
+client). NEXT: separate restricted staff-login portal (contractors see only
 their own tasks/schedule + their own payment plan, not clients/pipeline/
-revenue). Settings (theme accent picker); notifications bell
+revenue) — needs a new role + RLS + a payment-plan table. Settings (theme accent picker); notifications bell
 (unread badge, 60s poll, triggers on client comment/approval/first portal
 open); ⌘K command palette (cmdk — pages/clients/projects/deals/theme);
 toasts (sonner); tooltips; skeleton loading; gradient avatars; login-page
