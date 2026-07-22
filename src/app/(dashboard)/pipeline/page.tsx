@@ -48,12 +48,21 @@ export default function PipelinePage() {
 
   const { filters, views, setFilters, setViews } = useStoredFilters("pipeline");
 
-  /** Deals flowing through the pipeline — Closed Lost sits outside the funnel. */
+  /**
+   * A funnel needs each stage to be a subset of the one before it, so we count
+   * deals that REACHED each stage (i.e. are sitting at it or further along),
+   * not how many are parked there right now. Counting the latter breaks the
+   * shape the moment a later stage holds more deals than an earlier one.
+   * Closed Lost sits outside the flow.
+   */
   const funnelData = useMemo(() => {
     const stages = DEAL_STAGES.filter((s) => s !== "Closed Lost");
-    return stages.map((stage) => ({
+    return stages.map((stage, i) => ({
       label: stage,
-      value: deals.filter((d) => d.deal_stage === stage).length,
+      value: deals.filter((d) => {
+        const idx = stages.indexOf(d.deal_stage as (typeof stages)[number]);
+        return idx >= i; // -1 (Closed Lost) never counts
+      }).length,
     }));
   }, [deals]);
 
@@ -182,17 +191,20 @@ export default function PipelinePage() {
         <Card className="rounded-xl shadow-sm">
           <h3 className="mb-1 text-sm font-semibold">Conversion</h3>
           <p className="mb-3 text-xs text-muted-foreground">
-            How deals flow through your stages. Closed Lost is excluded.
+            Deals that reached each stage. Closed Lost is excluded.
           </p>
-          <FunnelChart
-            data={funnelData}
-            color="var(--primary)"
-            showPercentage
-            showValues
-            showLabels
-            className="h-[190px] w-full"
-            formatValue={(v) => `${v} deal${v === 1 ? "" : "s"}`}
-          />
+          {/* The chart draws with overflow-visible, so clip it to the card. */}
+          <div className="overflow-hidden">
+            <FunnelChart
+              data={funnelData}
+              color="var(--primary)"
+              showPercentage
+              showValues
+              showLabels
+              className="mx-auto w-full max-w-3xl"
+              formatValue={(v) => `${v} deal${v === 1 ? "" : "s"}`}
+            />
+          </div>
         </Card>
       )}
 

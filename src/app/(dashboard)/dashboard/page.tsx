@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { parseISO, format as formatDateFns } from "date-fns";
 import { PieChart } from "@/components/charts/pie-chart";
@@ -8,9 +8,12 @@ import { PieSlice } from "@/components/charts/pie-slice";
 import { PieCenter } from "@/components/charts/pie-center";
 import { BarChart } from "@/components/charts/bar-chart";
 import { Bar } from "@/components/charts/bar";
+import { AreaChart, Area } from "@/components/charts/area-chart";
 import { Grid } from "@/components/charts/grid";
 import { BarXAxis } from "@/components/charts/bar-x-axis";
+import { XAxis } from "@/components/charts/x-axis";
 import { ChartTooltip } from "@/components/charts/tooltip/chart-tooltip";
+import { cn } from "@/lib/utils";
 import { DollarSign, TrendingUp, Users, GitBranch, ArrowRight } from "lucide-react";
 import { StatCard } from "@/components/ui/StatCard";
 import { Card } from "@/components/ui/Card";
@@ -32,8 +35,17 @@ const COLORS = [
   "#eb5757",
 ];
 
+/** Chart shapes that actually suit a monthly revenue series. */
+type RevenueChart = "bar" | "area";
+
+const REVENUE_CHARTS: { id: RevenueChart; label: string; hint: string }[] = [
+  { id: "bar", label: "Bar", hint: "Compare month totals" },
+  { id: "area", label: "Area", hint: "See the trend and volume" },
+];
+
 export default function DashboardPage() {
   const { format: formatCurrency } = useCurrency();
+  const [revenueChart, setRevenueChart] = useState<RevenueChart>("bar");
   const { profile } = useAuth();
   const { rows: deals, loading: dealsLoading } = useSupabaseTable<Deal>("deals");
   const { rows: clients, loading: clientsLoading } = useSupabaseTable<Client>("clients");
@@ -94,6 +106,16 @@ export default function DashboardPage() {
       });
     return Object.entries(months).map(([month, revenue]) => ({ month, revenue }));
   }, [deals]);
+
+  /** Shared tooltip so bar and area read identically. */
+  const revenueTooltip = ({ point }: { point: Record<string, unknown> }) => (
+    <div>
+      <p className="text-[11px] text-muted-foreground">{String(point.month)}</p>
+      <p className="mt-0.5 text-[13px] font-medium tabular-nums text-foreground">
+        {formatCurrency(Number(point.revenue))}
+      </p>
+    </div>
+  );
 
   const loading = dealsLoading || clientsLoading || activitiesLoading;
 
@@ -193,31 +215,55 @@ export default function DashboardPage() {
         </Card>
 
         <Card className="lg:col-span-2">
-          <h3 className="mb-4 text-sm font-semibold text-muted-foreground">
-            Revenue by Month (Closed Won)
-          </h3>
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h3 className="text-sm font-semibold text-muted-foreground">
+              Revenue by Month (Closed Won)
+            </h3>
+            <div className="flex items-center gap-0.5 rounded-md border border-border bg-surface p-1">
+              {REVENUE_CHARTS.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => setRevenueChart(c.id)}
+                  title={c.hint}
+                  className={cn(
+                    "rounded px-2.5 py-1 text-xs font-medium transition-colors",
+                    revenueChart === c.id
+                      ? "bg-white/10 text-foreground"
+                      : "text-muted-foreground hover:text-foreground-secondary"
+                  )}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          </div>
           {monthlyRevenue.length > 0 ? (
-            <BarChart
-              data={monthlyRevenue}
-              xDataKey="month"
-              aspectRatio="5 / 2"
-              barGap={0.28}
-              margin={{ top: 24, right: 16, bottom: 36, left: 16 }}
-            >
-              <Grid horizontal vertical={false} />
-              <Bar dataKey="revenue" fill="var(--primary)" />
-              <BarXAxis />
-              <ChartTooltip
-                content={({ point }) => (
-                  <div>
-                    <p className="text-[11px] text-muted-foreground">{String(point.month)}</p>
-                    <p className="mt-0.5 text-[13px] font-medium tabular-nums text-foreground">
-                      {formatCurrency(Number(point.revenue))}
-                    </p>
-                  </div>
-                )}
-              />
-            </BarChart>
+            revenueChart === "bar" ? (
+              <BarChart
+                data={monthlyRevenue}
+                xDataKey="month"
+                aspectRatio="5 / 2"
+                barGap={0.28}
+                margin={{ top: 24, right: 16, bottom: 36, left: 16 }}
+              >
+                <Grid horizontal vertical={false} />
+                <Bar dataKey="revenue" fill="var(--primary)" />
+                <BarXAxis />
+                <ChartTooltip content={revenueTooltip} />
+              </BarChart>
+            ) : (
+              <AreaChart
+                data={monthlyRevenue}
+                xDataKey="month"
+                aspectRatio="5 / 2"
+                margin={{ top: 24, right: 16, bottom: 36, left: 16 }}
+              >
+                <Grid horizontal vertical={false} />
+                <Area dataKey="revenue" stroke="var(--primary)" fill="var(--primary)" />
+                <XAxis />
+                <ChartTooltip content={revenueTooltip} />
+              </AreaChart>
+            )
           ) : (
             <p className="py-16 text-center text-sm text-muted-foreground">
               No closed-won revenue yet.
