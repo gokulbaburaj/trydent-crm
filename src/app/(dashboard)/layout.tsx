@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Sidebar } from "@/components/Sidebar";
 import { Topbar } from "@/components/Topbar";
@@ -85,7 +85,9 @@ export default function DashboardLayout({
     <TabsProvider>
       <TooltipProvider delayDuration={350}>
       <div className="flex h-screen overflow-hidden bg-background">
-        <Sidebar />
+        <Suspense fallback={<div className="hidden w-[220px] shrink-0 md:block" />}>
+          <Sidebar />
+        </Suspense>
 
         {/* Mobile slide-in navigation */}
         {mobileNav && (
@@ -95,7 +97,9 @@ export default function DashboardLayout({
               onClick={() => setMobileNav(false)}
             />
             <div className="animate-page absolute left-0 top-0 h-full w-[250px] border-r border-border bg-background">
-              <Sidebar mobile onNavigate={() => setMobileNav(false)} />
+              <Suspense fallback={null}>
+                <Sidebar mobile onNavigate={() => setMobileNav(false)} />
+              </Suspense>
             </div>
           </div>
         )}

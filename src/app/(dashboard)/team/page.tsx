@@ -1,6 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { X } from "lucide-react";
 import { Building2, CreditCard, Eye, Network, Plus, Trash2, User, UserPlus, Users } from "lucide-react";
 import { toast } from "@/components/Toaster";
 import { DataTable, Column } from "@/components/DataTable";
@@ -64,7 +67,17 @@ const emptyMember: MemberForm = {
 };
 
 export default function TeamPage() {
+  return (
+    <Suspense fallback={<div className="py-10 text-center text-sm text-muted-foreground">Loading...</div>}>
+      <TeamPageInner />
+    </Suspense>
+  );
+}
+
+function TeamPageInner() {
   const { profile: me } = useAuth();
+  const searchParams = useSearchParams();
+  const teamFilter = searchParams.get("team");
   const { rows: profiles, setRows } = useSupabaseTable<Profile>(
     "profiles",
     { column: "full_name", ascending: true }
@@ -81,12 +94,18 @@ export default function TeamPage() {
   const isAdmin = me?.role === "admin";
 
   // The Team page is for staff — clients are managed on the Clients page.
-  const staff = useMemo(() => profiles.filter((p) => p.role !== "client"), [profiles]);
-  const teams = useMemo(
-    () => Array.from(new Set(staff.map((p) => p.team).filter((t): t is string => !!t))).sort(),
-    [staff]
+  const allStaff = useMemo(() => profiles.filter((p) => p.role !== "client"), [profiles]);
+  // ?team= scopes the page to one team (used by the sidebar's team sub-links).
+  const staff = useMemo(
+    () => (teamFilter ? allStaff.filter((p) => p.team === teamFilter) : allStaff),
+    [allStaff, teamFilter]
   );
-  const nameOf = (id: string | null) => staff.find((p) => p.id === id)?.full_name ?? null;
+  // Derived from everyone, so filtering to one team doesn't shrink the pickers.
+  const teams = useMemo(
+    () => Array.from(new Set(allStaff.map((p) => p.team).filter((t): t is string => !!t))).sort(),
+    [allStaff]
+  );
+  const nameOf = (id: string | null) => allStaff.find((p) => p.id === id)?.full_name ?? null;
 
   async function patchProfile(id: string, patch: Partial<Profile>) {
     setRows((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
@@ -217,7 +236,7 @@ export default function TeamPage() {
         isAdmin ? (
           <ManagerPicker
             value={p.reports_to}
-            options={staff.filter((s) => s.id !== p.id)}
+            options={allStaff.filter((s) => s.id !== p.id)}
             onChange={(reports_to) => patchProfile(p.id, { reports_to })}
           />
         ) : (
@@ -273,11 +292,25 @@ export default function TeamPage() {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          {isAdmin
-            ? "Set roles, teams, and reporting lines for your team."
-            : "Your team, their roles, and who reports to whom."}
-        </p>
+        <div className="flex min-w-0 items-center gap-2">
+          <p className="truncate text-sm text-muted-foreground">
+            {isAdmin
+              ? "Set roles, teams, and reporting lines for your team."
+              : "Your team, their roles, and who reports to whom."}
+          </p>
+          {teamFilter && (
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-primary/40 bg-primary/10 py-0.5 pl-2.5 pr-1 text-[11px] font-medium text-primary">
+              Team: {teamFilter}
+              <Link
+                href="/team"
+                title="Clear team filter"
+                className="rounded-full p-0.5 hover:bg-white/10"
+              >
+                <X className="h-3 w-3" />
+              </Link>
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-0.5 rounded-md border border-border bg-surface p-1">
             <ViewButton active={view === "members"} onClick={() => setView("members")} icon={Users} label="Members" />
@@ -362,7 +395,7 @@ export default function TeamPage() {
                 value={adding.reports_to}
                 options={[
                   { value: "", label: "No manager" },
-                  ...staff.map((p) => ({ value: p.id, label: p.full_name })),
+                  ...allStaff.map((p) => ({ value: p.id, label: p.full_name })),
                 ]}
                 onChange={(v) => setAdding({ ...adding, reports_to: v })}
               />

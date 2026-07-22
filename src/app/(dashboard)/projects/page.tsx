@@ -1,7 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { ChevronRight, Plus } from "lucide-react";
+import { Suspense, useMemo, useState } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { ChevronRight, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Badge, statusTone } from "@/components/ui/Badge";
@@ -27,8 +29,18 @@ const emptyForm: Partial<Project> = {
 };
 
 export default function ProjectsPage() {
+  return (
+    <Suspense fallback={<div className="py-10 text-center text-sm text-muted-foreground">Loading...</div>}>
+      <ProjectsPageInner />
+    </Suspense>
+  );
+}
+
+function ProjectsPageInner() {
   const { openInNewTab } = useTabs();
-  const { rows: projects, setRows } = useSupabaseTable<Project>(
+  const searchParams = useSearchParams();
+  const teamFilter = searchParams.get("team");
+  const { rows: allProjects, setRows } = useSupabaseTable<Project>(
     "projects",
     { column: "created_at", ascending: false }
   );
@@ -41,6 +53,13 @@ export default function ProjectsPage() {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
   const ownerName = (id: string | null) => profiles.find((p) => p.id === id)?.full_name ?? "Unassigned";
+
+  // ?team= scopes to projects owned by someone on that team (sidebar sub-link).
+  const projects = useMemo(() => {
+    if (!teamFilter) return allProjects;
+    const memberIds = new Set(profiles.filter((p) => p.team === teamFilter).map((p) => p.id));
+    return allProjects.filter((p) => p.owner && memberIds.has(p.owner));
+  }, [allProjects, profiles, teamFilter]);
 
   const grouped = useMemo(() => {
     const map = new Map<string, Project[]>();
@@ -96,10 +115,20 @@ export default function ProjectsPage() {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm text-muted-foreground">
-          {projects.length} project{projects.length !== 1 ? "s" : ""} across{" "}
-          {grouped.length} client{grouped.length !== 1 ? "s" : ""}
-        </h2>
+        <div className="flex min-w-0 items-center gap-2">
+          <h2 className="truncate text-sm text-muted-foreground">
+            {projects.length} project{projects.length !== 1 ? "s" : ""} across{" "}
+            {grouped.length} client{grouped.length !== 1 ? "s" : ""}
+          </h2>
+          {teamFilter && (
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-primary/40 bg-primary/10 py-0.5 pl-2.5 pr-1 text-[11px] font-medium text-primary">
+              Team: {teamFilter}
+              <Link href="/projects" title="Clear team filter" className="rounded-full p-0.5 hover:bg-white/10">
+                <X className="h-3 w-3" />
+              </Link>
+            </span>
+          )}
+        </div>
         <Button
           size="sm"
           onClick={() => setEditing({ ...emptyForm, client_id: clients[0]?.id ?? "" })}

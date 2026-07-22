@@ -163,6 +163,32 @@ on board cards, list rows, My Work rows, schedule table, week events, month
 chips.). NEXT: Sprint 2 prompt 5 (activity history / audit trail). Linear
 backlog mirrors this (TRY-35…39 for Sprints B/C ≈ prompts Sprints 3–4).
 
+## Later additions (July 22–23, 2026)
+
+- Client detail is a full tabbed PAGE (`clients/[id]`), opened via `openInNewTab`.
+  `ClientDetailDrawer` is retired (stubbed `export {}`); portal management lives
+  in `ClientPortalPanel`. Portals page merged into Clients (`/portals` redirects).
+- Team hierarchy: `profiles.team` + `profiles.reports_to`
+  (`2026-07-22_team_hierarchy.sql`). Team page = Members + Org chart views.
+- Staff portal for contractors: `contractor` role (`2026-07-22b`, run ALONE
+  first), `staff_payments` + RLS (`2026-07-22c`). `/staff-portal` with admin
+  preview via `?user=<id>`. Add/remove members via `/api/team-users`.
+- Money: all amounts are STORED in `app_settings.base_currency`
+  (`2026-07-23_app_settings.sql`); the display toggle converts at live rates via
+  `/api/fx` (6h server cache + localStorage). If rates fail, amounts render in
+  the base currency rather than faking a conversion. Changing the base does NOT
+  re-value records.
+- Pipeline: `Negotiation` merged into `Proposal` (`2026-07-22d`). The enum value
+  still exists in Postgres (can't drop) but the app never produces it.
+- Sidebar (`lib/nav.ts` + `Sidebar.tsx`): collapsible sections, drag-to-reorder
+  via dnd-kit (5px activation so clicks still navigate), and a "Your teams"
+  section where each team expands to Members (`/team?team=`) and Projects
+  (`/projects?team=`). Sidebar uses `useSearchParams`, so it's wrapped in
+  `Suspense` in the dashboard layout — same for the Team and Projects pages.
+- Portal redirect flash fixed: middleware routes portal users by their JWT role
+  metadata before any app route renders; the layout also refuses to paint a page
+  it's about to navigate away from.
+
 ## Known gotchas
 
 - Tailwind v4 silently ignores unknown theme tokens — grep after renames.
