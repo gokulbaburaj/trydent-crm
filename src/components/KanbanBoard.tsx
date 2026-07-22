@@ -137,7 +137,9 @@ function KanbanColumnDroppable({
     <div
       ref={setNodeRef}
       className={cn(
-        "w-72 shrink-0 rounded-md border border-border bg-white/[0.02] p-3 transition-colors",
+        // Columns share the available width evenly; min-width keeps them
+        // readable and lets the row scroll once space runs out.
+        "min-w-[15rem] flex-1 rounded-md border border-border bg-white/[0.02] p-3 transition-colors",
         className,
         isOver && "border-primary bg-primary/5"
       )}

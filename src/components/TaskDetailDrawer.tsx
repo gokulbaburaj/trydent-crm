@@ -444,7 +444,8 @@ export function TaskDetailDrawer({
               items={subtasks}
               getColumnId={(s) => s.status}
               onMove={(s, status) => updateSubtask(s.id, { status: status as TaskStatus })}
-              columnClassName="w-52"
+              /* Subtask mini-board stays compact instead of stretching. */
+              columnClassName="w-52 min-w-0 flex-none"
               renderCard={(s) => (
                 <div className="group/sub flex items-start justify-between gap-2">
                   <p className="min-w-0 flex-1 text-[13px]">{s.name}</p>
