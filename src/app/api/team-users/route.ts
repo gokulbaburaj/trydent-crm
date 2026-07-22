@@ -97,13 +97,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: raw || "Couldn't create user." }, { status: 400 });
   }
 
-  // Fill in team / manager (not part of the signup trigger).
-  const { error: profileError } = await admin
-    .from("profiles")
-    .update({ team, reports_to: reportsTo })
-    .eq("id", created.user.id);
-  if (profileError) {
-    return NextResponse.json({ error: profileError.message }, { status: 400 });
+  // Fill in team / manager (not part of the signup trigger). Best-effort: the
+  // account already exists at this point, so a failure here (e.g. the team
+  // hierarchy migration hasn't run) must not fail the whole request.
+  let warning: string | null = null;
+  if (team || reportsTo) {
+    const { error: profileError } = await admin
+      .from("profiles")
+      .update({ team, reports_to: reportsTo })
+      .eq("id", created.user.id);
+    if (profileError) {
+      warning = `Member created, but team/manager couldn't be saved: ${profileError.message}`;
+    }
   }
 
   const { data: profile } = await admin
@@ -112,7 +117,7 @@ export async function POST(req: Request) {
     .eq("id", created.user.id)
     .single();
 
-  return NextResponse.json({ ok: true, profile });
+  return NextResponse.json({ ok: true, profile, warning });
 }
 
 /**

@@ -139,7 +139,8 @@ export default function TeamPage() {
     }
     if (json.profile) setRows((prev) => [json.profile as Profile, ...prev]);
     setAdding(null);
-    toast.success(`${adding.full_name} added`);
+    if (json.warning) toast.error(errorText(json.warning, "Member added with warnings."));
+    else toast.success(`${adding.full_name} added`);
   }
 
   async function addPayment(profileId: string, line: Omit<StaffPayment, "id" | "profile_id" | "created_at">) {
