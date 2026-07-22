@@ -3,7 +3,11 @@
 import { useMemo, useState } from "react";
 import { ChevronDown, Plus } from "lucide-react";
 import { FilterBar } from "@/components/FilterBar";
-import { FunnelChart } from "@/components/charts/funnel-chart";
+import { BarChart } from "@/components/charts/bar-chart";
+import { Bar } from "@/components/charts/bar";
+import { Grid } from "@/components/charts/grid";
+import { BarXAxis } from "@/components/charts/bar-x-axis";
+import { ChartTooltip } from "@/components/charts/tooltip/chart-tooltip";
 import { Card } from "@/components/ui/Card";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { Button } from "@/components/ui/Button";
@@ -49,22 +53,23 @@ export default function PipelinePage() {
   const { filters, views, setFilters, setViews } = useStoredFilters("pipeline");
 
   /**
-   * A funnel needs each stage to be a subset of the one before it, so we count
-   * deals that REACHED each stage (i.e. are sitting at it or further along),
-   * not how many are parked there right now. Counting the latter breaks the
-   * shape the moment a later stage holds more deals than an earlier one.
-   * Closed Lost sits outside the flow.
+   * Deals sitting in each stage right now — exactly what the board shows.
+   * We deliberately do NOT infer a funnel: without stage history there's no
+   * way to know a deal ever passed through the stages it skipped, so any
+   * "reached this stage" number would be a guess that contradicts the board.
    */
-  const funnelData = useMemo(() => {
-    const stages = DEAL_STAGES.filter((s) => s !== "Closed Lost");
-    return stages.map((stage, i) => ({
-      label: stage,
-      value: deals.filter((d) => {
-        const idx = stages.indexOf(d.deal_stage as (typeof stages)[number]);
-        return idx >= i; // -1 (Closed Lost) never counts
-      }).length,
-    }));
-  }, [deals]);
+  const stageBars = useMemo(
+    () =>
+      DEAL_STAGES.map((stage) => {
+        const inStage = deals.filter((d) => d.deal_stage === stage);
+        return {
+          stage,
+          deals: inStage.length,
+          value: inStage.reduce((sum, d) => sum + Number(d.deal_value), 0),
+        };
+      }),
+    [deals]
+  );
 
   const visibleDeals = useMemo(
     () =>
@@ -189,22 +194,34 @@ export default function PipelinePage() {
 
       {deals.length > 0 && (
         <Card className="rounded-xl shadow-sm">
-          <h3 className="mb-1 text-sm font-semibold">Conversion</h3>
+          <h3 className="mb-1 text-sm font-semibold">Deals by stage</h3>
           <p className="mb-3 text-xs text-muted-foreground">
-            Deals that reached each stage. Closed Lost is excluded.
+            How many deals sit in each stage right now, and what they&apos;re worth.
           </p>
-          {/* The chart draws with overflow-visible, so clip it to the card. */}
-          <div className="overflow-hidden">
-            <FunnelChart
-              data={funnelData}
-              color="var(--primary)"
-              showPercentage
-              showValues
-              showLabels
-              className="mx-auto w-full max-w-3xl"
-              formatValue={(v) => `${v} deal${v === 1 ? "" : "s"}`}
+          <BarChart
+            data={stageBars}
+            xDataKey="stage"
+            aspectRatio="7 / 2"
+            barGap={0.3}
+            margin={{ top: 24, right: 16, bottom: 36, left: 16 }}
+          >
+            <Grid horizontal vertical={false} />
+            <Bar dataKey="deals" fill="var(--primary)" />
+            <BarXAxis showAllLabels />
+            <ChartTooltip
+              content={({ point }) => (
+                <div>
+                  <p className="text-[11px] text-muted-foreground">{String(point.stage)}</p>
+                  <p className="mt-0.5 text-[13px] font-medium tabular-nums text-foreground">
+                    {Number(point.deals)} deal{Number(point.deals) === 1 ? "" : "s"}
+                  </p>
+                  <p className="text-[11px] tabular-nums text-muted-foreground">
+                    {formatCurrency(Number(point.value))}
+                  </p>
+                </div>
+              )}
             />
-          </div>
+          </BarChart>
         </Card>
       )}
 
