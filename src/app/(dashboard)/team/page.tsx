@@ -7,6 +7,7 @@ import { X } from "lucide-react";
 import { Building2, CreditCard, Eye, Network, Plus, Trash2, User, UserPlus, Users } from "lucide-react";
 import { toast } from "@/components/Toaster";
 import { DataTable, Column } from "@/components/DataTable";
+import { OrgChartFlow } from "@/components/OrgChartFlow";
 import { PersonCell } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -20,8 +21,8 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/useAuth";
 import { useCurrency } from "@/lib/currency";
 import { useTabs } from "@/lib/tabs";
-import { formatDate, initials, cn } from "@/lib/utils";
-import type { Profile, StaffPayment, UserRole } from "@/lib/types";
+import { formatDate, cn } from "@/lib/utils";
+import type { Profile, StaffPayment, Team, UserRole } from "@/lib/types";
 
 const roleTone: Record<UserRole, "green" | "blue" | "gray"> = {
   admin: "green",
@@ -83,6 +84,10 @@ function TeamPageInner() {
     { column: "full_name", ascending: true }
   );
   const { rows: payments, setRows: setPayments } = useSupabaseTable<StaffPayment>("staff_payments");
+  const { rows: teamRows, setRows: setTeamRows } = useSupabaseTable<Team>("teams", {
+    column: "name",
+    ascending: true,
+  });
   const { openInNewTab } = useTabs();
   const [view, setView] = useState<View>("members");
   const [removingId, setRemovingId] = useState<string | null>(null);
@@ -96,15 +101,21 @@ function TeamPageInner() {
   // The Team page is for staff — clients are managed on the Clients page.
   const allStaff = useMemo(() => profiles.filter((p) => p.role !== "client"), [profiles]);
   // ?team= scopes the page to one team (used by the sidebar's team sub-links).
-  const staff = useMemo(
-    () => (teamFilter ? allStaff.filter((p) => p.team === teamFilter) : allStaff),
-    [allStaff, teamFilter]
-  );
-  // Derived from everyone, so filtering to one team doesn't shrink the pickers.
-  const teams = useMemo(
-    () => Array.from(new Set(allStaff.map((p) => p.team).filter((t): t is string => !!t))).sort(),
-    [allStaff]
-  );
+  const staff = useMemo(() => {
+    const list = teamFilter ? allStaff.filter((p) => p.team === teamFilter) : allStaff;
+    // You always sit at the top; everyone else alphabetical.
+    return [...list].sort((a, b) => {
+      if (a.id === me?.id) return -1;
+      if (b.id === me?.id) return 1;
+      return a.full_name.localeCompare(b.full_name);
+    });
+  }, [allStaff, teamFilter, me]);
+  // Real team records, plus any legacy names still sitting on profiles.
+  const teams = useMemo(() => {
+    const names = new Set(teamRows.map((t) => t.name));
+    for (const p of allStaff) if (p.team) names.add(p.team);
+    return Array.from(names).sort();
+  }, [teamRows, allStaff]);
   const nameOf = (id: string | null) => allStaff.find((p) => p.id === id)?.full_name ?? null;
 
   async function patchProfile(id: string, patch: Partial<Profile>) {
@@ -131,6 +142,73 @@ function TeamPageInner() {
     }
     setRows((prev) => prev.filter((x) => x.id !== p.id));
     toast.success(`${p.full_name} removed`);
+  }
+
+  /** Typing a brand-new team name on a person should also create the record. */
+  async function ensureTeam(name: string) {
+    if (!name || teamRows.some((t) => t.name === name)) return;
+    const supabase = createClient();
+    if (!supabase) return;
+    const { data } = await supabase.from("teams").insert({ name }).select().single();
+    if (data) setTeamRows((prev) => [...prev, data as Team]);
+  }
+
+  async function createTeam() {
+    const name = window.prompt("New team name:")?.trim();
+    if (!name) return;
+    if (teams.includes(name)) {
+      toast.error(`"${name}" already exists.`);
+      return;
+    }
+    const supabase = createClient();
+    if (!supabase) return;
+    const { data, error } = await supabase.from("teams").insert({ name }).select().single();
+    if (error) {
+      toast.error(`Couldn't create team: ${error.message}`);
+      return;
+    }
+    setTeamRows((prev) => [...prev, data as Team]);
+    toast.success(`Team "${name}" created`);
+  }
+
+  async function renameTeam(oldName: string) {
+    const name = window.prompt("Rename team:", oldName)?.trim();
+    if (!name || name === oldName) return;
+    if (teams.includes(name)) {
+      toast.error(`"${name}" already exists.`);
+      return;
+    }
+    const supabase = createClient();
+    if (!supabase) return;
+    // Rename the record, then carry everyone on it across.
+    const { error } = await supabase.from("teams").update({ name }).eq("name", oldName);
+    if (error) {
+      toast.error(`Couldn't rename: ${error.message}`);
+      return;
+    }
+    await supabase.from("profiles").update({ team: name }).eq("team", oldName);
+    setTeamRows((prev) => prev.map((t) => (t.name === oldName ? { ...t, name } : t)));
+    setRows((prev) => prev.map((p) => (p.team === oldName ? { ...p, team: name } : p)));
+    toast.success(`Renamed to "${name}"`);
+  }
+
+  async function deleteTeam(name: string) {
+    const count = allStaff.filter((p) => p.team === name).length;
+    if (
+      !confirm(
+        count > 0
+          ? `Delete team "${name}"? ${count} member${count !== 1 ? "s" : ""} will be left without a team (nobody is removed).`
+          : `Delete team "${name}"?`
+      )
+    )
+      return;
+    const supabase = createClient();
+    if (!supabase) return;
+    await supabase.from("teams").delete().eq("name", name);
+    await supabase.from("profiles").update({ team: null }).eq("team", name);
+    setTeamRows((prev) => prev.filter((t) => t.name !== name));
+    setRows((prev) => prev.map((p) => (p.team === name ? { ...p, team: null } : p)));
+    toast.success(`Team "${name}" deleted`);
   }
 
   async function addMember(e: React.FormEvent) {
@@ -222,7 +300,14 @@ function TeamPageInner() {
       header: "Team",
       render: (p) =>
         isAdmin ? (
-          <TeamPicker value={p.team} teams={teams} onChange={(team) => patchProfile(p.id, { team })} />
+          <TeamPicker
+            value={p.team}
+            teams={teams}
+            onChange={(team) => {
+              if (team) void ensureTeam(team);
+              patchProfile(p.id, { team });
+            }}
+          />
         ) : p.team ? (
           <Badge tone="gray">{p.team}</Badge>
         ) : (
@@ -317,9 +402,14 @@ function TeamPageInner() {
             <ViewButton active={view === "org"} onClick={() => setView("org")} icon={Network} label="Org chart" />
           </div>
           {isAdmin && (
-            <Button size="sm" onClick={() => { setAddError(null); setAdding({ ...emptyMember }); }}>
-              <UserPlus className="h-4 w-4" /> Add member
-            </Button>
+            <>
+              <Button size="sm" variant="secondary" onClick={createTeam}>
+                <Building2 className="h-4 w-4" /> New team
+              </Button>
+              <Button size="sm" onClick={() => { setAddError(null); setAdding({ ...emptyMember }); }}>
+                <UserPlus className="h-4 w-4" /> Add member
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -328,7 +418,14 @@ function TeamPageInner() {
         {view === "members" ? (
           <DataTable columns={columns} rows={staff} rowKey={(p) => p.id} emptyMessage="No team members yet." />
         ) : (
-          <OrgChart staff={staff} teams={teams} />
+          <OrgChartFlow
+            staff={staff}
+            teams={teams}
+            meId={me?.id}
+            canManage={isAdmin}
+            onRenameTeam={renameTeam}
+            onDeleteTeam={deleteTeam}
+          />
         )}
       </div>
 
@@ -522,112 +619,6 @@ function PaymentPlanEditor({
           <Plus className="h-3.5 w-3.5" /> Add payment
         </Button>
       </form>
-    </div>
-  );
-}
-
-/* ---------------------------------- Org chart ---------------------------------- */
-
-function OrgChart({ staff, teams }: { staff: Profile[]; teams: string[] }) {
-  const byManager = useMemo(() => {
-    const map = new Map<string, Profile[]>();
-    for (const p of staff) {
-      if (!p.reports_to) continue;
-      const arr = map.get(p.reports_to) ?? [];
-      arr.push(p);
-      map.set(p.reports_to, arr);
-    }
-    return map;
-  }, [staff]);
-
-  const ids = useMemo(() => new Set(staff.map((p) => p.id)), [staff]);
-  // Roots: no manager, or manager not in the staff set (defensive).
-  const roots = useMemo(
-    () => staff.filter((p) => !p.reports_to || !ids.has(p.reports_to)),
-    [staff, ids]
-  );
-
-  return (
-    <div className="flex flex-col gap-5">
-      {/* Teams summary */}
-      <div className="flex flex-wrap items-center gap-2">
-        {teams.length === 0 ? (
-          <span className="text-xs text-muted-foreground">
-            No teams assigned yet — set a team on the Members tab.
-          </span>
-        ) : (
-          teams.map((t) => (
-            <span
-              key={t}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-foreground-secondary"
-            >
-              <Building2 className="h-3 w-3 text-muted-foreground" />
-              {t}
-              <span className="rounded-full bg-white/10 px-1.5 text-[10px] tabular-nums text-muted-foreground">
-                {staff.filter((p) => p.team === t).length}
-              </span>
-            </span>
-          ))
-        )}
-      </div>
-
-      {/* Reporting tree */}
-      <div className="flex flex-col gap-2 rounded-xl border border-border bg-surface p-4 shadow-sm">
-        {roots.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">No team members yet.</p>
-        ) : (
-          roots.map((p) => (
-            <OrgNode key={p.id} person={p} byManager={byManager} depth={0} seen={new Set()} />
-          ))
-        )}
-      </div>
-    </div>
-  );
-}
-
-function OrgNode({
-  person,
-  byManager,
-  depth,
-  seen,
-}: {
-  person: Profile;
-  byManager: Map<string, Profile[]>;
-  depth: number;
-  seen: Set<string>;
-}) {
-  if (seen.has(person.id)) return null; // guard against reporting cycles
-  const nextSeen = new Set(seen);
-  nextSeen.add(person.id);
-  const reports = byManager.get(person.id) ?? [];
-
-  return (
-    <div className={cn(depth > 0 && "ml-4 border-l border-border-subtle pl-4")}>
-      <div className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-white/[0.03]">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[10px] font-semibold text-primary">
-          {initials(person.full_name)}
-        </span>
-        <span className="text-sm font-medium">{person.full_name}</span>
-        <Badge tone={roleTone[person.role]}>{person.role}</Badge>
-        {person.team && (
-          <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
-            <Building2 className="h-3 w-3" />
-            {person.team}
-          </span>
-        )}
-        {reports.length > 0 && (
-          <span className="ml-auto text-[11px] text-muted-2">
-            {reports.length} report{reports.length !== 1 ? "s" : ""}
-          </span>
-        )}
-      </div>
-      {reports.length > 0 && (
-        <div className="mt-1 flex flex-col gap-1">
-          {reports.map((r) => (
-            <OrgNode key={r.id} person={r} byManager={byManager} depth={depth + 1} seen={nextSeen} />
-          ))}
-        </div>
-      )}
     </div>
   );
 }

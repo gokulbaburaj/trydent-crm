@@ -218,6 +218,12 @@ export interface Notification {
   created_at: string;
 }
 
+export interface Team {
+  id: string;
+  name: string;
+  created_at: string;
+}
+
 export type PaymentStatus = "pending" | "paid";
 
 export interface StaffPayment {
@@ -254,6 +260,7 @@ export interface Database {
       projects: { Row: Project; Insert: Partial<Project>; Update: Partial<Project> };
       project_tasks: { Row: ProjectTask; Insert: Partial<ProjectTask>; Update: Partial<ProjectTask> };
       staff_payments: { Row: StaffPayment; Insert: Partial<StaffPayment>; Update: Partial<StaffPayment> };
+      teams: { Row: Team; Insert: Partial<Team>; Update: Partial<Team> };
       task_items: { Row: TaskItem; Insert: Partial<TaskItem>; Update: Partial<TaskItem> };
       task_comments: { Row: TaskComment; Insert: Partial<TaskComment>; Update: Partial<TaskComment> };
       portal_updates: { Row: PortalUpdate; Insert: Partial<PortalUpdate>; Update: Partial<PortalUpdate> };

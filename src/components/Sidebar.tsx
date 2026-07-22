@@ -17,6 +17,7 @@ import {
   Search,
   SquarePen,
   Building2,
+  Plus,
 } from "lucide-react";
 import {
   DndContext,
@@ -37,7 +38,10 @@ import { cn } from "@/lib/utils";
 import { openCommandMenu } from "@/components/CommandMenu";
 import { applyOrder, useNavState } from "@/lib/nav";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
-import type { Profile } from "@/lib/types";
+import { useAuth } from "@/lib/useAuth";
+import { createClient } from "@/lib/supabase/client";
+import { toast } from "@/components/Toaster";
+import type { Profile, Team } from "@/lib/types";
 
 interface NavItem {
   href: string;
@@ -74,19 +78,38 @@ export function Sidebar({
   const activeTeam = searchParams.get("team");
   const { state, toggleSection, toggleTeam, setOrder } = useNavState();
 
+  const { profile: me } = useAuth();
+  const isAdmin = me?.role === "admin";
   const { rows: profiles } = useSupabaseTable<Profile>("profiles");
-  const teams = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          profiles
-            .filter((p) => p.role !== "client")
-            .map((p) => p.team)
-            .filter((t): t is string => !!t)
-        )
-      ).sort(),
-    [profiles]
-  );
+  const { rows: teamRows, setRows: setTeamRows } = useSupabaseTable<Team>("teams", {
+    column: "name",
+    ascending: true,
+  });
+
+  // Real team records, plus any legacy names still sitting on profiles.
+  const teams = useMemo(() => {
+    const names = new Set(teamRows.map((t) => t.name));
+    for (const p of profiles) if (p.role !== "client" && p.team) names.add(p.team);
+    return Array.from(names).sort();
+  }, [teamRows, profiles]);
+
+  async function createTeam() {
+    const name = window.prompt("New team name:")?.trim();
+    if (!name) return;
+    if (teams.includes(name)) {
+      toast.error(`"${name}" already exists.`);
+      return;
+    }
+    const supabase = createClient();
+    if (!supabase) return;
+    const { data, error } = await supabase.from("teams").insert({ name }).select().single();
+    if (error) {
+      toast.error(`Couldn't create team: ${error.message}`);
+      return;
+    }
+    setTeamRows((prev) => [...prev, data as Team]);
+    toast.success(`Team "${name}" created`);
+  }
 
   const isActive = (href: string) =>
     !activeTeam && (pathname === href || pathname?.startsWith(href + "/"));
@@ -144,16 +167,29 @@ export function Sidebar({
 
         {/* Teams — each expands to its own scoped views */}
         <div className="flex flex-col gap-px">
-          <SectionHeader
-            label="Your teams"
-            collapsed={!!state.collapsed.teams}
-            onToggle={() => toggleSection("teams")}
-          />
+          <div className="group/hdr flex items-center">
+            <div className="min-w-0 flex-1">
+              <SectionHeader
+                label="Your teams"
+                collapsed={!!state.collapsed.teams}
+                onToggle={() => toggleSection("teams")}
+              />
+            </div>
+            {isAdmin && (
+              <button
+                onClick={createTeam}
+                title="New team"
+                className="mt-2.5 rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-white/5 hover:text-foreground group-hover/hdr:opacity-100"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
           {!state.collapsed.teams && (
             <div className="flex flex-col gap-px">
               {teams.length === 0 && (
                 <p className="px-2 py-1.5 text-[11px] leading-snug text-muted-2">
-                  No teams yet — set a team on people in the Team page.
+                  No teams yet{isAdmin ? " — use + to create one." : "."}
                 </p>
               )}
               {teams.map((team) => {

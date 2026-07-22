@@ -128,6 +128,14 @@ create table project_tasks (
   updated_at timestamptz not null default now()
 );
 
+-- ============ TEAMS ============
+-- Real team records; profiles.team stores the team NAME (renames cascade in app).
+create table teams (
+  id uuid primary key default gen_random_uuid(),
+  name text not null unique,
+  created_at timestamptz not null default now()
+);
+
 -- ============ APP SETTINGS (single row) ============
 -- All money is stored in base_currency; the display toggle converts from it.
 create table app_settings (
@@ -258,6 +266,7 @@ alter table project_tasks enable row level security;
 alter table task_items enable row level security;
 alter table staff_payments enable row level security;
 alter table app_settings enable row level security;
+alter table teams enable row level security;
 
 -- Profiles: everyone can read all profiles (needed for assignee dropdowns), only admins can edit others
 create policy "profiles_select_all" on profiles for select using (true);
@@ -308,6 +317,11 @@ create policy "project_tasks_contractor_select_own" on project_tasks for select
   using (current_role_name() = 'contractor' and assigned_to = auth.uid());
 create policy "project_tasks_contractor_update_own" on project_tasks for update
   using (current_role_name() = 'contractor' and assigned_to = auth.uid());
+
+-- Teams: everyone reads (sidebar), staff manage
+create policy "teams_read" on teams for select using (true);
+create policy "teams_staff_write" on teams for all
+  using (current_role_name() in ('admin', 'rep'));
 
 -- App settings: everyone reads (money formatting), staff can change
 create policy "app_settings_read" on app_settings for select using (true);
