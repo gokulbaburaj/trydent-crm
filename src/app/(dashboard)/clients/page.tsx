@@ -6,6 +6,7 @@ import { toast } from "@/components/Toaster";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { TableSkeleton } from "@/components/ui/Skeletons";
 import { BulkActionBar } from "@/components/BulkActionBar";
+import { ClientDetailDrawer } from "@/components/ClientDetailDrawer";
 import { DataTable, Column } from "@/components/DataTable";
 import { FilterBar } from "@/components/FilterBar";
 import { KanbanBoard } from "@/components/KanbanBoard";
@@ -22,8 +23,7 @@ import { applyFilters, useStoredFilters } from "@/lib/filters";
 import { useMultiSelect } from "@/lib/useMultiSelect";
 import { createClient } from "@/lib/supabase/client";
 import { formatDate } from "@/lib/utils";
-import { useCurrency } from "@/lib/currency";
-import type { Client, Deal, Activity, ClientPortal, Profile } from "@/lib/types";
+import type { Client, Deal, Activity, ClientPortal, PortalUpdate, Profile } from "@/lib/types";
 import { CLIENT_STATUSES, LEAD_SOURCES } from "@/lib/types";
 
 type View = "table" | "kanban";
@@ -46,11 +46,11 @@ export default function ClientsPage() {
   );
   const { rows: deals } = useSupabaseTable<Deal>("deals");
   const { rows: activities } = useSupabaseTable<Activity>("activities");
-  const { rows: portals } = useSupabaseTable<ClientPortal>("client_portals");
+  const { rows: portals, setRows: setPortals } = useSupabaseTable<ClientPortal>("client_portals");
+  const { rows: updates, setRows: setUpdates } = useSupabaseTable<PortalUpdate>("portal_updates");
   const { rows: profiles } = useSupabaseTable<Profile>("profiles");
 
   const [view, setView] = useState<View>("table");
-  const { format: formatCurrency } = useCurrency();
   const [selected, setSelected] = useState<Client | null>(null);
   const [editing, setEditing] = useState<Partial<Client> | null>(null);
   const [saving, setSaving] = useState(false);
@@ -144,6 +144,22 @@ export default function ClientsPage() {
         c.account_owner ? ownerName(c.account_owner).toLowerCase() : null,
     },
     {
+      header: "Portal",
+      render: (c) => {
+        const p = portals.find((x) => x.client_id === c.id);
+        if (!p) return <span className="text-xs text-muted-foreground">—</span>;
+        return (
+          <div className="flex items-center gap-2">
+            <Badge tone={statusTone(p.status)} dot>{p.status}</Badge>
+            {!p.last_opened_at && (
+              <span className="text-[11px] text-muted-2">never opened</span>
+            )}
+          </div>
+        );
+      },
+      sortKey: (c) => portals.find((x) => x.client_id === c.id)?.status ?? "~",
+    },
+    {
       header: "Last Contact",
       render: (c) => formatDate(c.last_contact),
       sortKey: (c) => c.last_contact,
@@ -204,18 +220,17 @@ export default function ClientsPage() {
     await supabase.from("clients").update({ status }).eq("id", client.id);
   }
 
-  const selectedDeals = useMemo(
-    () => deals.filter((d) => d.client_id === selected?.id),
-    [deals, selected]
-  );
-  const selectedActivities = useMemo(
-    () => activities.filter((a) => a.client_id === selected?.id),
-    [activities, selected]
-  );
   const selectedPortal = useMemo(
-    () => portals.find((p) => p.client_id === selected?.id),
+    () => portals.find((p) => p.client_id === selected?.id) ?? null,
     [portals, selected]
   );
+
+  /** Upsert a created/updated portal into list state so the column stays live. */
+  function syncPortal(p: ClientPortal) {
+    setPortals((prev) =>
+      prev.some((x) => x.id === p.id) ? prev.map((x) => (x.id === p.id ? p : x)) : [p, ...prev]
+    );
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -296,94 +311,20 @@ export default function ClientsPage() {
       )}
       </div>
 
-      {/* Detail drawer */}
-      <Drawer open={!!selected} onClose={() => setSelected(null)} title={selected?.company ?? ""}>
-        {selected && (
-          <div className="flex flex-col gap-6">
-            <div className="flex items-center justify-between">
-              <Badge tone={statusTone(selected.status)} dot>
-                {selected.status}
-              </Badge>
-              <div className="flex gap-2">
-                <Button size="sm" variant="secondary" onClick={() => setEditing(selected)}>
-                  Edit
-                </Button>
-                <Button size="sm" variant="danger" onClick={() => handleDelete(selected.id)}>
-                  Delete
-                </Button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <Info label="Contact" value={selected.point_person} />
-              <Info label="Email" value={selected.email} />
-              <Info label="Phone" value={selected.phone} />
-              <Info label="Lead Source" value={selected.lead_source} />
-              <Info label="Owner" value={ownerName(selected.account_owner)} />
-              <Info label="Last Contact" value={formatDate(selected.last_contact)} />
-            </div>
-
-            {selected.address && (
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">Address</p>
-                <p className="text-sm">{selected.address}</p>
-              </div>
-            )}
-
-            {selected.tags?.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {selected.tags.map((t) => (
-                  <Badge key={t} tone="gray">{t}</Badge>
-                ))}
-              </div>
-            )}
-
-            <div>
-              <h4 className="mb-2 text-sm font-semibold">Deals ({selectedDeals.length})</h4>
-              <div className="flex flex-col gap-2">
-                {selectedDeals.map((d) => (
-                  <div key={d.id} className="rounded border border-border p-3 text-sm">
-                    <div className="flex justify-between">
-                      <span className="font-medium">{d.deal_name}</span>
-                      <Badge tone={statusTone(d.deal_stage)}>{d.deal_stage}</Badge>
-                    </div>
-                    <p className="mt-1 text-xs text-muted-foreground">{formatCurrency(Number(d.deal_value))}</p>
-                  </div>
-                ))}
-                {selectedDeals.length === 0 && (
-                  <p className="text-xs text-muted-foreground">No deals linked.</p>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <h4 className="mb-2 text-sm font-semibold">Activities ({selectedActivities.length})</h4>
-              <div className="flex flex-col gap-2">
-                {selectedActivities.map((a) => (
-                  <div key={a.id} className="rounded border border-border p-3 text-sm">
-                    <p>{a.description}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{formatDate(a.activity_date)}</p>
-                  </div>
-                ))}
-                {selectedActivities.length === 0 && (
-                  <p className="text-xs text-muted-foreground">No activities linked.</p>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <h4 className="mb-2 text-sm font-semibold">Client Portal</h4>
-              {selectedPortal ? (
-                <Badge tone={statusTone(selectedPortal.status)} dot>
-                  {selectedPortal.status}
-                </Badge>
-              ) : (
-                <p className="text-xs text-muted-foreground">No portal set up.</p>
-              )}
-            </div>
-          </div>
-        )}
-      </Drawer>
+      {/* Detail drawer — client record + portal management in one place */}
+      <ClientDetailDrawer
+        client={selected}
+        portal={selectedPortal}
+        deals={deals}
+        activities={activities}
+        profiles={profiles}
+        updates={updates}
+        onClose={() => setSelected(null)}
+        onEdit={(c) => setEditing(c)}
+        onDelete={handleDelete}
+        onPortalChange={syncPortal}
+        onUpdatePosted={(u) => setUpdates((prev) => [u, ...prev])}
+      />
 
       {/* Create/edit form drawer */}
       <Drawer
@@ -506,14 +447,6 @@ export default function ClientsPage() {
   );
 }
 
-function Info({ label, value }: { label: string; value?: string | null }) {
-  return (
-    <div>
-      <p className="text-xs font-medium text-muted-foreground">{label}</p>
-      <p className="text-sm">{value || "—"}</p>
-    </div>
-  );
-}
 
 function TagInput({ tags, onChange }: { tags: string[]; onChange: (tags: string[]) => void }) {
   const [draft, setDraft] = useState("");

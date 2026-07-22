@@ -10,7 +10,6 @@ import {
   History,
   LayoutDashboard,
   ListChecks,
-  MonitorSmartphone,
   Plus,
   Settings,
   Users,
@@ -29,7 +28,6 @@ const TAB_ICONS: [string, React.ComponentType<{ className?: string }>][] = [
   ["/projects", FolderKanban],
   ["/schedule", Calendar],
   ["/activities", Calendar],
-  ["/portals", MonitorSmartphone],
   ["/team", UsersRound],
   ["/settings", Settings],
 ];

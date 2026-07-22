@@ -9,7 +9,6 @@ import {
   GitBranch,
   FolderKanban,
   Calendar,
-  MonitorSmartphone,
   UsersRound,
   Settings,
   ChevronDown,
@@ -29,7 +28,6 @@ const WORKSPACE = [
   { href: "/pipeline", label: "Pipeline", icon: GitBranch },
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/schedule", label: "Schedule", icon: Calendar },
-  { href: "/portals", label: "Client Portals", icon: MonitorSmartphone },
 ];
 
 const ORGANIZATION = [

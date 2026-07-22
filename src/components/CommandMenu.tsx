@@ -8,7 +8,6 @@ import {
   GitBranch,
   LayoutDashboard,
   ListChecks,
-  MonitorSmartphone,
   Palette,
   Settings,
   Users,
@@ -42,7 +41,6 @@ const PAGES = [
   { href: "/pipeline", label: "Pipeline", icon: GitBranch },
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/schedule", label: "Schedule", icon: Calendar },
-  { href: "/portals", label: "Client Portals", icon: MonitorSmartphone },
   { href: "/team", label: "Team", icon: UsersRound },
   { href: "/settings", label: "Settings", icon: Settings },
 ];

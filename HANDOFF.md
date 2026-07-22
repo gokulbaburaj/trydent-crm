@@ -94,9 +94,13 @@ deliverable links, label chips, priority, subtask mini-board, comment
 thread, client-approval banner); Schedule (week time-grid + redesigned
 month view, activities + task due dates + project deadlines, drag to
 reschedule with view-transition morphs, right-click event color picker);
-Portals (status tracker, login provisioning + password reset, preview
-portal as client, copy client link, last-opened tracking, post updates);
-Team (role editing); Settings (theme accent picker); notifications bell
+Portals — MERGED into Clients (July 2026): the standalone Portals page is
+gone (sidebar/⌘K/tab-map entries removed; `/portals` route now redirects to
+`/clients`). Portal management (status, login provisioning + password reset,
+preview, copy link, last-opened, post updates, notes) lives in the wide
+`ClientDetailDrawer` per client; the Clients table has a Portal status
+column (with a "never opened" hint). Clients with no portal get a "Set up
+portal" button. Team (role editing); Settings (theme accent picker); notifications bell
 (unread badge, 60s poll, triggers on client comment/approval/first portal
 open); ⌘K command palette (cmdk — pages/clients/projects/deals/theme);
 toasts (sonner); tooltips; skeleton loading; gradient avatars; login-page
