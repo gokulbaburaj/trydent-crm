@@ -68,27 +68,34 @@
   --event-yellow-bar: #d9a53f;
   --event-indigo-bg: #6c74dd;
   --event-indigo-bar: #4a52c4;
-  --chart-background: oklch(1 0 0);
-  --chart-foreground: oklch(0.145 0.004 285);
-  --chart-foreground-muted: oklch(0.55 0.014 260);
+  /*
+    Bklit chart chrome. The @bklit registry ships LIGHT defaults here, which in
+    this dark-only app rendered a white chart background, near-white grid lines
+    and dark-on-dark labels. These are the dark equivalents, mapped onto our
+    existing tokens so charts follow the theme (and the user's accent).
+  */
+  --chart-background: transparent;
+  --chart-foreground: var(--foreground);
+  --chart-foreground-muted: var(--muted-foreground);
   --chart-line-primary: var(--chart-1);
   --chart-line-secondary: var(--chart-2);
-  --chart-crosshair: oklch(0.4 0.1828 274.34);
-  --chart-grid: oklch(0.9 0 0);
-  --chart-brush-border: var(--chart-grid);
-  --chart-tooltip-background: oklch(0.21 0.006 285 / 0.8);
-  --chart-tooltip-foreground: oklch(0.985 0 0);
-  --chart-tooltip-muted: oklch(0.65 0.01 260);
-  --chart-marker-background: oklch(0.97 0.005 260);
-  --chart-marker-border: oklch(0.85 0.01 260);
-  --chart-marker-foreground: oklch(0.3 0.01 260);
-  --chart-label: oklch(0.45 0.01 260);
-  --chart-scale-01: oklch(0.98 0.003 106);
-  --chart-scale-02: oklch(0.92 0.008 106);
-  --chart-scale-03: oklch(0.82 0.015 106);
-  --chart-scale-04: oklch(0.68 0.02 106);
-  --chart-scale-05: oklch(0.55 0.025 106);
-  --chart-scale-pattern-color: oklch(0.96 0.005 106);
+  --chart-crosshair: var(--primary);
+  --chart-grid: oklch(1 0 0 / 0.08);
+  --chart-brush-border: var(--border);
+  --chart-tooltip-background: oklch(0.18 0 0 / 0.92);
+  --chart-tooltip-foreground: var(--foreground);
+  --chart-tooltip-muted: var(--muted-foreground);
+  --chart-marker-background: var(--card);
+  --chart-marker-border: var(--border);
+  --chart-marker-foreground: var(--foreground);
+  --chart-label: var(--muted-foreground);
+  /* Sequential ramp (heatmap/choropleth): dark → brand */
+  --chart-scale-01: oklch(1 0 0 / 0.06);
+  --chart-scale-02: oklch(1 0 0 / 0.12);
+  --chart-scale-03: oklch(1 0 0 / 0.20);
+  --chart-scale-04: color-mix(in oklab, var(--primary) 55%, transparent);
+  --chart-scale-05: var(--primary);
+  --chart-scale-pattern-color: oklch(1 0 0 / 0.15);
 }
 
 @theme inline {

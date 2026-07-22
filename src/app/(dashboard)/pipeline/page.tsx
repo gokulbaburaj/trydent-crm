@@ -8,7 +8,11 @@ import { Bar } from "@/components/charts/bar";
 import { Grid } from "@/components/charts/grid";
 import { BarXAxis } from "@/components/charts/bar-x-axis";
 import { ChartTooltip } from "@/components/charts/tooltip/chart-tooltip";
+import { PieChart } from "@/components/charts/pie-chart";
+import { PieSlice } from "@/components/charts/pie-slice";
+import { PieCenter } from "@/components/charts/pie-center";
 import { Card } from "@/components/ui/Card";
+import { cn } from "@/lib/utils";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { Button } from "@/components/ui/Button";
 import { Badge, statusTone } from "@/components/ui/Badge";
@@ -24,6 +28,23 @@ import { formatDate } from "@/lib/format";
 import { CURRENCIES, useCurrency } from "@/lib/currency";
 import type { Deal, Client, Profile } from "@/lib/types";
 import { DEAL_STAGES } from "@/lib/types";
+
+/** Stage colours — first follows the user's accent, rest are fixed. */
+const STAGE_COLORS = [
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
+];
+
+type StageChart = "bar" | "value" | "share";
+
+const STAGE_CHARTS: { id: StageChart; label: string; hint: string }[] = [
+  { id: "bar", label: "Count", hint: "How many deals sit in each stage" },
+  { id: "value", label: "Value", hint: "How much money sits in each stage" },
+  { id: "share", label: "Share", hint: "Each stage's share of all deals" },
+];
 
 const emptyForm: Partial<Deal> = {
   deal_name: "",
@@ -42,6 +63,7 @@ export default function PipelinePage() {
   const { rows: clients } = useSupabaseTable<Client>("clients");
   const { rows: profiles } = useSupabaseTable<Profile>("profiles");
 
+  const [stageChart, setStageChart] = useState<StageChart>("bar");
   const [selected, setSelected] = useState<Deal | null>(null);
   const [editing, setEditing] = useState<Partial<Deal> | null>(null);
   const [saving, setSaving] = useState(false);
@@ -69,6 +91,19 @@ export default function PipelinePage() {
         };
       }),
     [deals]
+  );
+
+  /** Pie needs empty stages dropped, otherwise it renders zero-width slices. */
+  const stageSlices = useMemo(
+    () =>
+      stageBars
+        .map((s, i) => ({
+          label: s.stage,
+          value: s.deals,
+          color: STAGE_COLORS[i % STAGE_COLORS.length],
+        }))
+        .filter((s) => s.value > 0),
+    [stageBars]
   );
 
   const visibleDeals = useMemo(
@@ -194,34 +229,79 @@ export default function PipelinePage() {
 
       {deals.length > 0 && (
         <Card className="rounded-xl shadow-sm">
-          <h3 className="mb-1 text-sm font-semibold">Deals by stage</h3>
-          <p className="mb-3 text-xs text-muted-foreground">
-            How many deals sit in each stage right now, and what they&apos;re worth.
-          </p>
-          <BarChart
-            data={stageBars}
-            xDataKey="stage"
-            aspectRatio="7 / 2"
-            barGap={0.3}
-            margin={{ top: 24, right: 16, bottom: 36, left: 16 }}
-          >
-            <Grid horizontal vertical={false} />
-            <Bar dataKey="deals" fill="var(--primary)" />
-            <BarXAxis showAllLabels />
-            <ChartTooltip
-              content={({ point }) => (
-                <div>
-                  <p className="text-[11px] text-muted-foreground">{String(point.stage)}</p>
-                  <p className="mt-0.5 text-[13px] font-medium tabular-nums text-foreground">
-                    {Number(point.deals)} deal{Number(point.deals) === 1 ? "" : "s"}
-                  </p>
-                  <p className="text-[11px] tabular-nums text-muted-foreground">
-                    {formatCurrency(Number(point.value))}
-                  </p>
-                </div>
-              )}
-            />
-          </BarChart>
+          <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold">Deals by stage</h3>
+              <p className="text-xs text-muted-foreground">
+                Where your deals sit right now — matches the board below.
+              </p>
+            </div>
+            <div className="flex items-center gap-0.5 rounded-md border border-border bg-surface p-1">
+              {STAGE_CHARTS.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => setStageChart(c.id)}
+                  title={c.hint}
+                  className={cn(
+                    "rounded px-2.5 py-1 text-xs font-medium transition-colors",
+                    stageChart === c.id
+                      ? "bg-white/10 text-foreground"
+                      : "text-muted-foreground hover:text-foreground-secondary"
+                  )}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {stageChart === "share" ? (
+            <div className="flex h-[260px] items-center justify-center gap-8">
+              <PieChart data={stageSlices} size={220} innerRadius={62} padAngle={0.05} cornerRadius={6}>
+                {stageSlices.map((s, i) => (
+                  <PieSlice key={s.label} index={i} />
+                ))}
+                <PieCenter defaultLabel="deals" />
+              </PieChart>
+              <div className="flex flex-col gap-2">
+                {stageSlices.map((s) => (
+                  <div key={s.label} className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span className="h-2 w-2 rounded-full" style={{ background: s.color }} />
+                    {s.label}
+                    <span className="tabular-nums text-foreground-secondary">{s.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <BarChart
+              data={stageBars}
+              xDataKey="stage"
+              aspectRatio="16 / 5"
+              barWidth={56}
+              margin={{ top: 24, right: 16, bottom: 36, left: 16 }}
+            >
+              <Grid horizontal vertical={false} />
+              <Bar
+                dataKey={stageChart === "value" ? "value" : "deals"}
+                fill="var(--chart-1)"
+              />
+              <BarXAxis showAllLabels />
+              <ChartTooltip
+                content={({ point }) => (
+                  <div>
+                    <p className="text-[11px] text-muted-foreground">{String(point.stage)}</p>
+                    <p className="mt-0.5 text-[13px] font-medium tabular-nums text-foreground">
+                      {Number(point.deals)} deal{Number(point.deals) === 1 ? "" : "s"}
+                    </p>
+                    <p className="text-[11px] tabular-nums text-muted-foreground">
+                      {formatCurrency(Number(point.value))}
+                    </p>
+                  </div>
+                )}
+              />
+            </BarChart>
+          )}
         </Card>
       )}
 

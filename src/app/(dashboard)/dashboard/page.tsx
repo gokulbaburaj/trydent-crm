@@ -184,16 +184,16 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-1">
-          <h3 className="mb-4 text-sm font-semibold text-muted-foreground">
-            Deals by Stage
-          </h3>
+        {/* h-full + flex so the donut centres in whatever height the row takes,
+            instead of leaving a tall gap under a small chart. */}
+        <Card className="flex h-full flex-col lg:col-span-1">
+          <h3 className="text-sm font-semibold text-muted-foreground">Deals by Stage</h3>
           {stageData.length > 0 ? (
-            <div className="flex h-[240px] items-center justify-center">
+            <div className="flex min-h-[200px] flex-1 items-center justify-center py-2">
               <PieChart
                 data={stageData}
-                size={220}
-                innerRadius={62}
+                size={200}
+                innerRadius={58}
                 padAngle={0.05}
                 cornerRadius={6}
               >
@@ -204,9 +204,11 @@ export default function DashboardPage() {
               </PieChart>
             </div>
           ) : (
-            <p className="py-16 text-center text-sm text-muted-foreground">No deals yet.</p>
+            <p className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+              No deals yet.
+            </p>
           )}
-          <div className="mt-2 flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-x-3 gap-y-1.5">
             {stageData.map((s) => (
               <div key={s.label} className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <span className="h-2 w-2 rounded-full" style={{ background: s.color }} />
