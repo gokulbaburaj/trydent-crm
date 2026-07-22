@@ -24,7 +24,6 @@ import {
   Box,
   Building2,
   Calendar as CalendarIcon,
-  CalendarDays,
   Check,
   CheckCheck,
   ChevronLeft,
@@ -442,7 +441,6 @@ export default function ProjectDetailPage() {
         />
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
           <div className="flex items-center gap-1.5">
-            <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
             <div className="w-36">
               <DatePicker
                 value={project.start_date}
@@ -461,7 +459,7 @@ export default function ProjectDetailPage() {
           </div>
           <Popover
             trigger={
-              <button className="flex items-center gap-1.5 rounded border border-white/5 bg-white/5 px-2 py-1 text-xs font-medium text-foreground-secondary hover:bg-white/10">
+              <button className="flex h-9 items-center gap-1.5 rounded-md border border-white/5 bg-white/5 px-2.5 text-xs font-medium text-foreground-secondary hover:bg-white/10">
                 <Building2 className="h-3 w-3 text-muted-foreground" />
                 {clientName(project.client_id)}
               </button>
@@ -487,7 +485,7 @@ export default function ProjectDetailPage() {
           </Popover>
           <Popover
             trigger={
-              <button className="flex items-center gap-2 rounded border border-white/5 bg-white/5 px-2 py-1 text-xs font-medium text-foreground-secondary hover:bg-white/10">
+              <button className="flex h-9 items-center gap-2 rounded-md border border-white/5 bg-white/5 px-2.5 text-xs font-medium text-foreground-secondary hover:bg-white/10">
                 {project.owner ? (
                   <>
                     <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary/15 text-[8px] font-semibold text-primary">
