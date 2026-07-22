@@ -2,6 +2,103 @@ import { NextResponse } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 
+const ALLOWED_ROLES = ["admin", "rep", "contractor"] as const;
+
+/** Confirm the caller is a signed-in admin; returns their user id or an error response. */
+async function requireAdmin() {
+  const supabase = await createServerClient();
+  if (!supabase) {
+    return { error: NextResponse.json({ error: "Supabase not configured." }, { status: 500 }) };
+  }
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: NextResponse.json({ error: "Not signed in." }, { status: 401 }) };
+  }
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  if (profile?.role !== "admin") {
+    return { error: NextResponse.json({ error: "Only admins can manage team members." }, { status: 403 }) };
+  }
+  return { userId: user.id };
+}
+
+/**
+ * POST /api/team-users
+ * Admin-only: creates a Supabase auth user for a team member (role
+ * admin/rep/contractor) and returns the new profile row.
+ * Body: { full_name, email, password, role, team?, reports_to? }
+ */
+export async function POST(req: Request) {
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!serviceKey || !url) {
+    return NextResponse.json(
+      { error: "SUPABASE_SERVICE_ROLE_KEY is not configured on the server." },
+      { status: 500 }
+    );
+  }
+
+  const auth = await requireAdmin();
+  if (auth.error) return auth.error;
+
+  const body = await req.json().catch(() => null);
+  const fullName = String(body?.full_name ?? "").trim();
+  const email = String(body?.email ?? "").trim().toLowerCase();
+  const password = String(body?.password ?? "");
+  const role = String(body?.role ?? "");
+  const team = body?.team ? String(body.team).trim() : null;
+  const reportsTo = body?.reports_to ? String(body.reports_to) : null;
+
+  if (!fullName) return NextResponse.json({ error: "Name is required." }, { status: 400 });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return NextResponse.json({ error: "Enter a valid email." }, { status: 400 });
+  }
+  if (password.length < 8) {
+    return NextResponse.json({ error: "Password must be at least 8 characters." }, { status: 400 });
+  }
+  if (!ALLOWED_ROLES.includes(role as (typeof ALLOWED_ROLES)[number])) {
+    return NextResponse.json({ error: "Invalid role." }, { status: 400 });
+  }
+
+  const admin = createServiceClient(url, serviceKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  // The on-signup trigger creates the profile from this metadata (role included).
+  const { data: created, error: createError } = await admin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: { full_name: fullName, role },
+  });
+  if (createError || !created?.user) {
+    const taken = createError?.message?.toLowerCase().includes("already");
+    return NextResponse.json(
+      { error: taken ? "That email is already in use." : createError?.message ?? "Couldn't create user." },
+      { status: 400 }
+    );
+  }
+
+  // Fill in team / manager (not part of the signup trigger).
+  await admin
+    .from("profiles")
+    .update({ team, reports_to: reportsTo })
+    .eq("id", created.user.id);
+
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("*")
+    .eq("id", created.user.id)
+    .single();
+
+  return NextResponse.json({ ok: true, profile });
+}
+
 /**
  * DELETE /api/team-users
  * Admin-only: removes a team member's auth user with the service role key.

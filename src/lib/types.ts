@@ -1,4 +1,4 @@
-export type UserRole = "admin" | "rep" | "client";
+export type UserRole = "admin" | "rep" | "client" | "contractor";
 export type ClientStatus =
   | "Lead"
   | "Prospect"
@@ -218,6 +218,18 @@ export interface Notification {
   created_at: string;
 }
 
+export type PaymentStatus = "pending" | "paid";
+
+export interface StaffPayment {
+  id: string;
+  profile_id: string;
+  label: string;
+  amount: number;
+  status: PaymentStatus;
+  due_date: string | null;
+  created_at: string;
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -241,6 +253,7 @@ export interface Database {
       client_portals: { Row: ClientPortal; Insert: Partial<ClientPortal>; Update: Partial<ClientPortal> };
       projects: { Row: Project; Insert: Partial<Project>; Update: Partial<Project> };
       project_tasks: { Row: ProjectTask; Insert: Partial<ProjectTask>; Update: Partial<ProjectTask> };
+      staff_payments: { Row: StaffPayment; Insert: Partial<StaffPayment>; Update: Partial<StaffPayment> };
       task_items: { Row: TaskItem; Insert: Partial<TaskItem>; Update: Partial<TaskItem> };
       task_comments: { Row: TaskComment; Insert: Partial<TaskComment>; Update: Partial<TaskComment> };
       portal_updates: { Row: PortalUpdate; Insert: Partial<PortalUpdate>; Update: Partial<PortalUpdate> };

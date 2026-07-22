@@ -1,26 +1,56 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Building2, Network, Plus, Trash2, User, Users } from "lucide-react";
+import { Building2, CreditCard, Network, Plus, Trash2, User, UserPlus, Users } from "lucide-react";
 import { toast } from "@/components/Toaster";
 import { DataTable, Column } from "@/components/DataTable";
 import { PersonCell } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { Drawer } from "@/components/ui/Drawer";
+import { Input, Label } from "@/components/ui/Input";
+import { DatePicker } from "@/components/ui/DatePicker";
 import { Dropdown } from "@/components/ui/Dropdown";
 import { Popover, MenuItem, MenuLabel, MenuSeparator } from "@/components/ui/Popover";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/useAuth";
+import { useCurrency } from "@/lib/currency";
 import { formatDate, initials, cn } from "@/lib/utils";
-import type { Profile, UserRole } from "@/lib/types";
+import type { Profile, StaffPayment, UserRole } from "@/lib/types";
 
 const roleTone: Record<UserRole, "green" | "blue" | "gray"> = {
   admin: "green",
   rep: "blue",
   client: "gray",
+  contractor: "gray",
+};
+
+const roleLabel: Record<string, string> = {
+  admin: "Admin",
+  rep: "Rep",
+  contractor: "Contractor",
 };
 
 type View = "members" | "org";
+
+interface MemberForm {
+  full_name: string;
+  email: string;
+  password: string;
+  role: "admin" | "rep" | "contractor";
+  team: string;
+  reports_to: string;
+}
+
+const emptyMember: MemberForm = {
+  full_name: "",
+  email: "",
+  password: "",
+  role: "rep",
+  team: "",
+  reports_to: "",
+};
 
 export default function TeamPage() {
   const { profile: me } = useAuth();
@@ -28,8 +58,13 @@ export default function TeamPage() {
     "profiles",
     { column: "full_name", ascending: true }
   );
+  const { rows: payments, setRows: setPayments } = useSupabaseTable<StaffPayment>("staff_payments");
   const [view, setView] = useState<View>("members");
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [adding, setAdding] = useState<MemberForm | null>(null);
+  const [savingMember, setSavingMember] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
+  const [payFor, setPayFor] = useState<Profile | null>(null);
 
   const isAdmin = me?.role === "admin";
 
@@ -67,6 +102,64 @@ export default function TeamPage() {
     toast.success(`${p.full_name} removed`);
   }
 
+  async function addMember(e: React.FormEvent) {
+    e.preventDefault();
+    if (!adding) return;
+    setSavingMember(true);
+    setAddError(null);
+    const res = await fetch("/api/team-users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        full_name: adding.full_name,
+        email: adding.email,
+        password: adding.password,
+        role: adding.role,
+        team: adding.team || null,
+        reports_to: adding.reports_to || null,
+      }),
+    });
+    const json = await res.json().catch(() => ({}));
+    setSavingMember(false);
+    if (!res.ok) {
+      setAddError(json.error ?? "Couldn't add team member.");
+      return;
+    }
+    if (json.profile) setRows((prev) => [json.profile as Profile, ...prev]);
+    setAdding(null);
+    toast.success(`${adding.full_name} added`);
+  }
+
+  async function addPayment(profileId: string, line: Omit<StaffPayment, "id" | "profile_id" | "created_at">) {
+    const supabase = createClient();
+    if (!supabase) return;
+    const { data, error } = await supabase
+      .from("staff_payments")
+      .insert({ profile_id: profileId, ...line })
+      .select()
+      .single();
+    if (error) {
+      toast.error(`Couldn't add: ${error.message}`);
+      return;
+    }
+    setPayments((prev) => [...prev, data as StaffPayment]);
+  }
+
+  async function togglePaid(p: StaffPayment) {
+    const status = p.status === "paid" ? "pending" : "paid";
+    setPayments((prev) => prev.map((x) => (x.id === p.id ? { ...x, status } : x)));
+    const supabase = createClient();
+    if (!supabase) return;
+    await supabase.from("staff_payments").update({ status }).eq("id", p.id);
+  }
+
+  async function deletePayment(id: string) {
+    setPayments((prev) => prev.filter((x) => x.id !== id));
+    const supabase = createClient();
+    if (!supabase) return;
+    await supabase.from("staff_payments").delete().eq("id", id);
+  }
+
   const columns: Column<Profile>[] = [
     {
       header: "Name",
@@ -77,18 +170,19 @@ export default function TeamPage() {
       header: "Role",
       render: (p) =>
         isAdmin ? (
-          <div className="w-28" onClick={(e) => e.stopPropagation()}>
+          <div className="w-32" onClick={(e) => e.stopPropagation()}>
             <Dropdown
               value={p.role}
               options={[
                 { value: "admin", label: "Admin" },
                 { value: "rep", label: "Rep" },
+                { value: "contractor", label: "Contractor" },
               ]}
               onChange={(v) => patchProfile(p.id, { role: v as UserRole })}
             />
           </div>
         ) : (
-          <Badge tone={roleTone[p.role]}>{p.role}</Badge>
+          <Badge tone={roleTone[p.role]}>{roleLabel[p.role] ?? p.role}</Badge>
         ),
       sortKey: (p) => p.role,
     },
@@ -123,23 +217,32 @@ export default function TeamPage() {
       ? [
           {
             header: "",
-            className: "w-10 text-right",
-            render: (p: Profile) =>
-              p.id === me?.id ? (
-                <span className="text-[11px] text-muted-2">You</span>
-              ) : (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    removeMember(p);
-                  }}
-                  disabled={removingId === p.id}
-                  title="Remove team member"
-                  className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-danger/10 hover:text-danger disabled:opacity-50"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              ),
+            className: "w-20 text-right",
+            render: (p: Profile) => (
+              <div className="flex items-center justify-end gap-0.5" onClick={(e) => e.stopPropagation()}>
+                {p.role === "contractor" && (
+                  <button
+                    onClick={() => setPayFor(p)}
+                    title="Payment plan"
+                    className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+                  >
+                    <CreditCard className="h-3.5 w-3.5" />
+                  </button>
+                )}
+                {p.id === me?.id ? (
+                  <span className="px-1 text-[11px] text-muted-2">You</span>
+                ) : (
+                  <button
+                    onClick={() => removeMember(p)}
+                    disabled={removingId === p.id}
+                    title="Remove team member"
+                    className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-danger/10 hover:text-danger disabled:opacity-50"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+            ),
           } as Column<Profile>,
         ]
       : []),
@@ -153,9 +256,16 @@ export default function TeamPage() {
             ? "Set roles, teams, and reporting lines for your team."
             : "Your team, their roles, and who reports to whom."}
         </p>
-        <div className="flex items-center gap-0.5 rounded-md border border-border bg-surface p-1">
-          <ViewButton active={view === "members"} onClick={() => setView("members")} icon={Users} label="Members" />
-          <ViewButton active={view === "org"} onClick={() => setView("org")} icon={Network} label="Org chart" />
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-0.5 rounded-md border border-border bg-surface p-1">
+            <ViewButton active={view === "members"} onClick={() => setView("members")} icon={Users} label="Members" />
+            <ViewButton active={view === "org"} onClick={() => setView("org")} icon={Network} label="Org chart" />
+          </div>
+          {isAdmin && (
+            <Button size="sm" onClick={() => { setAddError(null); setAdding({ ...emptyMember }); }}>
+              <UserPlus className="h-4 w-4" /> Add member
+            </Button>
+          )}
         </div>
       </div>
 
@@ -166,6 +276,197 @@ export default function TeamPage() {
           <OrgChart staff={staff} teams={teams} />
         )}
       </div>
+
+      {/* Add member */}
+      <Drawer open={!!adding} onClose={() => setAdding(null)} title="Add team member">
+        {adding && (
+          <form onSubmit={addMember} className="flex flex-col gap-4">
+            <div>
+              <Label>Full name</Label>
+              <Input
+                required
+                value={adding.full_name}
+                onChange={(e) => setAdding({ ...adding, full_name: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>Email</Label>
+              <Input
+                required
+                type="email"
+                placeholder="name@example.com"
+                value={adding.email}
+                onChange={(e) => setAdding({ ...adding, email: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>Temporary password</Label>
+              <Input
+                required
+                type="text"
+                placeholder="Min 8 characters"
+                value={adding.password}
+                onChange={(e) => setAdding({ ...adding, password: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>Role</Label>
+              <Dropdown
+                value={adding.role}
+                options={[
+                  { value: "rep", label: "Rep — full app access" },
+                  { value: "admin", label: "Admin — full app + manage team" },
+                  { value: "contractor", label: "Contractor — restricted staff portal" },
+                ]}
+                onChange={(v) => setAdding({ ...adding, role: v as MemberForm["role"] })}
+              />
+              {adding.role === "contractor" && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Sees only their own tasks, schedule, and payment plan — not clients, pipeline, or revenue.
+                </p>
+              )}
+            </div>
+            <div>
+              <Label>Team (optional)</Label>
+              <Input
+                placeholder="e.g. Design"
+                value={adding.team}
+                onChange={(e) => setAdding({ ...adding, team: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>Reports to (optional)</Label>
+              <Dropdown
+                value={adding.reports_to}
+                options={[
+                  { value: "", label: "No manager" },
+                  ...staff.map((p) => ({ value: p.id, label: p.full_name })),
+                ]}
+                onChange={(v) => setAdding({ ...adding, reports_to: v })}
+              />
+            </div>
+            {addError && <p className="text-xs text-danger">{addError}</p>}
+            <div className="flex gap-2 pt-2">
+              <Button type="submit" disabled={savingMember} className="flex-1">
+                {savingMember ? "Adding..." : "Add member"}
+              </Button>
+              <Button type="button" variant="secondary" onClick={() => setAdding(null)}>
+                Cancel
+              </Button>
+            </div>
+          </form>
+        )}
+      </Drawer>
+
+      {/* Contractor payment plan */}
+      <Drawer open={!!payFor} onClose={() => setPayFor(null)} title={payFor ? `${payFor.full_name} — Payment plan` : ""}>
+        {payFor && (
+          <PaymentPlanEditor
+            lines={payments.filter((p) => p.profile_id === payFor.id)}
+            onAdd={(line) => addPayment(payFor.id, line)}
+            onTogglePaid={togglePaid}
+            onDelete={deletePayment}
+          />
+        )}
+      </Drawer>
+    </div>
+  );
+}
+
+/* ---------------------------------- Payment plan ---------------------------------- */
+
+function PaymentPlanEditor({
+  lines,
+  onAdd,
+  onTogglePaid,
+  onDelete,
+}: {
+  lines: StaffPayment[];
+  onAdd: (line: Omit<StaffPayment, "id" | "profile_id" | "created_at">) => void;
+  onTogglePaid: (p: StaffPayment) => void;
+  onDelete: (id: string) => void;
+}) {
+  const { format: formatCurrency } = useCurrency();
+  const [label, setLabel] = useState("");
+  const [amount, setAmount] = useState("");
+  const [dueDate, setDueDate] = useState<string | null>(null);
+
+  const total = lines.reduce((s, l) => s + Number(l.amount), 0);
+  const paid = lines.filter((l) => l.status === "paid").reduce((s, l) => s + Number(l.amount), 0);
+
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="grid grid-cols-3 gap-3 rounded-lg border border-border bg-surface p-4 text-sm">
+        <div>
+          <p className="text-[11px] text-muted-foreground">Total</p>
+          <p className="mt-0.5 text-lg font-semibold tabular-nums">{formatCurrency(total)}</p>
+        </div>
+        <div>
+          <p className="text-[11px] text-muted-foreground">Paid</p>
+          <p className="mt-0.5 text-lg font-semibold tabular-nums text-success">{formatCurrency(paid)}</p>
+        </div>
+        <div>
+          <p className="text-[11px] text-muted-foreground">Outstanding</p>
+          <p className="mt-0.5 text-lg font-semibold tabular-nums text-warning">{formatCurrency(total - paid)}</p>
+        </div>
+      </div>
+
+      <div className="flex flex-col divide-y divide-border-subtle">
+        {lines.length === 0 && (
+          <p className="py-6 text-center text-sm text-muted-foreground">No payments in this plan yet.</p>
+        )}
+        {lines.map((l) => (
+          <div key={l.id} className="flex items-center gap-3 py-2.5 text-sm">
+            <button
+              onClick={() => onTogglePaid(l)}
+              title={l.status === "paid" ? "Mark pending" : "Mark paid"}
+              className={cn(
+                "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors",
+                l.status === "paid"
+                  ? "bg-success/15 text-success"
+                  : "bg-warning/15 text-warning"
+              )}
+            >
+              {l.status === "paid" ? "Paid" : "Pending"}
+            </button>
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-medium">{l.label}</p>
+              {l.due_date && <p className="text-xs text-muted-foreground">Due {formatDate(l.due_date)}</p>}
+            </div>
+            <span className="shrink-0 tabular-nums">{formatCurrency(Number(l.amount))}</span>
+            <button
+              onClick={() => onDelete(l.id)}
+              className="shrink-0 rounded p-1 text-muted-foreground hover:text-danger"
+              title="Delete"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          const amt = Number(amount);
+          if (!label.trim() || !amt) return;
+          onAdd({ label: label.trim(), amount: amt, status: "pending", due_date: dueDate });
+          setLabel("");
+          setAmount("");
+          setDueDate(null);
+        }}
+        className="flex flex-col gap-3 rounded-lg border border-border bg-white/[0.02] p-3"
+      >
+        <span className="text-[13px] font-medium">Add a payment</span>
+        <Input placeholder="Label (e.g. Milestone 1, Monthly retainer)" value={label} onChange={(e) => setLabel(e.target.value)} />
+        <div className="grid grid-cols-2 gap-2">
+          <Input type="number" min={0} placeholder="Amount" value={amount} onChange={(e) => setAmount(e.target.value)} />
+          <DatePicker value={dueDate} placeholder="Due date" onChange={setDueDate} />
+        </div>
+        <Button type="submit" size="sm" variant="secondary" disabled={!label.trim() || !Number(amount)}>
+          <Plus className="h-3.5 w-3.5" /> Add payment
+        </Button>
+      </form>
     </div>
   );
 }

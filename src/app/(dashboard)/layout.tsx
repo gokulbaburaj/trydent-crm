@@ -54,6 +54,9 @@ export default function DashboardLayout({
     if (profile.role === "client" && pathname !== "/portal") {
       router.replace("/portal");
     }
+    if (profile.role === "contractor" && pathname !== "/staff-portal") {
+      router.replace("/staff-portal");
+    }
   }, [loading, profile, isSupabaseConfigured, router, pathname]);
 
   // While checking the session — or when signed out and about to redirect —
@@ -66,8 +69,8 @@ export default function DashboardLayout({
     );
   }
 
-  if (profile?.role === "client") {
-    // client-role users get their own minimal shell rendered by /portal itself
+  if (profile?.role === "client" || profile?.role === "contractor") {
+    // client + contractor users get their own minimal shell rendered by their portal
     return <>{children}</>;
   }
 

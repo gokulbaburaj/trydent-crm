@@ -6,7 +6,7 @@
 create extension if not exists "pgcrypto";
 
 -- ============ ENUM TYPES ============
-create type user_role as enum ('admin', 'rep', 'client');
+create type user_role as enum ('admin', 'rep', 'client', 'contractor');
 create type client_status as enum ('Lead', 'Prospect', 'Active Customer', 'Inactive Customer');
 create type lead_source as enum ('Referral', 'Website', 'Social Media', 'Event');
 create type deal_stage as enum ('Lead', 'Qualified', 'Proposal', 'Negotiation', 'Closed Won', 'Closed Lost');
@@ -126,6 +126,17 @@ create table project_tasks (
   updated_at timestamptz not null default now()
 );
 
+-- ============ STAFF PAYMENT PLANS (contractor portal) ============
+create table staff_payments (
+  id uuid primary key default gen_random_uuid(),
+  profile_id uuid not null references profiles(id) on delete cascade,
+  label text not null,
+  amount numeric not null default 0,
+  status text not null default 'pending', -- 'pending' | 'paid'
+  due_date date,
+  created_at timestamptz not null default now()
+);
+
 -- ============ SUBTASKS ============
 create table task_items (
   id uuid primary key default gen_random_uuid(),
@@ -234,6 +245,7 @@ alter table client_portals enable row level security;
 alter table projects enable row level security;
 alter table project_tasks enable row level security;
 alter table task_items enable row level security;
+alter table staff_payments enable row level security;
 
 -- Profiles: everyone can read all profiles (needed for assignee dropdowns), only admins can edit others
 create policy "profiles_select_all" on profiles for select using (true);
@@ -257,6 +269,8 @@ create policy "activities_staff_all" on activities for all
   using (current_role_name() in ('admin', 'rep'));
 create policy "activities_client_select_own" on activities for select
   using (current_role_name() = 'client' and client_id = current_client_id());
+create policy "activities_contractor_select_own" on activities for select
+  using (current_role_name() = 'contractor' and assigned_to = auth.uid());
 
 -- Client portals
 create policy "portals_staff_all" on client_portals for all
@@ -278,6 +292,16 @@ create policy "project_tasks_client_select_own" on project_tasks for select
     current_role_name() = 'client'
     and project_id in (select id from projects where client_id = current_client_id())
   );
+create policy "project_tasks_contractor_select_own" on project_tasks for select
+  using (current_role_name() = 'contractor' and assigned_to = auth.uid());
+create policy "project_tasks_contractor_update_own" on project_tasks for update
+  using (current_role_name() = 'contractor' and assigned_to = auth.uid());
+
+-- Staff payment plans: staff manage all; a person reads their own
+create policy "staff_payments_staff_all" on staff_payments for all
+  using (current_role_name() in ('admin', 'rep'));
+create policy "staff_payments_own_select" on staff_payments for select
+  using (profile_id = auth.uid());
 
 -- Subtasks
 create policy "task_items_staff_all" on task_items for all

@@ -110,9 +110,19 @@ can't remove yourself). Team hierarchy DONE: migration
 on delete set null) to `profiles`; confirm Gokul ran it. Team page has
 Members (editable role/team/manager, sortable) and Org chart (teams summary +
 recursive reporting tree, cycle-guarded) views; scoped to staff (role !=
-client). NEXT: separate restricted staff-login portal (contractors see only
-their own tasks/schedule + their own payment plan, not clients/pipeline/
-revenue) — needs a new role + RLS + a payment-plan table. Settings (theme accent picker); notifications bell
+client). Staff portal DONE: new `contractor` role (migration
+`2026-07-22b_contractor_role.sql` — run FIRST, alone, since a new enum value
+can't be used in its own transaction; then `2026-07-22c_staff_portal.sql`).
+`staff_payments` table (payment plan lines: label/amount/status/due_date).
+RLS: contractors SELECT/UPDATE only their own `project_tasks` (assigned_to =
+uid), SELECT own `activities`, SELECT own `staff_payments`; they match no
+policy on clients/deals/projects so those stay invisible. Admins add people
+via `POST /api/team-users` (roles admin/rep/contractor) — this also fixed
+"can't add team members". Team page: "Add member" form + a payment-plan
+editor (CreditCard icon on contractor rows). Contractors are routed to
+`/staff-portal` (my tasks w/ status picker, schedule, payment plan) via the
+dashboard layout, same minimal-shell pattern as clients. Confirm Gokul ran
+BOTH migrations in order. Settings (theme accent picker); notifications bell
 (unread badge, 60s poll, triggers on client comment/approval/first portal
 open); ⌘K command palette (cmdk — pages/clients/projects/deals/theme);
 toasts (sonner); tooltips; skeleton loading; gradient avatars; login-page
