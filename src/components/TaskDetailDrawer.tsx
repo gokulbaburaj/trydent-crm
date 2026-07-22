@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { useAuth } from "@/lib/useAuth";
-import { formatDate } from "@/lib/utils";
+import { formatDate } from "@/lib/format";
 import { Drawer } from "@/components/ui/Drawer";
 import { Button } from "@/components/ui/Button";
 import { Input, Label } from "@/components/ui/Input";
@@ -26,7 +26,7 @@ import { DatePicker } from "@/components/ui/DatePicker";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { Popover, MenuItem, MenuLabel } from "@/components/ui/Popover";
 import { createClient } from "@/lib/supabase/client";
-import { initials } from "@/lib/utils";
+import { initials } from "@/lib/format";
 import type { Profile, ProjectTask, TaskComment, TaskItem, TaskLink, TaskStatus } from "@/lib/types";
 import { TASK_STATUSES } from "@/lib/types";
 

@@ -21,7 +21,8 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/useAuth";
 import { useCurrency } from "@/lib/currency";
 import { useTabs } from "@/lib/tabs";
-import { formatDate, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { formatDate } from "@/lib/format";
 import type { Profile, StaffPayment, Team, UserRole } from "@/lib/types";
 
 const roleTone: Record<UserRole, "green" | "blue" | "gray"> = {

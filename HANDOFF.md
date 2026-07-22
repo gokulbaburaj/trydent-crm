@@ -198,13 +198,17 @@ Install more with `npx shadcn@latest add @bklit/<name>`. Installed: pie, ring,
 area, bar, funnel. Palette comes from the existing `--chart-1…5` tokens, and
 `--chart-1` is wired to `--primary`, so charts follow the brand accent.
 
-Two install gotchas, both already fixed — re-check after any future
-`shadcn add`:
-1. It **overwrote `src/lib/utils.ts`** with the stock shadcn version, wiping
-   `formatDate`, `initials`, `withViewTransition`. Restore them if it happens.
-2. `chart-loading-label.tsx` imported `../components/shimmering-text`, which
-   resolves to `src/components/components/…`. Corrected to
-   `@/components/shimmering-text`.
+**`shadcn add` reclaims files — both traps are now permanently defused:**
+1. It overwrites `src/lib/utils.ts` (the `utils` alias) with the stock
+   `cn`-only version. This broke the build twice. Our helpers therefore live in
+   **`src/lib/format.ts`** (`formatDate`, `initials`, `withViewTransition`) —
+   import them from `@/lib/format`, NEVER add them back to `lib/utils.ts`.
+2. Generated `charts/chart-loading-label.tsx` imports
+   `../components/shimmering-text`, which resolves to
+   `src/components/components/shimmering-text.tsx`. That path now exists as a
+   re-export shim — don't delete it; it survives regeneration.
+
+After any `shadcn add`, just run `npx tsc --noEmit` before pushing.
 
 Recharts is fully removed from `src/` — safe to `npm uninstall recharts`.
 

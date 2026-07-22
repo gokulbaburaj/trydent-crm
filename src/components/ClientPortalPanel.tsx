@@ -10,7 +10,7 @@ import { StatusPicker } from "@/components/ui/StatusPicker";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { useAuth } from "@/lib/useAuth";
 import { createClient } from "@/lib/supabase/client";
-import { formatDate } from "@/lib/utils";
+import { formatDate } from "@/lib/format";
 import type { Client, ClientPortal, PortalUpdate } from "@/lib/types";
 import { PORTAL_STATUSES } from "@/lib/types";
 

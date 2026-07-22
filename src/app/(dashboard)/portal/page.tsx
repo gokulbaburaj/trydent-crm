@@ -26,7 +26,8 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/useAuth";
 import { createClient } from "@/lib/supabase/client";
-import { formatDate, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { formatDate } from "@/lib/format";
 import { useCurrency } from "@/lib/currency";
 import type {
   Client,

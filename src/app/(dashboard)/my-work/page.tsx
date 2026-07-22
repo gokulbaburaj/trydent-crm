@@ -16,7 +16,8 @@ import { nextTaskPayload } from "@/lib/recurrence";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/useAuth";
 import { useTabs } from "@/lib/tabs";
-import { formatDate, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { formatDate } from "@/lib/format";
 import type { Profile, Project, ProjectTask } from "@/lib/types";
 import { PRIORITY_ORDER, TASK_STATUSES } from "@/lib/types";
 

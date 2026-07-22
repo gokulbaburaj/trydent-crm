@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { initials } from "@/lib/utils";
+import { initials } from "@/lib/format";
 
 /** Deterministic two-color gradient per name — richer than flat tints. */
 const GRADIENTS: [string, string][] = [

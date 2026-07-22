@@ -11,7 +11,8 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { GripVertical } from "lucide-react";
-import { cn, withViewTransition } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { withViewTransition } from "@/lib/format";
 
 export interface DashCardDef {
   id: string;

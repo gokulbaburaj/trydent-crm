@@ -28,7 +28,8 @@ import { Dropdown } from "@/components/ui/Dropdown";
 import { Popover, MenuItem, MenuLabel } from "@/components/ui/Popover";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { createClient } from "@/lib/supabase/client";
-import { formatDate, initials, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { formatDate, initials } from "@/lib/format";
 import { useCurrency } from "@/lib/currency";
 import { useTabs } from "@/lib/tabs";
 import type {

@@ -16,7 +16,8 @@ import {
 import "@xyflow/react/dist/style.css";
 import { Building2, Pencil, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
-import { initials, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { initials } from "@/lib/format";
 import type { Profile, UserRole } from "@/lib/types";
 
 const roleTone: Record<UserRole, "green" | "blue" | "gray"> = {

@@ -12,7 +12,8 @@ import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/useAuth";
 import { useCurrency } from "@/lib/currency";
-import { formatDate, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { formatDate } from "@/lib/format";
 import type { Activity, Profile, ProjectTask, StaffPayment, TaskStatus } from "@/lib/types";
 import { PRIORITY_ORDER, TASK_STATUSES } from "@/lib/types";
 

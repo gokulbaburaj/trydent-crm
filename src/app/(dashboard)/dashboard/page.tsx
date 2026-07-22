@@ -9,6 +9,7 @@ import { PieCenter } from "@/components/charts/pie-center";
 import { BarChart } from "@/components/charts/bar-chart";
 import { Bar } from "@/components/charts/bar";
 import { AreaChart, Area } from "@/components/charts/area-chart";
+import { LineChart, Line } from "@/components/charts/line-chart";
 import { Grid } from "@/components/charts/grid";
 import { BarXAxis } from "@/components/charts/bar-x-axis";
 import { XAxis } from "@/components/charts/x-axis";
@@ -36,11 +37,12 @@ const COLORS = [
 ];
 
 /** Chart shapes that actually suit a monthly revenue series. */
-type RevenueChart = "bar" | "area";
+type RevenueChart = "bar" | "line" | "area";
 
 const REVENUE_CHARTS: { id: RevenueChart; label: string; hint: string }[] = [
   { id: "bar", label: "Bar", hint: "Compare month totals" },
-  { id: "area", label: "Area", hint: "See the trend and volume" },
+  { id: "line", label: "Line", hint: "Follow the trend month to month" },
+  { id: "area", label: "Area", hint: "Trend with a sense of volume" },
 ];
 
 export default function DashboardPage() {
@@ -251,6 +253,18 @@ export default function DashboardPage() {
                 <BarXAxis />
                 <ChartTooltip content={revenueTooltip} />
               </BarChart>
+            ) : revenueChart === "line" ? (
+              <LineChart
+                data={monthlyRevenue}
+                xDataKey="month"
+                aspectRatio="5 / 2"
+                margin={{ top: 24, right: 16, bottom: 36, left: 16 }}
+              >
+                <Grid horizontal vertical={false} />
+                <Line dataKey="revenue" stroke="var(--primary)" showMarkers />
+                <XAxis />
+                <ChartTooltip content={revenueTooltip} />
+              </LineChart>
             ) : (
               <AreaChart
                 data={monthlyRevenue}

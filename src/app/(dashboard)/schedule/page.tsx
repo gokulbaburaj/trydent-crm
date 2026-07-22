@@ -32,7 +32,8 @@ import {
 } from "@dnd-kit/core";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { RecurrencePicker, RecurrenceIndicator } from "@/components/ui/RecurrencePicker";
-import { cn, withViewTransition } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { withViewTransition } from "@/lib/format";
 import { DataTable, Column } from "@/components/DataTable";
 import { FilterBar } from "@/components/FilterBar";
 import { applyFilters, useStoredFilters } from "@/lib/filters";
@@ -45,7 +46,7 @@ import { Dropdown } from "@/components/ui/Dropdown";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/useAuth";
-import { formatDate } from "@/lib/utils";
+import { formatDate } from "@/lib/format";
 import type { Activity, Client, Deal, Profile, Project, ProjectTask } from "@/lib/types";
 
 type Tab = "all" | "mine" | "calendar";

@@ -22,7 +22,7 @@ import { applyFilters, useStoredFilters } from "@/lib/filters";
 import { useMultiSelect } from "@/lib/useMultiSelect";
 import { useTabs } from "@/lib/tabs";
 import { createClient } from "@/lib/supabase/client";
-import { formatDate } from "@/lib/utils";
+import { formatDate } from "@/lib/format";
 import type { Client, ClientPortal, Profile } from "@/lib/types";
 import { CLIENT_STATUSES, LEAD_SOURCES } from "@/lib/types";
 

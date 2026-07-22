@@ -16,7 +16,7 @@ import { Popover, MenuItem, MenuLabel } from "@/components/ui/Popover";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { applyFilters, useStoredFilters } from "@/lib/filters";
 import { createClient } from "@/lib/supabase/client";
-import { formatDate } from "@/lib/utils";
+import { formatDate } from "@/lib/format";
 import { CURRENCIES, useCurrency } from "@/lib/currency";
 import type { Deal, Client, Profile } from "@/lib/types";
 import { DEAL_STAGES } from "@/lib/types";
