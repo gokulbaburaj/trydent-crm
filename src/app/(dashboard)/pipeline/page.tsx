@@ -11,7 +11,6 @@ import { ChartTooltip } from "@/components/charts/tooltip/chart-tooltip";
 import { PieChart } from "@/components/charts/pie-chart";
 import { PieSlice } from "@/components/charts/pie-slice";
 import { PieCenter } from "@/components/charts/pie-center";
-import { FunnelChart } from "@/components/charts/funnel-chart";
 import { Card } from "@/components/ui/Card";
 import { cn } from "@/lib/utils";
 import { KanbanBoard } from "@/components/KanbanBoard";
@@ -39,13 +38,19 @@ const STAGE_COLORS = [
   "var(--chart-5)",
 ];
 
-type StageChart = "bar" | "value" | "share" | "funnel";
+/*
+  No funnel option on purpose. FunnelChart scales every segment against the
+  FIRST value, so the moment a later stage holds more deals than an earlier one
+  (e.g. Closed Won 3 vs Proposal 1) it renders at 3x the container height and
+  floods the page. Forcing it would mean sorting stages descending, which
+  destroys pipeline order. A real funnel needs stage-transition history.
+*/
+type StageChart = "bar" | "value" | "share";
 
 const STAGE_CHARTS: { id: StageChart; label: string; hint: string }[] = [
   { id: "bar", label: "Count", hint: "How many deals sit in each stage" },
   { id: "value", label: "Value", hint: "How much money sits in each stage" },
   { id: "share", label: "Share", hint: "Each stage's share of all deals" },
-  { id: "funnel", label: "Funnel", hint: "Stage sizes as a funnel shape" },
 ];
 
 const emptyForm: Partial<Deal> = {
@@ -257,23 +262,7 @@ export default function PipelinePage() {
             </div>
           </div>
 
-          {stageChart === "funnel" ? (
-            <div className="overflow-hidden">
-              <FunnelChart
-                data={stageSlices.map((s) => ({ label: s.label, value: s.value }))}
-                color="var(--chart-1)"
-                showValues
-                showLabels
-                showPercentage={false}
-                className="w-full"
-                formatValue={(v) => `${v} deal${v === 1 ? "" : "s"}`}
-              />
-              <p className="mt-2 text-[11px] text-muted-foreground">
-                Stage sizes only. Percentages are hidden because conversion rates need
-                stage history, which isn&apos;t tracked yet.
-              </p>
-            </div>
-          ) : stageChart === "share" ? (
+          {stageChart === "share" ? (
             <div className="flex h-[260px] items-center justify-center gap-8">
               <PieChart data={stageSlices} size={220} innerRadius={62} padAngle={0.05} cornerRadius={6}>
                 {stageSlices.map((s, i) => (
@@ -292,10 +281,12 @@ export default function PipelinePage() {
               </div>
             </div>
           ) : (
+            // aspectRatio is width-driven: on a ~1900px card anything taller
+            // than ~6/1 turns into a wall of chart.
             <BarChart
               data={stageBars}
               xDataKey="stage"
-              aspectRatio="16 / 5"
+              aspectRatio="6 / 1"
               barWidth={56}
               margin={{ top: 24, right: 16, bottom: 36, left: 16 }}
             >
