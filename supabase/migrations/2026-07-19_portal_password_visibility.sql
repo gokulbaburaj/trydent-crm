@@ -1,6 +1,4 @@
--- Trydent Labs CRM — Store portal passwords for admin visibility
--- ⚠️ Deliberate tradeoff: passwords are stored in plaintext so admins can
--- retrieve them from the Portals page. Remove this column to revert:
---   alter table public.client_portals drop column portal_password;
-
-alter table public.client_portals add column if not exists portal_password text;
+-- CANCELLED — this migration was never applied and does nothing.
+-- (Stored-password visibility was reverted in favor of the reset-to-reveal flow.
+--  This file can be deleted safely.)
+select 1;

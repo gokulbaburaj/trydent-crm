@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Copy, Eye, EyeOff, KeyRound, Link2, Plus } from "lucide-react";
+import { Check, Copy, Eye, KeyRound, Link2, Plus } from "lucide-react";
 import Link from "next/link";
 import { toast } from "@/components/Toaster";
 import { DataTable, Column } from "@/components/DataTable";
@@ -46,7 +46,6 @@ export default function PortalsPage() {
   const [loginError, setLoginError] = useState<string | null>(null);
   const [loginCreated, setLoginCreated] = useState<{ username: string; password: string; reset?: boolean } | null>(null);
   const [copied, setCopied] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
 
   const clientName = (id: string) => clients.find((c) => c.id === id)?.company ?? "Unknown";
 
@@ -66,7 +65,6 @@ export default function PortalsPage() {
     setLoginError(null);
     setLoginCreated(null);
     setCopied(false);
-    setShowPassword(false);
     setEditing(p);
   }
 
@@ -96,15 +94,9 @@ export default function PortalsPage() {
       return;
     }
     setLoginCreated({ username: json.username, password: loginPassword, reset: json.reset });
-    setEditing((prev) =>
-      prev ? { ...prev, portal_username: json.username, portal_password: loginPassword } : prev
-    );
+    setEditing((prev) => (prev ? { ...prev, portal_username: json.username } : prev));
     setRows((prev) =>
-      prev.map((p) =>
-        p.id === editing.id
-          ? { ...p, portal_username: json.username, portal_password: loginPassword }
-          : p
-      )
+      prev.map((p) => (p.id === editing.id ? { ...p, portal_username: json.username } : p))
     );
   }
 
@@ -324,49 +316,13 @@ export default function PortalsPage() {
                 </div>
 
                 {editing.portal_username && !loginCreated && (
-                  <div className="flex flex-col gap-1.5 rounded-md border border-border-subtle bg-white/[0.02] p-2.5">
-                    <div className="flex items-center justify-between gap-2 text-[13px]">
-                      <span className="text-muted-foreground">Username</span>
-                      <span className="font-medium text-foreground">{editing.portal_username}</span>
-                    </div>
-                    <div className="flex items-center justify-between gap-2 text-[13px]">
-                      <span className="text-muted-foreground">Password</span>
-                      <span className="flex items-center gap-1.5">
-                        <span className="font-medium tabular-nums text-foreground">
-                          {editing.portal_password
-                            ? showPassword
-                              ? editing.portal_password
-                              : "••••••••"
-                            : "— (reset to store it)"}
-                        </span>
-                        {editing.portal_password && (
-                          <button
-                            type="button"
-                            title={showPassword ? "Hide password" : "Show password"}
-                            onClick={() => setShowPassword((s) => !s)}
-                            className="rounded p-1 text-muted-foreground hover:bg-white/5 hover:text-foreground"
-                          >
-                            {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                          </button>
-                        )}
-                      </span>
-                    </div>
-                    {editing.portal_password && (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => {
-                          navigator.clipboard.writeText(
-                            `Trydent Labs Client Portal\nURL: ${window.location.origin}/login\nUsername: ${editing.portal_username}\nPassword: ${editing.portal_password}`
-                          );
-                          toast.success("Credentials copied");
-                        }}
-                      >
-                        <Copy className="h-3.5 w-3.5" /> Copy credentials
-                      </Button>
-                    )}
-                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    This client signs in with username{" "}
+                    <span className="rounded bg-white/5 px-1 py-0.5 font-medium text-foreground-secondary">
+                      {editing.portal_username}
+                    </span>{" "}
+                    — passwords aren&apos;t stored; use Reset to issue a new one anytime.
+                  </p>
                 )}
 
                 {loginCreated ? (
