@@ -2,17 +2,42 @@
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { CheckCheck, ChevronDown, ChevronRight, Eye, LogOut, Megaphone, MessageSquare, Send } from "lucide-react";
-import { formatDistanceToNow, parseISO } from "date-fns";
+import {
+  ArrowUpRight,
+  CalendarClock,
+  CheckCheck,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  Eye,
+  FileText,
+  FolderKanban,
+  LogOut,
+  Megaphone,
+  MessageSquare,
+  Send,
+  Sparkles,
+  Wallet,
+} from "lucide-react";
+import { formatDistanceToNow, parseISO, startOfDay } from "date-fns";
 import { Card } from "@/components/ui/Card";
 import { Badge, statusTone } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/useAuth";
 import { createClient } from "@/lib/supabase/client";
-import { formatDate } from "@/lib/utils";
+import { formatDate, cn } from "@/lib/utils";
 import { useCurrency } from "@/lib/currency";
-import type { Client, Deal, ClientPortal, PortalUpdate, Project, ProjectTask, TaskComment } from "@/lib/types";
+import type {
+  Client,
+  Deal,
+  ClientPortal,
+  PortalUpdate,
+  Project,
+  ProjectTask,
+  TaskComment,
+  TaskLink,
+} from "@/lib/types";
 
 export default function ClientPortalPage() {
   return (
@@ -87,23 +112,62 @@ function PortalInner() {
     load();
   }, [profile, previewClientId]);
 
+  const projectIds = useMemo(() => new Set(projects.map((p) => p.id)), [projects]);
+  const projectName = (id: string) => projects.find((p) => p.id === id)?.name ?? "Project";
+
+  // Scope tasks to this client's projects — matters in staff preview, where the
+  // query returns every project's tasks (a real client only sees their own via RLS).
+  const clientTasks = useMemo(
+    () => tasks.filter((t) => projectIds.has(t.project_id) && t.status !== "Archived"),
+    [tasks, projectIds]
+  );
+
   const tasksOf = useMemo(() => {
     const map = new Map<string, ProjectTask[]>();
-    for (const t of tasks) {
+    for (const t of clientTasks) {
       const arr = map.get(t.project_id) ?? [];
       arr.push(t);
       map.set(t.project_id, arr);
     }
     return map;
-  }, [tasks]);
+  }, [clientTasks]);
+
+  /* ---- dashboard stats ---- */
+  const doneCount = clientTasks.filter((t) => t.status === "Done").length;
+  const overallPct = clientTasks.length ? Math.round((doneCount / clientTasks.length) * 100) : 0;
+  const approvedCount = clientTasks.filter((t) => t.approved_at).length;
+  const activeProjects = projects.filter((p) => p.status !== "Delivered").length;
+  const totalValue = deals.reduce((s, d) => s + Number(d.deal_value), 0);
+  const totalPaid = deals.reduce((s, d) => s + Number(d.paid), 0);
+  const outstanding = totalValue - totalPaid;
+  const paidPct = totalValue > 0 ? Math.round((totalPaid / totalValue) * 100) : 0;
+
+  const nextDeadline = useMemo(() => {
+    const today = startOfDay(new Date());
+    const dates = [
+      ...projects.map((p) => p.due_date),
+      ...clientTasks.map((t) => t.due_date),
+    ]
+      .filter((d): d is string => !!d)
+      .filter((d) => parseISO(d) >= today)
+      .sort();
+    return dates[0] ?? null;
+  }, [projects, clientTasks]);
+
+  const deliverables = useMemo(() => {
+    const out: { task: ProjectTask; link: TaskLink }[] = [];
+    for (const t of clientTasks) {
+      const links = Array.isArray(t.links) ? t.links : [];
+      for (const l of links) out.push({ task: t, link: l });
+    }
+    return out;
+  }, [clientTasks]);
 
   async function approveTask(taskId: string) {
     const supabase = createClient();
     if (!supabase) return;
     setTasks((prev) =>
-      prev.map((t) =>
-        t.id === taskId ? { ...t, approved_at: new Date().toISOString() } : t
-      )
+      prev.map((t) => (t.id === taskId ? { ...t, approved_at: new Date().toISOString() } : t))
     );
     await supabase.rpc("approve_task", { p_task_id: taskId });
   }
@@ -123,7 +187,7 @@ function PortalInner() {
   }
 
   function completionOf(projectId: string) {
-    const active = (tasksOf.get(projectId) ?? []).filter((t) => t.status !== "Archived");
+    const active = tasksOf.get(projectId) ?? [];
     if (active.length === 0) return null;
     return (active.filter((t) => t.status === "Done").length / active.length) * 100;
   }
@@ -132,9 +196,11 @@ function PortalInner() {
     return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Loading...</div>;
   }
 
+  const greetingName = client?.point_person || client?.company || "there";
+
   return (
     <div className="min-h-screen bg-background">
-      <header className="flex items-center justify-between border-b border-border px-6 py-3.5">
+      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-background/80 px-6 py-3.5 backdrop-blur">
         <div className="flex items-center gap-2">
           <div className="flex h-6 w-6 items-center justify-center rounded bg-primary text-[10px] font-medium text-primary-foreground">
             TL
@@ -157,7 +223,7 @@ function PortalInner() {
         </button>
       </header>
 
-      <main className="animate-page mx-auto flex max-w-4xl flex-col gap-6 p-6">
+      <main className="animate-page mx-auto flex max-w-5xl flex-col gap-6 p-6">
         {!client ? (
           <Card>
             <p className="text-sm text-muted-foreground">
@@ -167,25 +233,51 @@ function PortalInner() {
           </Card>
         ) : (
           <>
-            {/* Welcome */}
-            <div className="border-l-2 border-primary pl-4">
-              <h1 className="text-xl font-semibold tracking-tight">
-                Welcome to your client portal, {client.point_person || client.company}!
-              </h1>
-              <p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">
-                Here you can follow progress on your projects, see what&apos;s being worked on
-                right now, and keep track of payments — all in one place. Reach out to your
-                account manager any time you need a hand.
-              </p>
-            </div>
+            {/* ============ HERO DASHBOARD ============ */}
+            <section className="relative overflow-hidden rounded-xl border border-primary/20 bg-gradient-to-br from-primary/15 via-card to-card p-6 shadow-sm">
+              <div className="pointer-events-none absolute -right-10 -top-12 h-44 w-44 rounded-full bg-primary/20 blur-3xl" />
+              <div className="relative">
+                <div className="flex items-center gap-1.5 text-primary">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  <span className="text-xs font-medium">Your project hub</span>
+                </div>
+                <h1 className="mt-2 text-2xl font-semibold tracking-tight">
+                  Welcome back, {greetingName}
+                </h1>
+                <p className="mt-1 max-w-xl text-sm text-muted-foreground">
+                  Everything happening on your account — progress, deliverables, and payments —
+                  in one place. Reach out to your account manager any time.
+                </p>
 
-            {/* Updates from the team */}
+                <div className="mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
+                  <Stat
+                    icon={FolderKanban}
+                    value={String(activeProjects)}
+                    label={activeProjects === 1 ? "Active project" : "Active projects"}
+                  />
+                  <Stat icon={CheckCircle2} value={`${overallPct}%`} label="Overall progress" />
+                  <Stat icon={CheckCheck} value={String(approvedCount)} label="Approved" />
+                  <Stat
+                    icon={Wallet}
+                    value={formatCurrency(outstanding)}
+                    label="Outstanding"
+                  />
+                  <Stat
+                    icon={CalendarClock}
+                    value={nextDeadline ? formatDate(nextDeadline) : "—"}
+                    label="Next deadline"
+                  />
+                </div>
+              </div>
+            </section>
+
+            {/* ============ UPDATES ============ */}
             {updates.length > 0 && (
               <section>
-                <h2 className="mb-3 text-[15px] font-semibold">Updates from your team</h2>
+                <SectionTitle icon={Megaphone}>Updates from your team</SectionTitle>
                 <div className="flex flex-col gap-2">
                   {updates.map((u, i) => (
-                    <Card key={u.id} className={i === 0 ? "border-primary/25" : ""}>
+                    <Card key={u.id} className={cn("rounded-xl shadow-sm", i === 0 && "border-primary/25")}>
                       <div className="mb-1.5 flex items-center gap-2 text-[11px] text-muted-foreground">
                         <Megaphone className="h-3 w-3 text-primary" />
                         {formatDistanceToNow(parseISO(u.created_at), { addSuffix: true })}
@@ -197,11 +289,11 @@ function PortalInner() {
               </section>
             )}
 
-            {/* Projects */}
+            {/* ============ PROJECTS ============ */}
             <section>
-              <h2 className="mb-3 text-[15px] font-semibold">Projects</h2>
+              <SectionTitle icon={FolderKanban}>Projects</SectionTitle>
               {projects.length === 0 ? (
-                <Card>
+                <Card className="rounded-xl shadow-sm">
                   <p className="py-4 text-center text-sm text-muted-foreground">No projects yet.</p>
                 </Card>
               ) : (
@@ -211,8 +303,13 @@ function PortalInner() {
                     return (
                       <button
                         key={p.id}
-                        onClick={() => setOpenProject(openProject === p.id ? null : p.id)}
-                        className="rounded border border-border bg-surface p-3.5 text-left transition-colors hover:bg-white/[0.04]"
+                        onClick={() => {
+                          setOpenProject(p.id);
+                          document
+                            .getElementById("task-progress")
+                            ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                        }}
+                        className="group rounded-xl border border-border bg-surface p-4 text-left shadow-sm transition-colors hover:border-primary/30 hover:bg-white/[0.04]"
                       >
                         <div className="flex items-center justify-between gap-2">
                           <span className="truncate text-sm font-medium">{p.name}</span>
@@ -221,21 +318,25 @@ function PortalInner() {
                           </Badge>
                         </div>
                         {pct !== null && (
-                          <div className="mt-3 flex items-center gap-2">
-                            <span className="text-xs tabular-nums text-muted-foreground">
+                          <div className="mt-3.5 flex items-center gap-2">
+                            <span className="w-9 shrink-0 text-xs font-medium tabular-nums text-foreground-secondary">
                               {pct.toFixed(0)}%
                             </span>
-                            <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/10">
+                            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
                               <div
-                                className="h-full rounded-full bg-success"
+                                className={cn(
+                                  "h-full rounded-full transition-all",
+                                  pct >= 100 ? "bg-success" : "bg-primary"
+                                )}
                                 style={{ width: `${pct}%` }}
                               />
                             </div>
                           </div>
                         )}
-                        {p.due_date && (
-                          <p className="mt-2 text-xs text-muted-foreground">Due {formatDate(p.due_date)}</p>
-                        )}
+                        <div className="mt-2.5 flex items-center justify-between text-xs text-muted-foreground">
+                          <span>{p.due_date ? `Due ${formatDate(p.due_date)}` : "No deadline set"}</span>
+                          <ChevronRight className="h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100" />
+                        </div>
                       </button>
                     );
                   })}
@@ -243,13 +344,13 @@ function PortalInner() {
               )}
             </section>
 
-            {/* Tasks grouped by project */}
+            {/* ============ TASK PROGRESS ============ */}
             {projects.length > 0 && (
-              <section>
-                <h2 className="mb-3 text-[15px] font-semibold">Task progress</h2>
-                <div className="overflow-hidden rounded border border-border bg-surface">
+              <section id="task-progress" className="scroll-mt-20">
+                <SectionTitle icon={CheckCircle2}>Task progress</SectionTitle>
+                <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
                   {projects.map((p) => {
-                    const pts = (tasksOf.get(p.id) ?? []).filter((t) => t.status !== "Archived");
+                    const pts = tasksOf.get(p.id) ?? [];
                     const open = openProject === p.id;
                     return (
                       <div key={p.id} className="border-b border-border-subtle last:border-0">
@@ -262,9 +363,7 @@ function PortalInner() {
                           ) : (
                             <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                           )}
-                          <span className="min-w-0 flex-1 truncate text-sm font-medium">
-                            {p.name}
-                          </span>
+                          <span className="min-w-0 flex-1 truncate text-sm font-medium">{p.name}</span>
                           <span className="shrink-0 text-xs text-muted-foreground">
                             {pts.filter((t) => t.status === "Done").length}/{pts.length} done
                           </span>
@@ -284,9 +383,10 @@ function PortalInner() {
                                       {t.status}
                                     </Badge>
                                     <span
-                                      className={`min-w-0 flex-1 truncate ${
-                                        t.status === "Done" ? "text-muted-foreground line-through" : ""
-                                      }`}
+                                      className={cn(
+                                        "min-w-0 flex-1 truncate",
+                                        t.status === "Done" && "text-muted-foreground line-through"
+                                      )}
                                     >
                                       {t.name}
                                     </span>
@@ -307,11 +407,12 @@ function PortalInner() {
                                         setExpandedTask(expanded ? null : t.id);
                                         setDraft("");
                                       }}
-                                      className={`flex shrink-0 items-center gap-1 rounded-md px-1.5 py-1 text-[11px] transition-colors hover:bg-white/5 ${
+                                      className={cn(
+                                        "flex shrink-0 items-center gap-1 rounded-md px-1.5 py-1 text-[11px] transition-colors hover:bg-white/5",
                                         tComments.length > 0 || expanded
                                           ? "text-foreground-secondary"
                                           : "text-muted-foreground"
-                                      }`}
+                                      )}
                                     >
                                       <MessageSquare className="h-3.5 w-3.5" />
                                       {tComments.length > 0 && tComments.length}
@@ -372,33 +473,93 @@ function PortalInner() {
               </section>
             )}
 
-            {/* Payments */}
+            {/* ============ DELIVERABLES ============ */}
+            {deliverables.length > 0 && (
+              <section>
+                <SectionTitle icon={FileText}>Deliverables</SectionTitle>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {deliverables.map(({ task, link }, i) => (
+                    <a
+                      key={`${task.id}-${i}`}
+                      href={link.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="group flex items-center gap-3 rounded-xl border border-border bg-surface p-3.5 shadow-sm transition-colors hover:border-primary/30 hover:bg-white/[0.04]"
+                    >
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/15 text-primary">
+                        <FileText className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="flex items-center gap-1.5 truncate text-sm font-medium">
+                          {link.title}
+                          {task.approved_at && <CheckCheck className="h-3 w-3 shrink-0 text-success" />}
+                        </p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {projectName(task.project_id)} · {task.name}
+                        </p>
+                      </div>
+                      <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary" />
+                    </a>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* ============ PAYMENTS ============ */}
             <section>
-              <h2 className="mb-3 text-[15px] font-semibold">Payments</h2>
-              <div className="overflow-hidden rounded border border-border bg-surface">
-                {deals.length === 0 && (
+              <SectionTitle icon={Wallet}>Payments</SectionTitle>
+              {deals.length === 0 ? (
+                <Card className="rounded-xl shadow-sm">
                   <p className="py-6 text-center text-sm text-muted-foreground">No engagements yet.</p>
-                )}
-                {deals.map((d) => (
-                  <div
-                    key={d.id}
-                    className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border-subtle px-3.5 py-2.5 text-sm last:border-0"
-                  >
-                    <span className="min-w-0 flex-1 truncate font-medium">{d.deal_name}</span>
-                    <Badge tone={statusTone(d.deal_stage)}>{d.deal_stage}</Badge>
-                    <span className="text-xs text-muted-foreground">
-                      {formatCurrency(Number(d.paid))} paid of {formatCurrency(Number(d.deal_value))}
-                    </span>
-                    {d.close_date && (
-                      <span className="text-xs text-muted-foreground">Close {formatDate(d.close_date)}</span>
-                    )}
+                </Card>
+              ) : (
+                <Card className="rounded-xl shadow-sm">
+                  {/* Summary */}
+                  <div className="grid grid-cols-3 gap-3 border-b border-border-subtle pb-4">
+                    <Summary label="Total value" value={formatCurrency(totalValue)} />
+                    <Summary label="Paid" value={formatCurrency(totalPaid)} tone="success" />
+                    <Summary label="Outstanding" value={formatCurrency(outstanding)} tone="warning" />
                   </div>
-                ))}
-              </div>
+                  <div className="flex items-center gap-3 py-3.5">
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/10">
+                      <div
+                        className="h-full rounded-full bg-success transition-all"
+                        style={{ width: `${paidPct}%` }}
+                      />
+                    </div>
+                    <span className="shrink-0 text-xs font-medium tabular-nums text-muted-foreground">
+                      {paidPct}% paid
+                    </span>
+                  </div>
+                  {/* Per-deal breakdown */}
+                  <div className="flex flex-col divide-y divide-border-subtle">
+                    {deals.map((d) => {
+                      const value = Number(d.deal_value);
+                      const paid = Number(d.paid);
+                      const pct = value > 0 ? Math.round((paid / value) * 100) : 0;
+                      return (
+                        <div key={d.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 py-2.5 text-sm">
+                          <span className="min-w-0 flex-1 truncate font-medium">{d.deal_name}</span>
+                          <Badge tone={statusTone(d.deal_stage)}>{d.deal_stage}</Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {formatCurrency(paid)} of {formatCurrency(value)}
+                          </span>
+                          <div className="h-1.5 w-24 overflow-hidden rounded-full bg-white/10">
+                            <div
+                              className={cn("h-full rounded-full", pct >= 100 ? "bg-success" : "bg-primary")}
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </Card>
+              )}
             </section>
 
             {portal?.notes && (
-              <Card>
+              <Card className="rounded-xl shadow-sm">
                 <h3 className="mb-1.5 text-sm font-semibold text-muted-foreground">Notes from your team</h3>
                 <p className="text-sm">{portal.notes}</p>
               </Card>
@@ -406,6 +567,70 @@ function PortalInner() {
           </>
         )}
       </main>
+    </div>
+  );
+}
+
+/* ---------------------------------- Pieces ---------------------------------- */
+
+function Stat({
+  icon: Icon,
+  value,
+  label,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  value: string;
+  label: string;
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-lg border border-border bg-card/70 px-3.5 py-3">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/15 text-primary">
+        <Icon className="h-4 w-4" />
+      </div>
+      <div className="min-w-0">
+        <p className="truncate text-base font-semibold leading-tight tabular-nums">{value}</p>
+        <p className="truncate text-[11px] text-muted-foreground">{label}</p>
+      </div>
+    </div>
+  );
+}
+
+function SectionTitle({
+  icon: Icon,
+  children,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  children: React.ReactNode;
+}) {
+  return (
+    <h2 className="mb-3 flex items-center gap-2 text-[15px] font-semibold">
+      <Icon className="h-4 w-4 text-muted-foreground" />
+      {children}
+    </h2>
+  );
+}
+
+function Summary({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone?: "success" | "warning";
+}) {
+  return (
+    <div>
+      <p className="text-[11px] text-muted-foreground">{label}</p>
+      <p
+        className={cn(
+          "mt-0.5 text-lg font-semibold tabular-nums",
+          tone === "success" && "text-success",
+          tone === "warning" && "text-warning"
+        )}
+      >
+        {value}
+      </p>
     </div>
   );
 }
