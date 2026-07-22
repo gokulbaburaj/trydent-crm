@@ -267,26 +267,20 @@
   ---break---
 */
 
+/*
+  The @bklit registry appended a greyscale `.dark` chart palette here, with
+  `--chart-1: oklch(1 0 none)` — pure white. Because next-themes puts `.dark`
+  on <html>, that silently overrode our brand palette and every chart series
+  rendered white. This app keeps its dark values in :root (see the top of this
+  file), so `.dark` only needs to re-assert the brand series colours.
+
+  If a future `shadcn add` re-appends a greyscale block below this one, delete
+  it — the series colours must stay tied to --primary.
+*/
 .dark {
-  --chart-1: oklch(1 0 none);
-  --chart-2: oklch(0.73 0 none);
-  --chart-3: oklch(0.51 0 none);
-  --chart-4: oklch(0.39 0 none);
-  --chart-5: oklch(0.32 0 none);
-  --chart-background: oklch(0.145 0 0);
-  --chart-foreground: oklch(0.45 0 0);
-  --chart-foreground-muted: oklch(0.65 0.01 260);
-  --chart-crosshair: oklch(0.45 0 0);
-  --chart-grid: oklch(0.25 0 0);
-  --chart-brush-border: var(--chart-grid);
-  --chart-marker-background: oklch(0.25 0.01 260);
-  --chart-marker-border: oklch(0.4 0.01 260);
-  --chart-marker-foreground: oklch(0.9 0 0);
-  --chart-label: oklch(0.75 0.01 260);
-  --chart-scale-01: oklch(0.28 0.03 270);
-  --chart-scale-02: oklch(0.38 0.04 270);
-  --chart-scale-03: oklch(0.48 0.05 270);
-  --chart-scale-04: oklch(0.58 0.06 270);
-  --chart-scale-05: oklch(0.68 0.07 270);
-  --chart-scale-pattern-color: oklch(0.145 0 0);
+  --chart-1: var(--primary);
+  --chart-2: #4ea7e0;
+  --chart-3: #4cb782;
+  --chart-4: #d9a53f;
+  --chart-5: #d95c8a;
 }

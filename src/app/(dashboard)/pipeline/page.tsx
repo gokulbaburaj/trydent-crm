@@ -11,6 +11,7 @@ import { ChartTooltip } from "@/components/charts/tooltip/chart-tooltip";
 import { PieChart } from "@/components/charts/pie-chart";
 import { PieSlice } from "@/components/charts/pie-slice";
 import { PieCenter } from "@/components/charts/pie-center";
+import { FunnelChart } from "@/components/charts/funnel-chart";
 import { Card } from "@/components/ui/Card";
 import { cn } from "@/lib/utils";
 import { KanbanBoard } from "@/components/KanbanBoard";
@@ -38,12 +39,13 @@ const STAGE_COLORS = [
   "var(--chart-5)",
 ];
 
-type StageChart = "bar" | "value" | "share";
+type StageChart = "bar" | "value" | "share" | "funnel";
 
 const STAGE_CHARTS: { id: StageChart; label: string; hint: string }[] = [
   { id: "bar", label: "Count", hint: "How many deals sit in each stage" },
   { id: "value", label: "Value", hint: "How much money sits in each stage" },
   { id: "share", label: "Share", hint: "Each stage's share of all deals" },
+  { id: "funnel", label: "Funnel", hint: "Stage sizes as a funnel shape" },
 ];
 
 const emptyForm: Partial<Deal> = {
@@ -255,7 +257,23 @@ export default function PipelinePage() {
             </div>
           </div>
 
-          {stageChart === "share" ? (
+          {stageChart === "funnel" ? (
+            <div className="overflow-hidden">
+              <FunnelChart
+                data={stageSlices.map((s) => ({ label: s.label, value: s.value }))}
+                color="var(--chart-1)"
+                showValues
+                showLabels
+                showPercentage={false}
+                className="w-full"
+                formatValue={(v) => `${v} deal${v === 1 ? "" : "s"}`}
+              />
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                Stage sizes only. Percentages are hidden because conversion rates need
+                stage history, which isn&apos;t tracked yet.
+              </p>
+            </div>
+          ) : stageChart === "share" ? (
             <div className="flex h-[260px] items-center justify-center gap-8">
               <PieChart data={stageSlices} size={220} innerRadius={62} padAngle={0.05} cornerRadius={6}>
                 {stageSlices.map((s, i) => (
