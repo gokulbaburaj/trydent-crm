@@ -9,6 +9,8 @@ create extension if not exists "pgcrypto";
 create type user_role as enum ('admin', 'rep', 'client', 'contractor');
 create type client_status as enum ('Lead', 'Prospect', 'Active Customer', 'Inactive Customer');
 create type lead_source as enum ('Referral', 'Website', 'Social Media', 'Event');
+-- 'Negotiation' is legacy: merged into 'Proposal' (migration 2026-07-22d).
+-- Kept in the type because Postgres can't drop an enum value already in use.
 create type deal_stage as enum ('Lead', 'Qualified', 'Proposal', 'Negotiation', 'Closed Won', 'Closed Lost');
 create type portal_status as enum ('Not Started', 'Building', 'Live: Shared with Client', 'Client Closed');
 create type project_status as enum ('Planning', 'In Progress', 'Review', 'Delivered', 'On Hold');

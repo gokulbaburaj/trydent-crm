@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check } from "lucide-react";
+import { toast } from "@/components/Toaster";
 import { Card } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
-import { Input } from "@/components/ui/Input";
+import { Input, Label } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/useAuth";
+import { createClient } from "@/lib/supabase/client";
 import { ACCENT_PRESETS, useAccent } from "@/lib/theme";
 
 export default function SettingsPage() {
@@ -15,23 +17,135 @@ export default function SettingsPage() {
   const { primary, setAccent } = useAccent();
   const [customHex, setCustomHex] = useState("");
 
+  const [fullName, setFullName] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [password, setPassword] = useState("");
+  const [savingPassword, setSavingPassword] = useState(false);
+
+  // Seed the form once the profile arrives.
+  const profileId = profile?.id ?? null;
+  useEffect(() => {
+    if (!profile) return;
+    queueMicrotask(() => {
+      setFullName(profile.full_name ?? "");
+      setAvatarUrl(profile.avatar_url ?? "");
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileId]);
+
+  const dirty =
+    !!profile &&
+    (fullName.trim() !== (profile.full_name ?? "") || avatarUrl.trim() !== (profile.avatar_url ?? ""));
+
+  async function saveProfile(e: React.FormEvent) {
+    e.preventDefault();
+    if (!profile) return;
+    const name = fullName.trim();
+    if (!name) {
+      toast.error("Name can't be empty.");
+      return;
+    }
+    setSavingProfile(true);
+    const supabase = createClient();
+    if (!supabase) return;
+    const { error } = await supabase
+      .from("profiles")
+      .update({ full_name: name, avatar_url: avatarUrl.trim() || null })
+      .eq("id", profile.id);
+    setSavingProfile(false);
+    if (error) {
+      toast.error(`Couldn't save: ${error.message}`);
+      return;
+    }
+    toast.success("Profile updated");
+  }
+
+  async function changePassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (password.length < 8) return;
+    setSavingPassword(true);
+    const supabase = createClient();
+    if (!supabase) return;
+    const { error } = await supabase.auth.updateUser({ password });
+    setSavingPassword(false);
+    if (error) {
+      toast.error(`Couldn't change password: ${error.message}`);
+      return;
+    }
+    setPassword("");
+    toast.success("Password updated");
+  }
+
   return (
     <div className="flex flex-col gap-5 max-w-xl">
       <Card>
         <h3 className="mb-4 text-sm font-semibold text-muted-foreground">Your Profile</h3>
         {profile ? (
-          <div className="flex items-center gap-4">
-            <Avatar name={profile.full_name} url={profile.avatar_url} size="lg" />
-            <div>
-              <p className="font-medium">{profile.full_name}</p>
-              <p className="text-sm text-muted-foreground">{profile.email}</p>
-              <Badge tone="green" className="mt-1">{profile.role}</Badge>
+          <form onSubmit={saveProfile} className="flex flex-col gap-4">
+            <div className="flex items-center gap-4">
+              <Avatar name={fullName || profile.full_name} url={avatarUrl || profile.avatar_url} size="lg" />
+              <div className="min-w-0">
+                <p className="truncate text-sm text-muted-foreground">{profile.email}</p>
+                <Badge tone="green" className="mt-1">{profile.role}</Badge>
+              </div>
             </div>
-          </div>
+            <div>
+              <Label>Full name</Label>
+              <Input value={fullName} onChange={(e) => setFullName(e.target.value)} />
+            </div>
+            <div>
+              <Label>Avatar image URL (optional)</Label>
+              <Input
+                placeholder="https://..."
+                value={avatarUrl}
+                onChange={(e) => setAvatarUrl(e.target.value)}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Button type="submit" size="sm" disabled={!dirty || savingProfile}>
+                {savingProfile ? "Saving..." : "Save profile"}
+              </Button>
+              {dirty && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    setFullName(profile.full_name ?? "");
+                    setAvatarUrl(profile.avatar_url ?? "");
+                  }}
+                >
+                  Reset
+                </Button>
+              )}
+            </div>
+          </form>
         ) : (
           <p className="text-sm text-muted-foreground">Not signed in.</p>
         )}
       </Card>
+
+      {profile && (
+        <Card>
+          <h3 className="mb-1 text-sm font-semibold text-muted-foreground">Password</h3>
+          <p className="mb-4 text-xs text-muted-foreground">
+            Set a new password for {profile.email}. You&apos;ll stay signed in.
+          </p>
+          <form onSubmit={changePassword} className="flex items-center gap-2">
+            <Input
+              type="password"
+              placeholder="New password (min 8 characters)"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="max-w-[260px]"
+            />
+            <Button type="submit" size="sm" variant="secondary" disabled={password.length < 8 || savingPassword}>
+              {savingPassword ? "Updating..." : "Update password"}
+            </Button>
+          </form>
+        </Card>
+      )}
 
       <Card>
         <h3 className="mb-1 text-sm font-semibold text-muted-foreground">Theme</h3>

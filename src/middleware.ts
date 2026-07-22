@@ -36,18 +36,31 @@ export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isPublic = path.startsWith("/login") || path.startsWith("/api");
 
+  const go = (to: string) => {
+    const redirect = NextResponse.redirect(new URL(to, request.url));
+    response.cookies.getAll().forEach((c) => redirect.cookies.set(c.name, c.value));
+    return redirect;
+  };
+
   // Signed out → straight to login (server-side, so the dashboard never flashes).
   if (!user && !isPublic) {
-    const redirect = NextResponse.redirect(new URL("/login", request.url));
-    response.cookies.getAll().forEach((c) => redirect.cookies.set(c.name, c.value));
-    return redirect;
+    return go("/login");
   }
 
-  // Signed in → skip the login page.
+  // Portal users get sent to their own home before any app route renders. Read
+  // from the JWT metadata so this costs no database round-trip; the dashboard
+  // layout still enforces it authoritatively if the metadata is stale/missing.
+  const metaRole = (user?.user_metadata as { role?: string } | undefined)?.role;
+  const portalHome =
+    metaRole === "client" ? "/portal" : metaRole === "contractor" ? "/staff-portal" : null;
+
+  // Signed in → skip the login page, landing on the right home for the role.
   if (user && path.startsWith("/login")) {
-    const redirect = NextResponse.redirect(new URL("/my-work", request.url));
-    response.cookies.getAll().forEach((c) => redirect.cookies.set(c.name, c.value));
-    return redirect;
+    return go(portalHome ?? "/my-work");
+  }
+
+  if (user && portalHome && !path.startsWith(portalHome) && !path.startsWith("/api")) {
+    return go(portalHome);
   }
 
   return response;

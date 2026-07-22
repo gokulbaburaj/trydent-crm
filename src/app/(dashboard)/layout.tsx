@@ -59,9 +59,16 @@ export default function DashboardLayout({
     }
   }, [loading, profile, isSupabaseConfigured, router, pathname]);
 
+  // A portal user who landed on an app route is about to be redirected — don't
+  // paint the page they're leaving (this was the ~2s dashboard flash).
+  const redirectPending =
+    !!profile &&
+    ((profile.role === "client" && pathname !== "/portal") ||
+      (profile.role === "contractor" && pathname !== "/staff-portal"));
+
   // While checking the session — or when signed out and about to redirect —
   // never render the dashboard shell (prevents the dashboard-then-login flash).
-  if (loading || (isSupabaseConfigured && !profile)) {
+  if (loading || (isSupabaseConfigured && !profile) || redirectPending) {
     return (
       <div className="flex min-h-screen items-center justify-center text-muted-foreground">
         Loading...

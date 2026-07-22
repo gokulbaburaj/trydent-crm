@@ -5,11 +5,12 @@ export type ClientStatus =
   | "Active Customer"
   | "Inactive Customer";
 export type LeadSource = "Referral" | "Website" | "Social Media" | "Event";
+/** "Negotiation" was merged into "Proposal" (migration 2026-07-22d). The enum
+ *  value still exists in Postgres but the app no longer produces it. */
 export type DealStage =
   | "Lead"
   | "Qualified"
   | "Proposal"
-  | "Negotiation"
   | "Closed Won"
   | "Closed Lost";
 export type PortalStatus =
@@ -56,7 +57,6 @@ export const DEAL_STAGES: DealStage[] = [
   "Lead",
   "Qualified",
   "Proposal",
-  "Negotiation",
   "Closed Won",
   "Closed Lost",
 ];
