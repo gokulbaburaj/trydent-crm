@@ -5,7 +5,9 @@ import { LayoutGrid, List, Plus, X } from "lucide-react";
 import { toast } from "@/components/Toaster";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { TableSkeleton } from "@/components/ui/Skeletons";
+import { BulkActionBar } from "@/components/BulkActionBar";
 import { DataTable, Column } from "@/components/DataTable";
+import { FilterBar } from "@/components/FilterBar";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { Button } from "@/components/ui/Button";
 import { Badge, statusTone } from "@/components/ui/Badge";
@@ -16,6 +18,8 @@ import { Drawer } from "@/components/ui/Drawer";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { Dropdown } from "@/components/ui/Dropdown";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
+import { applyFilters, useStoredFilters } from "@/lib/filters";
+import { useMultiSelect } from "@/lib/useMultiSelect";
 import { createClient } from "@/lib/supabase/client";
 import { formatDate } from "@/lib/utils";
 import { useCurrency } from "@/lib/currency";
@@ -54,10 +58,68 @@ export default function ClientsPage() {
   const ownerName = (id: string | null) =>
     profiles.find((p) => p.id === id)?.full_name ?? "Unassigned";
 
+  const { filters, views, setFilters, setViews } = useStoredFilters("clients");
+
+  const allTags = useMemo(
+    () => Array.from(new Set(clients.flatMap((c) => c.tags ?? []))).sort(),
+    [clients]
+  );
+
+  const visibleClients = useMemo(
+    () =>
+      applyFilters(clients, filters, {
+        text: (c) => [c.company, c.point_person, c.email, ...(c.tags ?? [])],
+        status: (c) => c.status,
+        assignee: (c) => c.account_owner,
+        labels: (c) => c.tags ?? [],
+        due: (c) => c.last_contact,
+      }),
+    [clients, filters]
+  );
+
+  // `selected` is taken by the detail drawer, so the multi-select set is `checked`.
+  const { selected: checked, toggle, setMany, clear } = useMultiSelect();
+
+  // Bulk actions only touch rows that are both selected and currently visible.
+  const selectedIds = useMemo(
+    () => visibleClients.map((c) => c.id).filter((id) => checked.has(id)),
+    [visibleClients, checked]
+  );
+
+  async function bulkUpdate(patch: Partial<Client>, what: string) {
+    const ids = selectedIds;
+    if (ids.length === 0) return;
+    setRows((prev) => prev.map((c) => (ids.includes(c.id) ? { ...c, ...patch } : c)));
+    const supabase = createClient();
+    if (!supabase) return;
+    const { error } = await supabase.from("clients").update(patch).in("id", ids);
+    if (error) toast.error(`Couldn't update: ${error.message}`);
+    else toast.success(`${what} set for ${ids.length} client${ids.length !== 1 ? "s" : ""}`);
+  }
+
+  async function bulkDelete() {
+    const ids = selectedIds;
+    if (ids.length === 0) return;
+    if (
+      !confirm(
+        `Delete ${ids.length} client${ids.length !== 1 ? "s" : ""}? This will remove linked deals/activities.`
+      )
+    )
+      return;
+    setRows((prev) => prev.filter((c) => !ids.includes(c.id)));
+    clear();
+    const supabase = createClient();
+    if (!supabase) return;
+    const { error } = await supabase.from("clients").delete().in("id", ids);
+    if (error) toast.error(`Couldn't delete: ${error.message}`);
+    else toast.success(`Deleted ${ids.length} client${ids.length !== 1 ? "s" : ""}`);
+  }
+
   const columns: Column<Client>[] = [
     {
       header: "Company",
       render: (c) => <PersonCell name={c.company} subtitle={c.point_person} />,
+      sortKey: (c) => c.company.toLowerCase(),
     },
     {
       header: "Status",
@@ -68,10 +130,24 @@ export default function ClientsPage() {
           onChange={(status) => handleStageMove(c, status)}
         />
       ),
+      sortKey: (c) => CLIENT_STATUSES.indexOf(c.status),
     },
-    { header: "Email", render: (c) => c.email || "—" },
-    { header: "Owner", render: (c) => ownerName(c.account_owner) },
-    { header: "Last Contact", render: (c) => formatDate(c.last_contact) },
+    {
+      header: "Email",
+      render: (c) => c.email || "—",
+      sortKey: (c) => c.email?.toLowerCase() || null,
+    },
+    {
+      header: "Owner",
+      render: (c) => ownerName(c.account_owner),
+      sortKey: (c) =>
+        c.account_owner ? ownerName(c.account_owner).toLowerCase() : null,
+    },
+    {
+      header: "Last Contact",
+      render: (c) => formatDate(c.last_contact),
+      sortKey: (c) => c.last_contact,
+    },
   ];
 
   async function handleSave(e: React.FormEvent) {
@@ -167,16 +243,32 @@ export default function ClientsPage() {
         </Button>
       </div>
 
+      <FilterBar
+        filters={filters}
+        onChange={setFilters}
+        views={views}
+        onViewsChange={setViews}
+        statuses={CLIENT_STATUSES}
+        assignees={profiles.map((p) => ({ value: p.id, label: p.full_name }))}
+        labels={allTags}
+        showDue
+        dueLabel="Last contact"
+        placeholder="Filter clients…"
+      />
+
       <div key={view} className="animate-fade">
       {view === "table" ? (
         <DataTable
           columns={columns}
-          rows={clients}
+          rows={visibleClients}
           rowKey={(c) => c.id}
           onRowClick={setSelected}
+          selection={{ selected: checked, onToggle: toggle, onToggleAll: setMany }}
           emptyMessage={
             loading ? (
               <TableSkeleton />
+            ) : clients.length > 0 ? (
+              "No clients match the current filters."
             ) : (
               <EmptyState
                 icon={List}
@@ -191,7 +283,7 @@ export default function ClientsPage() {
       ) : (
         <KanbanBoard
           columns={CLIENT_STATUSES.map((s) => ({ id: s, label: s }))}
-          items={clients}
+          items={visibleClients}
           getColumnId={(c) => c.status}
           onMove={handleStageMove}
           renderCard={(c) => (
@@ -396,6 +488,20 @@ export default function ClientsPage() {
           </form>
         )}
       </Drawer>
+
+      <BulkActionBar
+        count={selectedIds.length}
+        onClear={clear}
+        statuses={CLIENT_STATUSES}
+        onSetStatus={(s) => bulkUpdate({ status: s as Client["status"] }, "Status")}
+        assignees={profiles.map((p) => ({ value: p.id, label: p.full_name }))}
+        assigneeLabel="Owner"
+        onSetAssignee={(id) => bulkUpdate({ account_owner: id }, "Owner")}
+        showDue
+        dueLabel="Last contact"
+        onSetDue={(d) => bulkUpdate({ last_contact: d }, "Last contact")}
+        onDelete={bulkDelete}
+      />
     </div>
   );
 }

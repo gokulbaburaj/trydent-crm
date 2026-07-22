@@ -24,6 +24,26 @@ export type ProjectStatus =
   | "Delivered"
   | "On Hold";
 export type TaskStatus = "Not Started" | "In Progress" | "Done" | "Archived";
+export type TaskPriority = "urgent" | "high" | "normal" | "low";
+export type Recurrence = "none" | "daily" | "weekly" | "biweekly" | "monthly";
+
+export const RECURRENCES: Recurrence[] = [
+  "none",
+  "daily",
+  "weekly",
+  "biweekly",
+  "monthly",
+];
+
+export const TASK_PRIORITIES: TaskPriority[] = ["urgent", "high", "normal", "low"];
+
+/** Sort weight — lower comes first. */
+export const PRIORITY_ORDER: Record<TaskPriority, number> = {
+  urgent: 0,
+  high: 1,
+  normal: 2,
+  low: 3,
+};
 
 export const CLIENT_STATUSES: ClientStatus[] = [
   "Lead",
@@ -120,6 +140,8 @@ export interface Activity {
   assigned_to: string | null;
   activity_date: string;
   color: string | null;
+  recurrence: Recurrence;
+  recurrence_parent_id: string | null;
   created_at: string;
 }
 
@@ -129,7 +151,6 @@ export interface ClientPortal {
   status: PortalStatus;
   notes: string | null;
   portal_username: string | null;
-  portal_password: string | null;
   last_opened_at: string | null;
   created_at: string;
   updated_at: string;
@@ -151,6 +172,9 @@ export interface ProjectTask {
   description: string | null;
   links: TaskLink[];
   label: string | null;
+  priority: TaskPriority;
+  recurrence: Recurrence;
+  recurrence_parent_id: string | null;
   approved_at: string | null;
   approved_by: string | null;
   created_at: string;

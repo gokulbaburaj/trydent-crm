@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ChevronDown, Plus } from "lucide-react";
+import { FilterBar } from "@/components/FilterBar";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { Button } from "@/components/ui/Button";
 import { Badge, statusTone } from "@/components/ui/Badge";
@@ -11,6 +12,7 @@ import { Dropdown } from "@/components/ui/Dropdown";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { Popover, MenuItem, MenuLabel } from "@/components/ui/Popover";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
+import { applyFilters, useStoredFilters } from "@/lib/filters";
 import { createClient } from "@/lib/supabase/client";
 import { formatDate } from "@/lib/utils";
 import { CURRENCIES, useCurrency } from "@/lib/currency";
@@ -41,6 +43,22 @@ export default function PipelinePage() {
 
   const clientName = (id: string) => clients.find((c) => c.id === id)?.company ?? "Unknown";
   const ownerName = (id: string | null) => profiles.find((p) => p.id === id)?.full_name ?? "Unassigned";
+
+  const { filters, views, setFilters, setViews } = useStoredFilters("pipeline");
+
+  const visibleDeals = useMemo(
+    () =>
+      applyFilters(deals, filters, {
+        text: (d) => [
+          d.deal_name,
+          clients.find((c) => c.id === d.client_id)?.company,
+        ],
+        status: (d) => d.deal_stage,
+        assignee: (d) => d.account_owner,
+        due: (d) => d.close_date,
+      }),
+    [deals, filters, clients]
+  );
 
   async function handleStageMove(deal: Deal, stage: string) {
     setRows((prev) => prev.map((d) => (d.id === deal.id ? { ...d, deal_stage: stage as Deal["deal_stage"] } : d)));
@@ -94,7 +112,9 @@ export default function PipelinePage() {
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
         <h2 className="text-sm text-muted-foreground">
-          {deals.length} deal{deals.length !== 1 ? "s" : ""} in pipeline
+          {visibleDeals.length !== deals.length
+            ? `${visibleDeals.length} of ${deals.length} deals shown`
+            : `${deals.length} deal${deals.length !== 1 ? "s" : ""} in pipeline`}
         </h2>
         <div className="flex items-center gap-2">
           <Popover
@@ -134,9 +154,22 @@ export default function PipelinePage() {
         </div>
       </div>
 
+      <FilterBar
+        filters={filters}
+        onChange={setFilters}
+        views={views}
+        onViewsChange={setViews}
+        statuses={DEAL_STAGES}
+        statusLabel="Stage"
+        assignees={profiles.map((p) => ({ value: p.id, label: p.full_name }))}
+        showDue
+        dueLabel="Close date"
+        placeholder="Filter deals…"
+      />
+
       <KanbanBoard
         columns={DEAL_STAGES.map((s) => ({ id: s, label: s }))}
-        items={deals}
+        items={visibleDeals}
         getColumnId={(d) => d.deal_stage}
         onMove={handleStageMove}
         columnMeta={(_, items) =>

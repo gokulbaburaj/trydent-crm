@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
+  ListChecks,
   Users,
   GitBranch,
   FolderKanban,
@@ -18,7 +19,10 @@ import {
 import { cn } from "@/lib/utils";
 import { openCommandMenu } from "@/components/CommandMenu";
 
-const OVERVIEW = [{ href: "/dashboard", label: "Dashboard", icon: LayoutDashboard }];
+const OVERVIEW = [
+  { href: "/my-work", label: "My Work", icon: ListChecks },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+];
 
 const WORKSPACE = [
   { href: "/clients", label: "Clients", icon: Users },

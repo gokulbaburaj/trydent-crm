@@ -9,6 +9,7 @@ import {
   GitBranch,
   History,
   LayoutDashboard,
+  ListChecks,
   MonitorSmartphone,
   Plus,
   Settings,
@@ -21,6 +22,7 @@ import { Tip } from "@/components/ui/Tooltip";
 import { cn } from "@/lib/utils";
 
 const TAB_ICONS: [string, React.ComponentType<{ className?: string }>][] = [
+  ["/my-work", ListChecks],
   ["/dashboard", LayoutDashboard],
   ["/clients", Users],
   ["/pipeline", GitBranch],

@@ -38,6 +38,9 @@ import {
   Trash2,
   User,
 } from "lucide-react";
+import { toast } from "@/components/Toaster";
+import { BulkActionBar } from "@/components/BulkActionBar";
+import { FilterBar } from "@/components/FilterBar";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { DashGrid } from "@/components/DashGrid";
 import { ProjectPageSkeleton } from "@/components/ui/Skeletons";
@@ -50,11 +53,16 @@ import { DatePicker } from "@/components/ui/DatePicker";
 import { Popover, MenuItem, MenuLabel } from "@/components/ui/Popover";
 import { Input } from "@/components/ui/Input";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
+import { applyFilters, useStoredFilters } from "@/lib/filters";
+import { useMultiSelect } from "@/lib/useMultiSelect";
+import { nextTaskPayload } from "@/lib/recurrence";
 import { createClient } from "@/lib/supabase/client";
 import { formatDate, initials, cn } from "@/lib/utils";
 import { useTabs } from "@/lib/tabs";
-import type { Activity, Client, Profile, Project, ProjectTask, TaskItem, TaskStatus } from "@/lib/types";
-import { PROJECT_STATUSES, TASK_STATUSES } from "@/lib/types";
+import type { Activity, Client, Profile, Project, ProjectTask, TaskItem, TaskPriority, TaskStatus } from "@/lib/types";
+import { PRIORITY_ORDER, PROJECT_STATUSES, TASK_STATUSES } from "@/lib/types";
+import { PriorityFlag } from "@/components/ui/PriorityPicker";
+import { RecurrenceIndicator } from "@/components/ui/RecurrencePicker";
 
 type PageTab = "overview" | "tasks" | "board" | "calendar";
 
@@ -101,9 +109,73 @@ export default function ProjectDetailPage() {
   }, [allSubtasks]);
 
   const tasks = useMemo(
-    () => allTasks.filter((t) => t.project_id === projectId),
+    () =>
+      allTasks
+        .filter((t) => t.project_id === projectId)
+        .sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]),
     [allTasks, projectId]
   );
+
+  // Shared across all project pages so saved views work anywhere.
+  const { filters, views, setFilters, setViews } = useStoredFilters("project-tasks");
+
+  const taskLabels = useMemo(
+    () =>
+      Array.from(
+        new Set(tasks.map((t) => t.label).filter((l): l is string => !!l))
+      ).sort(),
+    [tasks]
+  );
+
+  const visibleTasks = useMemo(
+    () =>
+      applyFilters(tasks, filters, {
+        text: (t) => [t.name, t.description],
+        status: (t) => t.status,
+        assignee: (t) => t.assigned_to,
+        labels: (t) => (t.label ? [t.label] : []),
+        priority: (t) => t.priority,
+        due: (t) => t.due_date,
+      }),
+    [tasks, filters]
+  );
+
+  const visibleActive = useMemo(
+    () => visibleTasks.filter((t) => t.status !== "Archived"),
+    [visibleTasks]
+  );
+
+  const { selected, toggle, clear } = useMultiSelect();
+
+  // Bulk actions only touch rows that are both selected and currently visible.
+  const selectedIds = useMemo(
+    () => visibleTasks.map((t) => t.id).filter((id) => selected.has(id)),
+    [visibleTasks, selected]
+  );
+
+  async function bulkUpdateTasks(patch: Partial<ProjectTask>, what: string) {
+    const ids = selectedIds;
+    if (ids.length === 0) return;
+    setTasks((prev) => prev.map((t) => (ids.includes(t.id) ? { ...t, ...patch } : t)));
+    const supabase = createClient();
+    if (!supabase) return;
+    const { error } = await supabase.from("project_tasks").update(patch).in("id", ids);
+    if (error) toast.error(`Couldn't update: ${error.message}`);
+    else toast.success(`${what} set for ${ids.length} task${ids.length !== 1 ? "s" : ""}`);
+  }
+
+  async function bulkDeleteTasks() {
+    const ids = selectedIds;
+    if (ids.length === 0) return;
+    if (!confirm(`Delete ${ids.length} task${ids.length !== 1 ? "s" : ""}?`)) return;
+    setTasks((prev) => prev.filter((t) => !ids.includes(t.id)));
+    clear();
+    const supabase = createClient();
+    if (!supabase) return;
+    const { error } = await supabase.from("project_tasks").delete().in("id", ids);
+    if (error) toast.error(`Couldn't delete: ${error.message}`);
+    else toast.success(`Deleted ${ids.length} task${ids.length !== 1 ? "s" : ""}`);
+  }
 
   useEffect(() => {
     async function load() {
@@ -185,11 +257,48 @@ export default function ProjectDetailPage() {
   }
 
   async function updateTask(id: string, patch: Partial<ProjectTask>) {
+    const before = allTasks.find((t) => t.id === id);
     setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
     const supabase = createClient();
     if (!supabase) return;
     const { error } = await supabase.from("project_tasks").update(patch).eq("id", id);
-    if (error) setActionError(`Couldn't update task: ${error.message}`);
+    if (error) {
+      setActionError(`Couldn't update task: ${error.message}`);
+      return;
+    }
+    // A recurring task marked Done spawns its next occurrence.
+    if (
+      before &&
+      before.recurrence !== "none" &&
+      before.status !== "Done" &&
+      patch.status === "Done"
+    ) {
+      await spawnNext({ ...before, ...patch });
+    }
+  }
+
+  /** Insert the next occurrence of a recurring task, if one is due. */
+  async function spawnNext(task: ProjectTask) {
+    const payload = nextTaskPayload(task, allTasks);
+    if (!payload) return;
+    const supabase = createClient();
+    if (!supabase) return;
+    const { data, error } = await supabase
+      .from("project_tasks")
+      .insert(payload)
+      .select()
+      .single();
+    if (!error && data) {
+      setTasks((prev) => [...prev, data as ProjectTask]);
+      toast.success("Next occurrence scheduled");
+    }
+  }
+
+  /** Skip a recurring occurrence: schedule the next, remove this one. */
+  async function skipTask(task: ProjectTask) {
+    await spawnNext(task);
+    await deleteTask(task.id);
+    toast.success("Occurrence skipped");
   }
 
   async function deleteTask(id: string) {
@@ -225,6 +334,12 @@ export default function ProjectDetailPage() {
       if (error) setActionError(`Couldn't add meeting: ${error.message}`);
       if (!error && data) setActivityRows((prev) => [data as Activity, ...prev]);
     }
+  }
+
+  /** Change view tab; selection belongs to the List view, so drop it. */
+  function switchTab(t: PageTab) {
+    setTab(t);
+    clear();
   }
 
   if (loading) {
@@ -387,11 +502,26 @@ export default function ProjectDetailPage() {
 
       {/* View switcher */}
       <div className="flex w-fit items-center gap-0.5 rounded-md border border-border bg-surface p-1">
-        <PageTabButton active={tab === "overview"} onClick={() => setTab("overview")} icon={LayoutDashboard} label="Overview" />
-        <PageTabButton active={tab === "board"} onClick={() => setTab("board")} icon={LayoutGrid} label="Kanban" />
-        <PageTabButton active={tab === "tasks"} onClick={() => setTab("tasks")} icon={List} label="List" />
-        <PageTabButton active={tab === "calendar"} onClick={() => setTab("calendar")} icon={CalendarIcon} label="Calendar" />
+        <PageTabButton active={tab === "overview"} onClick={() => switchTab("overview")} icon={LayoutDashboard} label="Overview" />
+        <PageTabButton active={tab === "board"} onClick={() => switchTab("board")} icon={LayoutGrid} label="Kanban" />
+        <PageTabButton active={tab === "tasks"} onClick={() => switchTab("tasks")} icon={List} label="List" />
+        <PageTabButton active={tab === "calendar"} onClick={() => switchTab("calendar")} icon={CalendarIcon} label="Calendar" />
       </div>
+
+      {tab !== "overview" && (
+        <FilterBar
+          filters={filters}
+          onChange={setFilters}
+          views={views}
+          onViewsChange={setViews}
+          statuses={TASK_STATUSES}
+          assignees={profiles.map((p) => ({ value: p.id, label: p.full_name }))}
+          labels={taskLabels}
+          priorities
+          showDue
+          placeholder="Filter tasks…"
+        />
+      )}
 
       <div key={tab} className="animate-page">
       {/* ============ OVERVIEW ============ */}
@@ -561,7 +691,7 @@ export default function ProjectDetailPage() {
           </form>
           <KanbanBoard
             columns={BOARD_STATUSES.map((s) => ({ id: s, label: s }))}
-            items={tasks.filter((t) => t.status !== "Archived")}
+            items={visibleActive}
             getColumnId={(t) => t.status}
             onMove={(t, status) => updateTask(t.id, { status: status as TaskStatus })}
             renderCard={(t) => {
@@ -582,7 +712,11 @@ export default function ProjectDetailPage() {
                       )}
                     </div>
                   )}
-                  <p className="text-sm font-medium">{t.name}</p>
+                  <p className="flex items-center gap-1.5 text-sm font-medium">
+                    <PriorityFlag priority={t.priority} />
+                    {t.name}
+                    <RecurrenceIndicator recurrence={t.recurrence} />
+                  </p>
                   {t.description && (
                     <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
                       {t.description}
@@ -634,14 +768,47 @@ export default function ProjectDetailPage() {
             </Button>
           </form>
           <div className="overflow-hidden rounded border border-border bg-surface">
-            {tasks.length === 0 && (
-              <p className="py-8 text-center text-sm text-muted-foreground">No tasks yet.</p>
+            {visibleTasks.length === 0 && (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                {tasks.length > 0
+                  ? "No tasks match the current filters."
+                  : "No tasks yet."}
+              </p>
             )}
-            {tasks.map((t) => (
+            {visibleTasks.map((t) => (
               <div
                 key={t.id}
-                className="group flex items-center gap-3 border-b border-border-subtle px-3 py-2 last:border-0 hover:bg-white/[0.03]"
+                className={cn(
+                  "group flex items-center gap-3 border-b border-border-subtle px-3 py-2 last:border-0 hover:bg-white/[0.03]",
+                  selected.has(t.id) && "bg-primary/5"
+                )}
               >
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggle(t.id, e.shiftKey, visibleTasks.map((x) => x.id));
+                  }}
+                  onMouseDown={(e) => {
+                    // Keep shift-click from selecting page text.
+                    if (e.shiftKey) e.preventDefault();
+                  }}
+                  title="Select task (shift-click for a range)"
+                  className={cn(
+                    "flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-[opacity,background-color,border-color]",
+                    selected.has(t.id)
+                      ? "border-primary bg-primary opacity-100"
+                      : cn(
+                          "border-muted-2 hover:border-muted-foreground",
+                          selected.size > 0
+                            ? "opacity-100"
+                            : "opacity-0 group-hover:opacity-100"
+                        )
+                  )}
+                >
+                  {selected.has(t.id) && (
+                    <Check className="h-3 w-3 text-primary-foreground" />
+                  )}
+                </button>
                 <StatusPicker
                   value={t.status}
                   options={TASK_STATUSES}
@@ -660,6 +827,8 @@ export default function ProjectDetailPage() {
                   >
                     {t.name}
                   </span>
+                  <PriorityFlag priority={t.priority} />
+                  <RecurrenceIndicator recurrence={t.recurrence} />
                   {t.approved_at && (
                     <span title="Approved by client">
                       <CheckCheck className="h-3.5 w-3.5 shrink-0 text-success" />
@@ -728,8 +897,24 @@ export default function ProjectDetailPage() {
       )}
 
       {/* ============ CALENDAR ============ */}
-      {tab === "calendar" && <ProjectCalendar tasks={active} onQuickAdd={quickAdd} />}
+      {tab === "calendar" && <ProjectCalendar tasks={visibleActive} onQuickAdd={quickAdd} />}
       </div>
+
+      <BulkActionBar
+        count={selectedIds.length}
+        onClear={clear}
+        statuses={TASK_STATUSES}
+        onSetStatus={(s) => bulkUpdateTasks({ status: s as TaskStatus }, "Status")}
+        assignees={profiles.map((p) => ({ value: p.id, label: p.full_name }))}
+        onSetAssignee={(id) => bulkUpdateTasks({ assigned_to: id }, "Assignee")}
+        showPriority
+        onSetPriority={(p: TaskPriority) => bulkUpdateTasks({ priority: p }, "Priority")}
+        showDue
+        onSetDue={(d) => bulkUpdateTasks({ due_date: d }, "Due date")}
+        labels={taskLabels}
+        onSetLabel={(l) => bulkUpdateTasks({ label: l }, "Label")}
+        onDelete={bulkDeleteTasks}
+      />
 
       {/* Task detail */}
       <TaskDetailDrawer
@@ -738,6 +923,7 @@ export default function ProjectDetailPage() {
         onClose={() => setDetailTaskId(null)}
         onUpdate={updateTask}
         onDelete={deleteTask}
+        onSkip={skipTask}
       />
     </div>
   );

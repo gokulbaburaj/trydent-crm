@@ -19,6 +19,7 @@ export interface AppTab {
 const STORAGE_KEY = "trydent-tabs";
 
 const PAGE_TITLES: [string, string][] = [
+  ["/my-work", "My Work"],
   ["/dashboard", "Dashboard"],
   ["/clients", "Clients"],
   ["/pipeline", "Pipeline"],

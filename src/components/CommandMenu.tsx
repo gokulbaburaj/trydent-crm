@@ -7,6 +7,7 @@ import {
   FolderKanban,
   GitBranch,
   LayoutDashboard,
+  ListChecks,
   MonitorSmartphone,
   Palette,
   Settings,
@@ -35,6 +36,7 @@ export function openCommandMenu() {
 }
 
 const PAGES = [
+  { href: "/my-work", label: "My Work", icon: ListChecks },
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/clients", label: "Clients", icon: Users },
   { href: "/pipeline", label: "Pipeline", icon: GitBranch },

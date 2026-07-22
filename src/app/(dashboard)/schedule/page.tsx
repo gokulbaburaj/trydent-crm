@@ -20,7 +20,7 @@ import {
   subMonths,
   subWeeks,
 } from "date-fns";
-import { Calendar, ChevronLeft, ChevronRight, List, Plus, User } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, List, Plus, Repeat, User } from "lucide-react";
 import {
   DndContext,
   DragEndEvent,
@@ -31,8 +31,12 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { DatePicker } from "@/components/ui/DatePicker";
+import { RecurrencePicker, RecurrenceIndicator } from "@/components/ui/RecurrencePicker";
 import { cn, withViewTransition } from "@/lib/utils";
 import { DataTable, Column } from "@/components/DataTable";
+import { FilterBar } from "@/components/FilterBar";
+import { applyFilters, useStoredFilters } from "@/lib/filters";
+import { nextActivityPayload } from "@/lib/recurrence";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Drawer } from "@/components/ui/Drawer";
@@ -56,6 +60,7 @@ const emptyForm: Partial<Activity> = {
   deal_id: null,
   assigned_to: null,
   activity_date: new Date().toISOString().slice(0, 16),
+  recurrence: "none",
 };
 
 const WEEKDAYS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
@@ -133,16 +138,84 @@ export default function SchedulePage() {
   const clientName = (id: string | null) => clients.find((c) => c.id === id)?.company ?? "—";
   const assigneeName = (id: string | null) => profiles.find((p) => p.id === id)?.full_name ?? "Unassigned";
 
+  // No cron: when a recurring schedule item's date has passed, spawn its next
+  // occurrence once on load. nextActivityPayload de-dupes via parent id.
+  const sweptRef = useRef(false);
+  useEffect(() => {
+    if (sweptRef.current || activities.length === 0) return;
+    sweptRef.current = true;
+    const now = new Date();
+    const due = activities.filter(
+      (a) => a.recurrence !== "none" && new Date(a.activity_date) < now
+    );
+    if (due.length === 0) return;
+    (async () => {
+      const supabase = createClient();
+      if (!supabase) return;
+      for (const a of due) {
+        const payload = nextActivityPayload(a, activities, now);
+        if (!payload) continue;
+        const { data, error } = await supabase
+          .from("activities")
+          .insert(payload)
+          .select()
+          .single();
+        if (!error && data) setRows((prev) => [data as Activity, ...prev]);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activities]);
+
   const filtered = useMemo(
     () => (tab === "mine" && profile ? activities.filter((a) => a.assigned_to === profile.id) : activities),
     [activities, tab, profile]
   );
 
+  const { filters, views, setFilters, setViews } = useStoredFilters("schedule");
+
+  const visible = useMemo(
+    () =>
+      applyFilters(filtered, filters, {
+        text: (a) => [
+          a.description,
+          a.outcome,
+          a.location,
+          clients.find((c) => c.id === a.client_id)?.company,
+        ],
+        assignee: (a) => a.assigned_to,
+        due: (a) => a.activity_date,
+      }),
+    [filtered, filters, clients]
+  );
+
   const columns: Column<Activity>[] = [
-    { header: "Description", render: (a) => <span className="font-medium">{a.description}</span> },
-    { header: "Client", render: (a) => clientName(a.client_id) },
-    { header: "Assigned To", render: (a) => assigneeName(a.assigned_to) },
-    { header: "Date", render: (a) => formatDate(a.activity_date) },
+    {
+      header: "Description",
+      render: (a) => (
+        <span className="flex items-center gap-1.5 font-medium">
+          {a.description}
+          <RecurrenceIndicator recurrence={a.recurrence} />
+        </span>
+      ),
+      sortKey: (a) => a.description.toLowerCase(),
+    },
+    {
+      header: "Client",
+      render: (a) => clientName(a.client_id),
+      sortKey: (a) =>
+        a.client_id ? clientName(a.client_id).toLowerCase() : null,
+    },
+    {
+      header: "Assigned To",
+      render: (a) => assigneeName(a.assigned_to),
+      sortKey: (a) =>
+        a.assigned_to ? assigneeName(a.assigned_to).toLowerCase() : null,
+    },
+    {
+      header: "Date",
+      render: (a) => formatDate(a.activity_date),
+      sortKey: (a) => a.activity_date,
+    },
     {
       header: "Follow-up",
       render: (a) =>
@@ -151,6 +224,7 @@ export default function SchedulePage() {
         ) : (
           <span className="text-muted-foreground">—</span>
         ),
+      sortKey: (a) => (a.follow_up_required ? 0 : 1),
     },
   ];
 
@@ -277,13 +351,29 @@ export default function SchedulePage() {
       </div>
 
       {tab !== "calendar" ? (
-        <DataTable
-          columns={columns}
-          rows={filtered}
-          rowKey={(a) => a.id}
-          onRowClick={setEditing}
-          emptyMessage="No schedule items yet."
-        />
+        <>
+          <FilterBar
+            filters={filters}
+            onChange={setFilters}
+            views={views}
+            onViewsChange={setViews}
+            assignees={profiles.map((p) => ({ value: p.id, label: p.full_name }))}
+            showDue
+            dueLabel="Date"
+            placeholder="Filter schedule…"
+          />
+          <DataTable
+            columns={columns}
+            rows={visible}
+            rowKey={(a) => a.id}
+            onRowClick={setEditing}
+            emptyMessage={
+              filtered.length > 0
+                ? "No items match the current filters."
+                : "No schedule items yet."
+            }
+          />
+        </>
       ) : (
         <>
           <div className="flex items-center justify-between">
@@ -462,6 +552,18 @@ export default function SchedulePage() {
                   }
                 />
               </div>
+            </div>
+            <div>
+              <Label>Repeat</Label>
+              <RecurrencePicker
+                value={editing.recurrence ?? "none"}
+                onChange={(recurrence) => setEditing({ ...editing, recurrence })}
+              />
+              {editing.recurrence && editing.recurrence !== "none" && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  The next occurrence is created automatically once this date passes.
+                </p>
+              )}
             </div>
             <label className="flex items-center gap-2 text-sm">
               <input
@@ -749,8 +851,11 @@ function WeekEvent({
           : undefined,
       }}
     >
-      <p className="truncate text-[11px] font-semibold leading-tight text-[#16171b]">
-        {format(d, "H:mm")} <span className="font-medium">{a.description}</span>
+      <p className="flex items-center gap-1 truncate text-[11px] font-semibold leading-tight text-[#16171b]">
+        <span className="truncate">
+          {format(d, "H:mm")} <span className="font-medium">{a.description}</span>
+        </span>
+        {a.recurrence !== "none" && <Repeat className="h-2.5 w-2.5 shrink-0 opacity-70" />}
       </p>
       <p className="truncate text-[10px] leading-tight text-[#16171b]/70">
         {clientName(a.client_id)}
@@ -880,6 +985,7 @@ function MonthGridPro({
                       title={a.description}
                       hint={format(parseISO(a.activity_date), "h:mm a")}
                       past={parseISO(a.activity_date) < now}
+                      recurring={a.recurrence !== "none"}
                       onClick={() => onEventClick(a)}
                       onContextMenu={(e) => {
                         e.preventDefault();
@@ -895,6 +1001,7 @@ function MonthGridPro({
                       title={t.name}
                       hint={projectName(t.project_id)}
                       past={false}
+                      recurring={t.recurrence !== "none"}
                       onClick={() => {}}
                     />
                   ))}
@@ -997,6 +1104,7 @@ function MonthChip({
   title,
   hint,
   past,
+  recurring = false,
   onClick,
   onContextMenu,
 }: {
@@ -1005,6 +1113,7 @@ function MonthChip({
   title: string;
   hint?: string;
   past: boolean;
+  recurring?: boolean;
   onClick: () => void;
   onContextMenu?: (e: React.MouseEvent) => void;
 }) {
@@ -1036,7 +1145,10 @@ function MonthChip({
         } as React.CSSProperties
       }
     >
-      <span className="min-w-0 truncate">{title}</span>
+      <span className="flex min-w-0 items-center gap-1 truncate">
+        {recurring && <Repeat className="h-2.5 w-2.5 shrink-0 opacity-80" />}
+        <span className="truncate">{title}</span>
+      </span>
       {hint && <span className="shrink-0 text-[10px] opacity-75">{hint}</span>}
     </button>
   );

@@ -45,7 +45,7 @@ export async function middleware(request: NextRequest) {
 
   // Signed in → skip the login page.
   if (user && path.startsWith("/login")) {
-    const redirect = NextResponse.redirect(new URL("/dashboard", request.url));
+    const redirect = NextResponse.redirect(new URL("/my-work", request.url));
     response.cookies.getAll().forEach((c) => redirect.cookies.set(c.name, c.value));
     return redirect;
   }

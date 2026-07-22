@@ -12,6 +12,7 @@ import { TooltipProvider } from "@/components/ui/Tooltip";
 import { useAuth } from "@/lib/useAuth";
 
 const PAGE_TITLES: Record<string, string> = {
+  "/my-work": "My Work",
   "/dashboard": "Dashboard",
   "/clients": "Clients",
   "/pipeline": "Pipeline",

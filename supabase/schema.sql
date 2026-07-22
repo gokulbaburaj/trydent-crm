@@ -13,6 +13,8 @@ create type deal_stage as enum ('Lead', 'Qualified', 'Proposal', 'Negotiation', 
 create type portal_status as enum ('Not Started', 'Building', 'Live: Shared with Client', 'Client Closed');
 create type project_status as enum ('Planning', 'In Progress', 'Review', 'Delivered', 'On Hold');
 create type task_status as enum ('Not Started', 'In Progress', 'Done', 'Archived');
+create type task_priority as enum ('urgent', 'high', 'normal', 'low');
+create type recurrence as enum ('none', 'daily', 'weekly', 'biweekly', 'monthly');
 
 -- ============ PROFILES (extends Supabase auth.users) ============
 create table profiles (
@@ -72,6 +74,8 @@ create table activities (
   assigned_to uuid references profiles(id) on delete set null,
   activity_date timestamptz not null default now(),
   color text, -- custom calendar chip color (right-click in month view)
+  recurrence recurrence not null default 'none',
+  recurrence_parent_id uuid references activities(id) on delete set null,
   created_at timestamptz not null default now()
 );
 
@@ -81,8 +85,7 @@ create table client_portals (
   client_id uuid not null references clients(id) on delete cascade,
   status portal_status not null default 'Not Started',
   notes text,
-  portal_username text,        -- login username shown to admins
-  portal_password text,        -- ⚠️ plaintext by deliberate choice: admin retrieval from Portals page
+  portal_username text,        -- login username shown to admins (password never stored)
   last_opened_at timestamptz,  -- set via touch_portal() when the client opens their portal
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -114,6 +117,9 @@ create table project_tasks (
   description text,
   links jsonb not null default '[]'::jsonb, -- [{title, url}] deliverable links
   label text,                                -- free-text label chip (e.g. "UI design")
+  priority task_priority not null default 'normal',
+  recurrence recurrence not null default 'none',
+  recurrence_parent_id uuid references project_tasks(id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -141,6 +147,8 @@ create index idx_projects_status on projects(status);
 create index idx_projects_owner on projects(owner);
 create index idx_project_tasks_project_id on project_tasks(project_id);
 create index idx_project_tasks_due_date on project_tasks(due_date);
+create index idx_project_tasks_recurrence_parent on project_tasks(recurrence_parent_id);
+create index idx_activities_recurrence_parent on activities(recurrence_parent_id);
 create index idx_task_items_task_id on task_items(task_id);
 
 -- ============ updated_at TRIGGER ============

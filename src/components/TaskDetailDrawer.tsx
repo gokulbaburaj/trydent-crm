@@ -1,7 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCheck, ExternalLink, Link2, MessageSquare, Plus, Trash2, User, X } from "lucide-react";
+import {
+  CheckCheck,
+  ExternalLink,
+  Link2,
+  MessageSquare,
+  MoreHorizontal,
+  Plus,
+  SkipForward,
+  Trash2,
+  User,
+  X,
+} from "lucide-react";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { useAuth } from "@/lib/useAuth";
 import { formatDate } from "@/lib/utils";
@@ -9,6 +20,8 @@ import { Drawer } from "@/components/ui/Drawer";
 import { Button } from "@/components/ui/Button";
 import { Input, Label } from "@/components/ui/Input";
 import { StatusPicker } from "@/components/ui/StatusPicker";
+import { PriorityPicker } from "@/components/ui/PriorityPicker";
+import { RecurrencePicker } from "@/components/ui/RecurrencePicker";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { Popover, MenuItem, MenuLabel } from "@/components/ui/Popover";
@@ -25,12 +38,15 @@ export function TaskDetailDrawer({
   onClose,
   onUpdate,
   onDelete,
+  onSkip,
 }: {
   task: ProjectTask | null;
   profiles: Profile[];
   onClose: () => void;
   onUpdate: (id: string, patch: Partial<ProjectTask>) => void;
   onDelete: (id: string) => void;
+  /** Skip this occurrence of a recurring task (advances the series). */
+  onSkip?: (task: ProjectTask) => void;
 }) {
   const [name, setName] = useState("");
   const [label, setLabel] = useState("");
@@ -182,18 +198,61 @@ export function TaskDetailDrawer({
             }}
             className="w-full rounded border border-transparent bg-transparent px-1 py-1 text-xl font-semibold tracking-tight text-foreground hover:border-border focus:border-primary/60 focus:outline-none focus:ring-1 focus:ring-primary/30"
           />
-          <button
-            title="Delete task"
-            onClick={() => {
-              if (confirm("Delete this task and its subtasks?")) {
-                onDelete(task.id);
-                onClose();
+          {task.recurrence !== "none" && onSkip ? (
+            <Popover
+              align="right"
+              trigger={
+                <button
+                  title="More actions"
+                  className="mt-1 shrink-0 rounded p-2 text-muted-foreground hover:bg-white/5 hover:text-foreground"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </button>
               }
-            }}
-            className="mt-1 shrink-0 rounded p-2 text-muted-foreground hover:bg-danger/10 hover:text-danger"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
+            >
+              {(close) => (
+                <>
+                  <MenuItem
+                    icon={<SkipForward className="h-3.5 w-3.5" />}
+                    onClick={() => {
+                      close();
+                      onSkip(task);
+                      onClose();
+                    }}
+                  >
+                    Skip this occurrence
+                  </MenuItem>
+                  <MenuItem
+                    danger
+                    icon={<Trash2 className="h-3.5 w-3.5" />}
+                    onClick={() => {
+                      if (confirm("Delete this task and its subtasks?")) {
+                        onDelete(task.id);
+                        onClose();
+                      } else {
+                        close();
+                      }
+                    }}
+                  >
+                    Delete task
+                  </MenuItem>
+                </>
+              )}
+            </Popover>
+          ) : (
+            <button
+              title="Delete task"
+              onClick={() => {
+                if (confirm("Delete this task and its subtasks?")) {
+                  onDelete(task.id);
+                  onClose();
+                }
+              }}
+              className="mt-1 shrink-0 rounded p-2 text-muted-foreground hover:bg-danger/10 hover:text-danger"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          )}
         </div>
 
         {/* Properties grid */}
@@ -204,6 +263,13 @@ export function TaskDetailDrawer({
               value={task.status}
               options={TASK_STATUSES}
               onChange={(status) => onUpdate(task.id, { status })}
+            />
+          </div>
+          <div>
+            <Label>Priority</Label>
+            <PriorityPicker
+              value={task.priority}
+              onChange={(priority) => onUpdate(task.id, { priority })}
             />
           </div>
           <div>
@@ -267,7 +333,20 @@ export function TaskDetailDrawer({
               }}
             />
           </div>
+          <div>
+            <Label>Repeat</Label>
+            <RecurrencePicker
+              value={task.recurrence}
+              onChange={(recurrence) => onUpdate(task.id, { recurrence })}
+            />
+          </div>
         </div>
+
+        {task.recurrence !== "none" && (
+          <p className="-mt-3 text-xs text-muted-foreground">
+            The next occurrence is created automatically when this task is marked Done.
+          </p>
+        )}
 
         {/* Description */}
         <div>
