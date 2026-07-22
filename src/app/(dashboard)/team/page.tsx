@@ -44,6 +44,16 @@ interface MemberForm {
   reports_to: string;
 }
 
+/** Never render a raw object — always surface something readable. */
+function errorText(err: unknown, fallback: string): string {
+  if (typeof err === "string" && err.trim()) return err;
+  if (err && typeof err === "object") {
+    const msg = (err as { message?: unknown }).message;
+    if (typeof msg === "string" && msg.trim()) return msg;
+  }
+  return fallback;
+}
+
 const emptyMember: MemberForm = {
   full_name: "",
   email: "",
@@ -124,7 +134,7 @@ export default function TeamPage() {
     const json = await res.json().catch(() => ({}));
     setSavingMember(false);
     if (!res.ok) {
-      setAddError(json.error ?? "Couldn't add team member.");
+      setAddError(errorText(json?.error, "Couldn't add team member."));
       return;
     }
     if (json.profile) setRows((prev) => [json.profile as Profile, ...prev]);

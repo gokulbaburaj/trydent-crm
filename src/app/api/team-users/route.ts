@@ -77,18 +77,34 @@ export async function POST(req: Request) {
     user_metadata: { full_name: fullName, role },
   });
   if (createError || !created?.user) {
-    const taken = createError?.message?.toLowerCase().includes("already");
-    return NextResponse.json(
-      { error: taken ? "That email is already in use." : createError?.message ?? "Couldn't create user." },
-      { status: 400 }
-    );
+    const raw = createError?.message ?? "";
+    const lower = raw.toLowerCase();
+    if (lower.includes("already")) {
+      return NextResponse.json({ error: "That email is already in use." }, { status: 400 });
+    }
+    // The signup trigger casts the role to the user_role enum. If the
+    // contractor migration hasn't run, that cast fails with a generic
+    // "database error" — point at the real fix instead.
+    if (role === "contractor" && (lower.includes("database") || lower.includes("unexpected"))) {
+      return NextResponse.json(
+        {
+          error:
+            "The 'contractor' role doesn't exist in the database yet. Run supabase/migrations/2026-07-22b_contractor_role.sql (on its own), then 2026-07-22c_staff_portal.sql, and try again.",
+        },
+        { status: 400 }
+      );
+    }
+    return NextResponse.json({ error: raw || "Couldn't create user." }, { status: 400 });
   }
 
   // Fill in team / manager (not part of the signup trigger).
-  await admin
+  const { error: profileError } = await admin
     .from("profiles")
     .update({ team, reports_to: reportsTo })
     .eq("id", created.user.id);
+  if (profileError) {
+    return NextResponse.json({ error: profileError.message }, { status: 400 });
+  }
 
   const { data: profile } = await admin
     .from("profiles")
