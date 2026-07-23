@@ -1,4 +1,6 @@
 export type UserRole = "admin" | "rep" | "client" | "contractor";
+/** Kept here (not in lib/currency) so lib/types stays dependency-free. */
+export type CurrencyCode = "USD" | "INR" | "EUR" | "CAD" | "AUD" | "AED";
 export type ClientStatus =
   | "Lead"
   | "Prospect"
@@ -123,6 +125,7 @@ export interface Deal {
   deal_name: string;
   client_id: string;
   deal_stage: DealStage;
+  currency: CurrencyCode;
   deal_value: number;
   paid: number;
   close_date: string | null;

@@ -36,6 +36,7 @@ import type {
   Activity,
   Client,
   ClientPortal,
+  CurrencyCode,
   Deal,
   PortalUpdate,
   Profile,
@@ -55,7 +56,7 @@ export default function ClientDetailPage() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<PageTab>("overview");
 
-  const { format: formatCurrency } = useCurrency();
+  const { format: formatCurrency, toBase, base } = useCurrency();
   const { rows: deals } = useSupabaseTable<Deal>("deals");
   const { rows: activities } = useSupabaseTable<Activity>("activities");
   const { rows: profiles } = useSupabaseTable<Profile>("profiles");
@@ -97,7 +98,10 @@ export default function ClientDetailPage() {
     [portals, clientId]
   );
 
-  const totalValue = clientDeals.reduce((s, d) => s + Number(d.deal_value), 0);
+  const totalValue = clientDeals.reduce(
+    (s, d) => s + toBase(Number(d.deal_value), (d.currency as CurrencyCode) ?? base),
+    0
+  );
 
   async function updateClient(patch: Partial<Client>) {
     if (!client) return;
@@ -349,7 +353,8 @@ export default function ClientDetailPage() {
                 <span className="min-w-0 flex-1 truncate font-medium">{d.deal_name}</span>
                 <Badge tone={statusTone(d.deal_stage)}>{d.deal_stage}</Badge>
                 <span className="text-xs text-muted-foreground">
-                  {formatCurrency(Number(d.paid))} of {formatCurrency(Number(d.deal_value))}
+                  {formatCurrency(Number(d.paid), (d.currency as CurrencyCode) ?? base)} of{" "}
+                  {formatCurrency(Number(d.deal_value), (d.currency as CurrencyCode) ?? base)}
                 </span>
               </div>
             ))}

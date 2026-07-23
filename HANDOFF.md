@@ -212,6 +212,23 @@ After any `shadcn add`, just run `npx tsc --noEmit` before pushing.
 
 Recharts is fully removed from `src/` — safe to `npm uninstall recharts`.
 
+The installer also appends light + greyscale chart palettes to `globals.css`
+(`--chart-1: oklch(1 0 none)` = white). Our dark values live in `:root` and a
+minimal `.dark { --chart-1..5 }`. If a future install re-appends a greyscale
+block, delete it — series colours must stay tied to `--primary`.
+
+## Currency (per-deal)
+
+Each deal stores its own `currency` (migration `2026-07-23c_deal_currency.sql`);
+`deal_value`/`paid` are in THAT currency. `app_settings.base_currency` is the
+default for new deals + the currency all cross-deal SUMS are done in.
+`useCurrency()` exposes `format(value, from?=base)` (converts from→display,
+falls back to native when rates missing), `toBase(value, from)` for summing
+mixed-currency deals, and `convertAmount`. `CurrencyCode` now lives in
+`lib/types` (lib/currency re-exports it) to avoid a circular import. Every deal
+display passes the deal's currency; every deal total sums `toBase` first.
+`staff_payments` stay in the base currency (unchanged).
+
 ## Known gotchas
 
 - Tailwind v4 silently ignores unknown theme tokens — grep after renames.

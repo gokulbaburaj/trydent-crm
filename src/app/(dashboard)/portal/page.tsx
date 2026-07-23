@@ -31,6 +31,7 @@ import { formatDate } from "@/lib/format";
 import { useCurrency } from "@/lib/currency";
 import type {
   Client,
+  CurrencyCode,
   Deal,
   ClientPortal,
   PortalUpdate,
@@ -59,7 +60,8 @@ function PortalInner() {
   const previewClientId =
     profile && profile.role !== "client" ? searchParams.get("client") : null;
   const isPreview = !!previewClientId;
-  const { format: formatCurrency } = useCurrency();
+  const { format: formatCurrency, toBase, base } = useCurrency();
+  const dealCcy = (d: Deal): CurrencyCode => (d.currency as CurrencyCode) ?? base;
   const [client, setClient] = useState<Client | null>(null);
   const [deals, setDeals] = useState<Deal[]>([]);
   const [portal, setPortal] = useState<ClientPortal | null>(null);
@@ -138,8 +140,8 @@ function PortalInner() {
   const overallPct = clientTasks.length ? Math.round((doneCount / clientTasks.length) * 100) : 0;
   const approvedCount = clientTasks.filter((t) => t.approved_at).length;
   const activeProjects = projects.filter((p) => p.status !== "Delivered").length;
-  const totalValue = deals.reduce((s, d) => s + Number(d.deal_value), 0);
-  const totalPaid = deals.reduce((s, d) => s + Number(d.paid), 0);
+  const totalValue = deals.reduce((s, d) => s + toBase(Number(d.deal_value), dealCcy(d)), 0);
+  const totalPaid = deals.reduce((s, d) => s + toBase(Number(d.paid), dealCcy(d)), 0);
   const outstanding = totalValue - totalPaid;
   const paidPct = totalValue > 0 ? Math.round((totalPaid / totalValue) * 100) : 0;
 
@@ -543,7 +545,7 @@ function PortalInner() {
                           <span className="min-w-0 flex-1 truncate font-medium">{d.deal_name}</span>
                           <Badge tone={statusTone(d.deal_stage)}>{d.deal_stage}</Badge>
                           <span className="text-xs text-muted-foreground">
-                            {formatCurrency(paid)} of {formatCurrency(value)}
+                            {formatCurrency(paid, dealCcy(d))} of {formatCurrency(value, dealCcy(d))}
                           </span>
                           <div className="h-1.5 w-24 overflow-hidden rounded-full bg-white/10">
                             <div

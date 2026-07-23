@@ -2,8 +2,9 @@
 
 import { useSyncExternalStore } from "react";
 import { createClient } from "@/lib/supabase/client";
+import type { CurrencyCode } from "@/lib/types";
 
-export type CurrencyCode = "USD" | "INR" | "EUR" | "CAD" | "AUD" | "AED";
+export type { CurrencyCode };
 
 export const CURRENCIES: { code: CurrencyCode; label: string; symbol: string }[] = [
   { code: "USD", label: "US Dollar", symbol: "$" },
@@ -171,29 +172,56 @@ export function useCurrency() {
     commit({ display: code });
   };
 
-  /** Convert a base-currency amount into whatever we can honestly show. */
-  const convert = (value: number): { value: number; code: CurrencyCode } => {
-    if (display === base) return { value, code: base };
-    const rate = rates && rates.base === base ? rates.rates[display] : undefined;
-    if (!rate) return { value, code: base };
-    return { value: value * rate, code: display };
+  // Rates are fetched relative to `base`: rate(code) = units of `code` per 1
+  // base. rate(base) is always 1. Returns null when we don't have it.
+  const rateOf = (code: CurrencyCode): number | null => {
+    if (code === base) return 1;
+    if (!rates || rates.base !== base) return null;
+    const r = rates.rates[code];
+    return typeof r === "number" && r > 0 ? r : null;
   };
 
-  const format = (value: number) => {
-    const c = convert(value);
-    return formatMoney(c.value, c.code);
+  /** Convert an amount from one currency to another via the base-relative table. */
+  const convertAmount = (
+    value: number,
+    from: CurrencyCode,
+    to: CurrencyCode
+  ): number | null => {
+    if (from === to) return value;
+    const rf = rateOf(from);
+    const rt = rateOf(to);
+    if (rf == null || rt == null) return null;
+    return (value / rf) * rt;
+  };
+
+  /** Bring an amount into the base currency for summing (falls back to as-is). */
+  const toBase = (value: number, from: CurrencyCode = base): number => {
+    const c = convertAmount(value, from, base);
+    return c == null ? value : c;
+  };
+
+  /**
+   * Format an amount that is stored in `from` (defaults to the base currency),
+   * converted to the viewer's display currency. If we can't convert (rates
+   * missing), we show it in its own currency rather than faking a number.
+   */
+  const format = (value: number, from: CurrencyCode = base): string => {
+    const c = convertAmount(value, from, display);
+    if (c == null) return formatMoney(value, from);
+    return formatMoney(c, display);
   };
 
   return {
     /** Viewer's chosen display currency. */
     currency: display,
     setCurrency,
-    /** Currency all amounts are stored in. */
+    /** Default currency for new amounts (set in Settings). */
     base,
-    /** True when we can actually convert to the chosen currency. */
-    converted: display === base || !!(rates && rates.base === base && rates.rates[display]),
+    /** True when the chosen display currency can be converted to. */
+    converted: display === base || rateOf(display) != null,
     ratesFetchedAt: rates?.fetchedAt ?? null,
-    convert,
+    convertAmount,
+    toBase,
     format,
   };
 }

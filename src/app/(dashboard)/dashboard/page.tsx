@@ -23,7 +23,7 @@ import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { useCurrency } from "@/lib/currency";
 import { useAuth } from "@/lib/useAuth";
 import { DashboardSkeleton } from "@/components/ui/Skeletons";
-import type { Deal, Client, Activity } from "@/lib/types";
+import type { CurrencyCode, Deal, Client, Activity } from "@/lib/types";
 import { DEAL_STAGES } from "@/lib/types";
 
 /* First slice follows the user's chosen primary; the rest stay fixed. */
@@ -46,21 +46,25 @@ const REVENUE_CHARTS: { id: RevenueChart; label: string; hint: string }[] = [
 ];
 
 export default function DashboardPage() {
-  const { format: formatCurrency } = useCurrency();
+  const { format: formatCurrency, toBase, base } = useCurrency();
   const [revenueChart, setRevenueChart] = useState<RevenueChart>("bar");
   const { profile } = useAuth();
   const { rows: deals, loading: dealsLoading } = useSupabaseTable<Deal>("deals");
+  const dealBase = (d: Deal) => toBase(Number(d.deal_value), (d.currency as CurrencyCode) ?? base);
   const { rows: clients, loading: clientsLoading } = useSupabaseTable<Client>("clients");
   const { rows: activities, loading: activitiesLoading } = useSupabaseTable<Activity>(
     "activities",
     { column: "activity_date", ascending: false }
   );
 
+  // Deals can be in different currencies, so every sum is done in the base
+  // currency (each deal converted from its own), then formatted to display.
   const totalPipeline = useMemo(
     () =>
       deals
         .filter((d) => d.deal_stage !== "Closed Won" && d.deal_stage !== "Closed Lost")
-        .reduce((sum, d) => sum + Number(d.deal_value), 0),
+        .reduce((sum, d) => sum + dealBase(d), 0),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [deals]
   );
 
@@ -73,7 +77,8 @@ export default function DashboardPage() {
           d.close_date &&
           new Date(d.close_date).getFullYear() === year
       )
-      .reduce((sum, d) => sum + Number(d.deal_value), 0);
+      .reduce((sum, d) => sum + dealBase(d), 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deals]);
 
   const activeClients = clients.filter(
@@ -104,9 +109,10 @@ export default function DashboardPage() {
           month: "short",
           year: "2-digit",
         });
-        months[key] = (months[key] || 0) + Number(d.deal_value);
+        months[key] = (months[key] || 0) + dealBase(d);
       });
     return Object.entries(months).map(([month, revenue]) => ({ month, revenue }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deals]);
 
   /** Shared tooltip so bar and area read identically. */

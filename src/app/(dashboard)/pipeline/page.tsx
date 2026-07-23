@@ -26,7 +26,7 @@ import { applyFilters, useStoredFilters } from "@/lib/filters";
 import { createClient } from "@/lib/supabase/client";
 import { formatDate } from "@/lib/format";
 import { CURRENCIES, useCurrency } from "@/lib/currency";
-import type { Deal, Client, Profile } from "@/lib/types";
+import type { CurrencyCode, Deal, Client, Profile } from "@/lib/types";
 import { DEAL_STAGES } from "@/lib/types";
 
 /** Stage colours — first follows the user's accent, rest are fixed. */
@@ -62,6 +62,11 @@ const emptyForm: Partial<Deal> = {
   close_date: null,
 };
 
+const CURRENCY_OPTIONS = CURRENCIES.map((c) => ({
+  value: c.code,
+  label: `${c.symbol} ${c.code} — ${c.label}`,
+}));
+
 export default function PipelinePage() {
   const { rows: deals, setRows } = useSupabaseTable<Deal>(
     "deals",
@@ -74,7 +79,10 @@ export default function PipelinePage() {
   const [selected, setSelected] = useState<Deal | null>(null);
   const [editing, setEditing] = useState<Partial<Deal> | null>(null);
   const [saving, setSaving] = useState(false);
-  const { currency, setCurrency, base, format: formatCurrency } = useCurrency();
+  const { currency, setCurrency, base, toBase, format: formatCurrency } = useCurrency();
+
+  /** A deal's own currency (older rows may predate the column). */
+  const dealCcy = (d: Deal): CurrencyCode => (d.currency as CurrencyCode) ?? base;
 
   const clientName = (id: string) => clients.find((c) => c.id === id)?.company ?? "Unknown";
   const ownerName = (id: string | null) => profiles.find((p) => p.id === id)?.full_name ?? "Unassigned";
@@ -87,6 +95,8 @@ export default function PipelinePage() {
    * way to know a deal ever passed through the stages it skipped, so any
    * "reached this stage" number would be a guess that contradicts the board.
    */
+  // `value` is summed in the base currency (each deal converted from its own),
+  // so mixed-currency stages add up correctly.
   const stageBars = useMemo(
     () =>
       DEAL_STAGES.map((stage) => {
@@ -94,9 +104,10 @@ export default function PipelinePage() {
         return {
           stage,
           deals: inStage.length,
-          value: inStage.reduce((sum, d) => sum + Number(d.deal_value), 0),
+          value: inStage.reduce((sum, d) => sum + toBase(Number(d.deal_value), dealCcy(d)), 0),
         };
       }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [deals]
   );
 
@@ -214,7 +225,7 @@ export default function PipelinePage() {
           </Popover>
           <Button
             size="sm"
-            onClick={() => setEditing({ ...emptyForm, client_id: clients[0]?.id ?? "" })}
+            onClick={() => setEditing({ ...emptyForm, client_id: clients[0]?.id ?? "", currency: base })}
           >
             <Plus className="h-4 w-4" /> New Deal
           </Button>
@@ -322,7 +333,7 @@ export default function PipelinePage() {
         columnMeta={(_, items) =>
           items.length > 0 ? (
             <span className="text-xs font-medium tabular-nums text-success">
-              {formatCurrency(items.reduce((sum, d) => sum + Number(d.deal_value), 0))}
+              {formatCurrency(items.reduce((sum, d) => sum + toBase(Number(d.deal_value), dealCcy(d)), 0))}
             </span>
           ) : null
         }
@@ -331,7 +342,7 @@ export default function PipelinePage() {
             <p className="text-sm font-medium">{d.deal_name}</p>
             <p className="mt-0.5 text-xs text-muted-foreground">{clientName(d.client_id)}</p>
             <p className="mt-2 text-sm font-semibold text-primary">
-              {formatCurrency(Number(d.deal_value))}
+              {formatCurrency(Number(d.deal_value), dealCcy(d))}
             </p>
           </div>
         )}
@@ -357,11 +368,11 @@ export default function PipelinePage() {
             <div className="grid grid-cols-2 gap-3 text-sm">
               <Info label="Client" value={clientName(selected.client_id)} />
               <Info label="Owner" value={ownerName(selected.account_owner)} />
-              <Info label="Deal Value" value={formatCurrency(Number(selected.deal_value))} />
-              <Info label="Paid" value={formatCurrency(Number(selected.paid))} />
+              <Info label="Deal Value" value={formatCurrency(Number(selected.deal_value), dealCcy(selected))} />
+              <Info label="Paid" value={formatCurrency(Number(selected.paid), dealCcy(selected))} />
               <Info
                 label="Remaining"
-                value={formatCurrency(Number(selected.deal_value) - Number(selected.paid))}
+                value={formatCurrency(Number(selected.deal_value) - Number(selected.paid), dealCcy(selected))}
               />
               <Info label="Close Date" value={formatDate(selected.close_date)} />
             </div>
@@ -401,9 +412,17 @@ export default function PipelinePage() {
                 onChange={(v) => setEditing({ ...editing, deal_stage: v as Deal["deal_stage"] })}
               />
             </div>
+            <div>
+              <Label>Currency</Label>
+              <Dropdown
+                value={editing.currency ?? base}
+                options={CURRENCY_OPTIONS}
+                onChange={(v) => setEditing({ ...editing, currency: v as CurrencyCode })}
+              />
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Deal Value ({base})</Label>
+                <Label>Deal Value ({editing.currency ?? base})</Label>
                 <Input
                   type="number"
                   min={0}
@@ -412,7 +431,7 @@ export default function PipelinePage() {
                 />
               </div>
               <div>
-                <Label>Paid ({base})</Label>
+                <Label>Paid ({editing.currency ?? base})</Label>
                 <Input
                   type="number"
                   min={0}
@@ -422,7 +441,8 @@ export default function PipelinePage() {
               </div>
             </div>
             <p className="-mt-1 text-xs text-muted-foreground">
-              Amounts are stored in {base}, the base currency set in Settings.
+              Enter the amounts in the currency you&apos;re actually paid in. The pipeline
+              converts to your display currency automatically.
             </p>
             <div>
               <Label>Close Date</Label>

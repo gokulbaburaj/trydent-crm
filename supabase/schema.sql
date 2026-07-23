@@ -58,6 +58,7 @@ create table deals (
   deal_name text not null,
   client_id uuid not null references clients(id) on delete cascade,
   deal_stage deal_stage not null default 'Lead',
+  currency text not null default 'USD',   -- currency deal_value/paid are in
   deal_value numeric(12,2) not null default 0,
   paid numeric(12,2) not null default 0,
   close_date date,
