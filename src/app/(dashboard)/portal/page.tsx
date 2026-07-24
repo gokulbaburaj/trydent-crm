@@ -34,6 +34,7 @@ import type {
   CurrencyCode,
   Deal,
   ClientPortal,
+  PortalMessage,
   PortalUpdate,
   Project,
   ProjectTask,
@@ -69,6 +70,8 @@ function PortalInner() {
   const [tasks, setTasks] = useState<ProjectTask[]>([]);
   const [updates, setUpdates] = useState<PortalUpdate[]>([]);
   const [comments, setComments] = useState<TaskComment[]>([]);
+  const [messages, setMessages] = useState<PortalMessage[]>([]);
+  const [msgDraft, setMsgDraft] = useState("");
   const [loading, setLoading] = useState(true);
   const [openProject, setOpenProject] = useState<string | null>(null);
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
@@ -83,7 +86,7 @@ function PortalInner() {
         return;
       }
 
-      const [clientRes, dealsRes, portalRes, projectsRes, tasksRes, updatesRes, commentsRes] =
+      const [clientRes, dealsRes, portalRes, projectsRes, tasksRes, updatesRes, commentsRes, messagesRes] =
         await Promise.all([
           supabase.from("clients").select("*").eq("id", clientId).single(),
           supabase.from("deals").select("*").eq("client_id", clientId),
@@ -96,6 +99,11 @@ function PortalInner() {
             .eq("client_id", clientId)
             .order("created_at", { ascending: false }),
           supabase.from("task_comments").select("*").order("created_at", { ascending: true }),
+          supabase
+            .from("portal_messages")
+            .select("*")
+            .eq("client_id", clientId)
+            .order("created_at", { ascending: true }),
         ]);
 
       setClient((clientRes.data as Client) ?? null);
@@ -105,6 +113,7 @@ function PortalInner() {
       setTasks((tasksRes.data as ProjectTask[]) ?? []);
       setUpdates((updatesRes.data as PortalUpdate[]) ?? []);
       setComments((commentsRes.data as TaskComment[]) ?? []);
+      setMessages((messagesRes.data as PortalMessage[]) ?? []);
       setLoading(false);
 
       // Record that the client opened their portal (staff previews don't count).
@@ -166,6 +175,25 @@ function PortalInner() {
     return out;
   }, [clientTasks]);
 
+  const awaitingApproval = useMemo(
+    () => clientTasks.filter((t) => t.status === "Done" && !t.approved_at),
+    [clientTasks]
+  );
+
+  async function sendMessage() {
+    const body = msgDraft.trim();
+    if (!body || !profile) return;
+    setMsgDraft("");
+    const supabase = createClient();
+    if (!supabase) return;
+    const { data, error } = await supabase
+      .from("portal_messages")
+      .insert({ client_id: profile.client_id, author_id: profile.id, body })
+      .select()
+      .single();
+    if (!error && data) setMessages((prev) => [...prev, data as PortalMessage]);
+  }
+
   async function approveTask(taskId: string) {
     const supabase = createClient();
     if (!supabase) return;
@@ -226,7 +254,7 @@ function PortalInner() {
         </button>
       </header>
 
-      <main className="animate-page mx-auto flex max-w-5xl flex-col gap-6 p-6">
+      <main className="animate-page mx-auto flex max-w-6xl flex-col gap-6 p-6">
         {!client ? (
           <Card>
             <p className="text-sm text-muted-foreground">
@@ -274,24 +302,9 @@ function PortalInner() {
               </div>
             </section>
 
-            {/* ============ UPDATES ============ */}
-            {updates.length > 0 && (
-              <section>
-                <SectionTitle icon={Megaphone}>Updates from your team</SectionTitle>
-                <div className="flex flex-col gap-2">
-                  {updates.map((u, i) => (
-                    <Card key={u.id} className={cn("rounded-xl shadow-sm", i === 0 && "border-primary/25")}>
-                      <div className="mb-1.5 flex items-center gap-2 text-[11px] text-muted-foreground">
-                        <Megaphone className="h-3 w-3 text-primary" />
-                        {formatDistanceToNow(parseISO(u.created_at), { addSuffix: true })}
-                      </div>
-                      <p className="text-sm leading-relaxed">{u.body}</p>
-                    </Card>
-                  ))}
-                </div>
-              </section>
-            )}
-
+            {/* ============ TWO-COLUMN: main + right rail ============ */}
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+              <div className="flex min-w-0 flex-col gap-6">
             {/* ============ PROJECTS ============ */}
             <section>
               <SectionTitle icon={FolderKanban}>Projects</SectionTitle>
@@ -567,6 +580,125 @@ function PortalInner() {
                 <p className="text-sm">{portal.notes}</p>
               </Card>
             )}
+              </div>
+
+              {/* ============ RIGHT RAIL ============ */}
+              <aside className="flex flex-col gap-4 lg:sticky lg:top-[76px] lg:self-start">
+                {/* Awaiting your approval */}
+                {awaitingApproval.length > 0 && (
+                  <Card className="rounded-xl border-warning/30 shadow-sm">
+                    <div className="mb-2.5 flex items-center gap-2">
+                      <CheckCheck className="h-4 w-4 text-warning" />
+                      <h3 className="text-sm font-semibold">Awaiting your approval</h3>
+                      <span className="ml-auto rounded-full bg-warning/15 px-1.5 py-px text-[11px] font-medium text-warning">
+                        {awaitingApproval.length}
+                      </span>
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      {awaitingApproval.map((t) => (
+                        <div
+                          key={t.id}
+                          className="flex items-center gap-2 rounded-md border border-border-subtle bg-white/[0.02] px-2.5 py-2"
+                        >
+                          <span className="min-w-0 flex-1 truncate text-[13px]">{t.name}</span>
+                          {profile?.role === "client" ? (
+                            <button
+                              onClick={() => approveTask(t.id)}
+                              className="shrink-0 rounded-md border border-success/40 bg-success/10 px-2 py-1 text-[11px] font-medium text-success transition-colors hover:bg-success/20"
+                            >
+                              Approve
+                            </button>
+                          ) : (
+                            <span className="shrink-0 text-[11px] text-muted-foreground">pending</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                )}
+
+                {/* Announcements */}
+                <Card className="rounded-xl shadow-sm">
+                  <div className="mb-2.5 flex items-center gap-2">
+                    <Megaphone className="h-4 w-4 text-primary" />
+                    <h3 className="text-sm font-semibold">Announcements</h3>
+                  </div>
+                  {updates.length === 0 ? (
+                    <p className="py-4 text-center text-xs text-muted-foreground">
+                      No announcements yet — updates from your team will appear here.
+                    </p>
+                  ) : (
+                    <div className="flex flex-col divide-y divide-border-subtle">
+                      {updates.slice(0, 6).map((u, i) => (
+                        <div key={u.id} className={cn("py-2.5 first:pt-0 last:pb-0")}>
+                          <div className="mb-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                            {i === 0 && (
+                              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                            )}
+                            {formatDistanceToNow(parseISO(u.created_at), { addSuffix: true })}
+                          </div>
+                          <p className="text-[13px] leading-relaxed">{u.body}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+
+                {/* Messages */}
+                <Card className="flex max-h-[440px] flex-col rounded-xl shadow-sm">
+                  <div className="mb-2.5 flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4 text-primary" />
+                    <h3 className="text-sm font-semibold">Messages</h3>
+                    <span className="ml-auto text-[11px] text-muted-foreground">with your team</span>
+                  </div>
+                  <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto">
+                    {messages.length === 0 && (
+                      <p className="py-4 text-center text-xs text-muted-foreground">
+                        Start a conversation — your account manager will get notified.
+                      </p>
+                    )}
+                    {messages.map((m) => {
+                      const mine = m.author_id === profile?.id;
+                      return (
+                        <div
+                          key={m.id}
+                          className={cn(
+                            "max-w-[85%] rounded-lg px-2.5 py-1.5",
+                            mine
+                              ? "self-end bg-primary/15 text-foreground"
+                              : "self-start border border-border-subtle bg-white/[0.03]"
+                          )}
+                        >
+                          <p className="text-[13px] leading-snug">{m.body}</p>
+                          <p className="mt-0.5 text-[10px] text-muted-2">
+                            {mine ? "You" : "Trydent Labs"} ·{" "}
+                            {formatDistanceToNow(parseISO(m.created_at), { addSuffix: true })}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {profile?.role === "client" && (
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        sendMessage();
+                      }}
+                      className="mt-3 flex items-center gap-2"
+                    >
+                      <Input
+                        placeholder="Message your team..."
+                        value={msgDraft}
+                        onChange={(e) => setMsgDraft(e.target.value)}
+                      />
+                      <Button type="submit" size="sm" variant="secondary" disabled={!msgDraft.trim()}>
+                        <Send className="h-3.5 w-3.5" />
+                      </Button>
+                    </form>
+                  )}
+                </Card>
+              </aside>
+            </div>
           </>
         )}
       </main>

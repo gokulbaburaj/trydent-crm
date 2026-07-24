@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Check, Copy, Eye, KeyRound, Link2, Megaphone, MonitorSmartphone } from "lucide-react";
+import { Check, Copy, Eye, KeyRound, Link2, Megaphone, MessageSquare, MonitorSmartphone, Send } from "lucide-react";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { toast } from "@/components/Toaster";
 import { Button } from "@/components/ui/Button";
@@ -10,8 +10,9 @@ import { StatusPicker } from "@/components/ui/StatusPicker";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { useAuth } from "@/lib/useAuth";
 import { createClient } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/format";
-import type { Client, ClientPortal, PortalUpdate } from "@/lib/types";
+import type { Client, ClientPortal, PortalMessage, PortalUpdate } from "@/lib/types";
 import { PORTAL_STATUSES } from "@/lib/types";
 
 /**
@@ -42,6 +43,8 @@ export function ClientPortalPanel({
   const [loginCreated, setLoginCreated] = useState<{ username: string; password: string; reset?: boolean } | null>(null);
   const [copied, setCopied] = useState(false);
   const [portalBusy, setPortalBusy] = useState(false);
+  const [messages, setMessages] = useState<PortalMessage[]>([]);
+  const [msgDraft, setMsgDraft] = useState("");
 
   const genUsername = useMemo(
     () => (withSuffix = false) => {
@@ -65,7 +68,20 @@ export function ClientPortalPanel({
       setLoginError(null);
       setLoginCreated(null);
       setCopied(false);
+      setMsgDraft("");
+      setMessages([]);
     });
+    async function loadMessages() {
+      const supabase = createClient();
+      if (!supabase) return;
+      const { data } = await supabase
+        .from("portal_messages")
+        .select("*")
+        .eq("client_id", clientId)
+        .order("created_at", { ascending: true });
+      setMessages((data as PortalMessage[]) ?? []);
+    }
+    loadMessages();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientId]);
 
@@ -145,6 +161,25 @@ export function ClientPortalPanel({
     onUpdatePosted(data as PortalUpdate);
     setUpdateDraft("");
     toast.success("Update posted to the client portal");
+  }
+
+  async function sendMessage() {
+    if (!profile) return;
+    const body = msgDraft.trim();
+    if (!body) return;
+    setMsgDraft("");
+    const supabase = createClient();
+    if (!supabase) return;
+    const { data, error } = await supabase
+      .from("portal_messages")
+      .insert({ client_id: client.id, author_id: profile.id, body })
+      .select()
+      .single();
+    if (error) {
+      toast.error(`Couldn't send: ${error.message}`);
+      return;
+    }
+    setMessages((prev) => [...prev, data as PortalMessage]);
   }
 
   function copyCredentials() {
@@ -321,6 +356,60 @@ export function ClientPortalPanel({
             </p>
           </div>
         ))}
+      </div>
+
+      {/* Messages */}
+      <div className="flex flex-col gap-2 rounded border border-border bg-white/[0.02] p-3">
+        <div className="flex items-center gap-2">
+          <MessageSquare className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="text-[13px] font-medium">Messages</span>
+          <span className="text-[11px] text-muted-foreground">
+            direct thread with {client.company}
+          </span>
+        </div>
+        <div className="flex max-h-64 flex-col gap-1.5 overflow-y-auto">
+          {messages.length === 0 && (
+            <p className="py-3 text-center text-[12px] text-muted-foreground">
+              No messages yet. Anything you send here appears on the client&apos;s portal.
+            </p>
+          )}
+          {messages.map((m) => {
+            const mine = m.author_id === profile?.id;
+            return (
+              <div
+                key={m.id}
+                className={cn(
+                  "max-w-[85%] rounded-lg px-2.5 py-1.5",
+                  mine
+                    ? "self-end bg-primary/15 text-foreground"
+                    : "self-start border border-border-subtle bg-white/[0.03]"
+                )}
+              >
+                <p className="text-[13px] leading-snug">{m.body}</p>
+                <p className="mt-0.5 text-[10px] text-muted-2">
+                  {mine ? "You" : client.company} ·{" "}
+                  {formatDistanceToNow(parseISO(m.created_at), { addSuffix: true })}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            sendMessage();
+          }}
+          className="flex items-center gap-2"
+        >
+          <Input
+            placeholder="Reply to the client..."
+            value={msgDraft}
+            onChange={(e) => setMsgDraft(e.target.value)}
+          />
+          <Button type="submit" size="sm" variant="secondary" disabled={!msgDraft.trim()}>
+            <Send className="h-3.5 w-3.5" />
+          </Button>
+        </form>
       </div>
 
       {/* Notes */}

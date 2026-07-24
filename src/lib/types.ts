@@ -211,6 +211,14 @@ export interface PortalUpdate {
   created_at: string;
 }
 
+export interface PortalMessage {
+  id: string;
+  client_id: string;
+  author_id: string | null;
+  body: string;
+  created_at: string;
+}
+
 export interface Notification {
   id: string;
   recipient_id: string;
@@ -267,6 +275,7 @@ export interface Database {
       task_items: { Row: TaskItem; Insert: Partial<TaskItem>; Update: Partial<TaskItem> };
       task_comments: { Row: TaskComment; Insert: Partial<TaskComment>; Update: Partial<TaskComment> };
       portal_updates: { Row: PortalUpdate; Insert: Partial<PortalUpdate>; Update: Partial<PortalUpdate> };
+      portal_messages: { Row: PortalMessage; Insert: Partial<PortalMessage>; Update: Partial<PortalMessage> };
       notifications: { Row: Notification; Insert: Partial<Notification>; Update: Partial<Notification> };
     };
   };
