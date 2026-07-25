@@ -12,6 +12,7 @@ import {
   ListChecks,
   Plus,
   Settings,
+  Target,
   Users,
   UsersRound,
   X,
@@ -28,6 +29,7 @@ const TAB_ICONS: [string, React.ComponentType<{ className?: string }>][] = [
   ["/projects", FolderKanban],
   ["/schedule", Calendar],
   ["/activities", Calendar],
+  ["/goals", Target],
   ["/team", UsersRound],
   ["/settings", Settings],
 ];

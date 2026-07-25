@@ -12,6 +12,7 @@ import {
   Calendar,
   UsersRound,
   Settings,
+  Target,
   ChevronDown,
   ChevronRight,
   Search,
@@ -62,6 +63,7 @@ const WORKSPACE: NavItem[] = [
 ];
 
 const ORGANIZATION: NavItem[] = [
+  { href: "/goals", label: "Goals", icon: Target },
   { href: "/team", label: "Team", icon: UsersRound },
   { href: "/settings", label: "Settings", icon: Settings },
 ];

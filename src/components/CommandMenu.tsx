@@ -10,6 +10,7 @@ import {
   ListChecks,
   Palette,
   Settings,
+  Target,
   Users,
   UsersRound,
 } from "lucide-react";
@@ -41,6 +42,7 @@ const PAGES = [
   { href: "/pipeline", label: "Pipeline", icon: GitBranch },
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/schedule", label: "Schedule", icon: Calendar },
+  { href: "/goals", label: "Goals", icon: Target },
   { href: "/team", label: "Team", icon: UsersRound },
   { href: "/settings", label: "Settings", icon: Settings },
 ];

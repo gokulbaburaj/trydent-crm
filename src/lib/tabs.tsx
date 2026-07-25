@@ -26,6 +26,7 @@ const PAGE_TITLES: [string, string][] = [
   ["/projects", "Projects"],
   ["/schedule", "Schedule"],
   ["/activities", "Schedule"],
+  ["/goals", "Goals"],
   ["/team", "Team"],
   ["/settings", "Settings"],
 ];

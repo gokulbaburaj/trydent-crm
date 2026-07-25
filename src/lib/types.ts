@@ -323,6 +323,78 @@ export interface TeamMember {
   role: UserRole;
 }
 
+/* ============ GOALS / OKRs ============ */
+
+export type GoalStatus = "on_track" | "at_risk" | "off_track" | "achieved";
+
+export const GOAL_STATUSES: GoalStatus[] = [
+  "on_track",
+  "at_risk",
+  "off_track",
+  "achieved",
+];
+
+export const GOAL_STATUS_LABELS: Record<GoalStatus, string> = {
+  on_track: "On track",
+  at_risk: "At risk",
+  off_track: "Off track",
+  achieved: "Achieved",
+};
+
+/** Where a key result's current value comes from. Everything except `manual`
+ *  is computed live from existing rows, so it can't drift. */
+export type KeyResultSource =
+  | "manual"
+  | "revenue_won"
+  | "deals_closed"
+  | "new_clients"
+  | "tasks_done"
+  | "invoices_paid";
+
+export const KEY_RESULT_SOURCES: KeyResultSource[] = [
+  "manual",
+  "revenue_won",
+  "deals_closed",
+  "new_clients",
+  "tasks_done",
+  "invoices_paid",
+];
+
+export const KEY_RESULT_SOURCE_LABELS: Record<KeyResultSource, string> = {
+  manual: "Manual entry",
+  revenue_won: "Revenue won (deals)",
+  deals_closed: "Deals closed",
+  new_clients: "New clients",
+  tasks_done: "Tasks completed",
+  invoices_paid: "Invoices paid",
+};
+
+export interface Goal {
+  id: string;
+  objective: string;
+  description: string | null;
+  owner: string | null;
+  period: string;
+  status: GoalStatus;
+  start_date: string | null;
+  end_date: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface KeyResult {
+  id: string;
+  goal_id: string;
+  name: string;
+  source: KeyResultSource;
+  target: number;
+  current_manual: number;
+  unit: string | null;
+  sort_order: number;
+  created_at: string;
+}
+
 export interface Notification {
   id: string;
   recipient_id: string;
@@ -384,6 +456,8 @@ export interface Database {
       invoices: { Row: Invoice; Insert: Partial<Invoice>; Update: Partial<Invoice> };
       team_directory: { Row: TeamMember; Insert: never; Update: never };
       meeting_requests: { Row: MeetingRequest; Insert: Partial<MeetingRequest>; Update: Partial<MeetingRequest> };
+      goals: { Row: Goal; Insert: Partial<Goal>; Update: Partial<Goal> };
+      key_results: { Row: KeyResult; Insert: Partial<KeyResult>; Update: Partial<KeyResult> };
       notifications: { Row: Notification; Insert: Partial<Notification>; Update: Partial<Notification> };
     };
   };
