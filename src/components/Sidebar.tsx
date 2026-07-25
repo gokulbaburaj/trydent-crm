@@ -13,6 +13,7 @@ import {
   UsersRound,
   Settings,
   Target,
+  UserPlus,
   ChevronDown,
   ChevronRight,
   Search,
@@ -64,6 +65,7 @@ const WORKSPACE: NavItem[] = [
 
 const ORGANIZATION: NavItem[] = [
   { href: "/goals", label: "Goals", icon: Target },
+  { href: "/recruiting", label: "Recruiting", icon: UserPlus },
   { href: "/team", label: "Team", icon: UsersRound },
   { href: "/settings", label: "Settings", icon: Settings },
 ];

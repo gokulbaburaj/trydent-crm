@@ -395,6 +395,75 @@ export interface KeyResult {
   created_at: string;
 }
 
+/* ============ RECRUITING / ONBOARDING ============ */
+
+export type ApplicantStage =
+  | "applied"
+  | "screening"
+  | "interview"
+  | "offer"
+  | "hired"
+  | "rejected";
+
+/** Board column order. Rejected sits last deliberately — it's an outcome, not
+ *  a step, and burying it keeps the active pipeline readable. */
+export const APPLICANT_STAGES: ApplicantStage[] = [
+  "applied",
+  "screening",
+  "interview",
+  "offer",
+  "hired",
+  "rejected",
+];
+
+export const APPLICANT_STAGE_LABELS: Record<ApplicantStage, string> = {
+  applied: "Applied",
+  screening: "Screening",
+  interview: "Interview",
+  offer: "Offer",
+  hired: "Hired",
+  rejected: "Rejected",
+};
+
+export interface Applicant {
+  id: string;
+  full_name: string;
+  email: string | null;
+  phone: string | null;
+  role_title: string | null;
+  location: string | null;
+  stage: ApplicantStage;
+  source: string | null;
+  resume_url: string | null;
+  notes: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OnboardingTemplate {
+  id: string;
+  name: string;
+  is_default: boolean;
+  created_at: string;
+}
+
+export interface OnboardingTemplateItem {
+  id: string;
+  template_id: string;
+  title: string;
+  sort_order: number;
+}
+
+export interface OnboardingTask {
+  id: string;
+  profile_id: string;
+  title: string;
+  done: boolean;
+  sort_order: number;
+  created_at: string;
+}
+
 export interface Notification {
   id: string;
   recipient_id: string;
@@ -458,6 +527,10 @@ export interface Database {
       meeting_requests: { Row: MeetingRequest; Insert: Partial<MeetingRequest>; Update: Partial<MeetingRequest> };
       goals: { Row: Goal; Insert: Partial<Goal>; Update: Partial<Goal> };
       key_results: { Row: KeyResult; Insert: Partial<KeyResult>; Update: Partial<KeyResult> };
+      applicants: { Row: Applicant; Insert: Partial<Applicant>; Update: Partial<Applicant> };
+      onboarding_templates: { Row: OnboardingTemplate; Insert: Partial<OnboardingTemplate>; Update: Partial<OnboardingTemplate> };
+      onboarding_template_items: { Row: OnboardingTemplateItem; Insert: Partial<OnboardingTemplateItem>; Update: Partial<OnboardingTemplateItem> };
+      onboarding_tasks: { Row: OnboardingTask; Insert: Partial<OnboardingTask>; Update: Partial<OnboardingTask> };
       notifications: { Row: Notification; Insert: Partial<Notification>; Update: Partial<Notification> };
     };
   };

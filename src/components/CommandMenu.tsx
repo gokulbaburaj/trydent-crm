@@ -11,6 +11,7 @@ import {
   Palette,
   Settings,
   Target,
+  UserPlus,
   Users,
   UsersRound,
 } from "lucide-react";
@@ -43,6 +44,7 @@ const PAGES = [
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/schedule", label: "Schedule", icon: Calendar },
   { href: "/goals", label: "Goals", icon: Target },
+  { href: "/recruiting", label: "Recruiting", icon: UserPlus },
   { href: "/team", label: "Team", icon: UsersRound },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
