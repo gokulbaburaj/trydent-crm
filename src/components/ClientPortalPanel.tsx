@@ -14,6 +14,7 @@ import {
   MessageSquare,
   MonitorSmartphone,
   Plus,
+  Receipt,
   Send,
   Trash2,
 } from "lucide-react";
@@ -23,6 +24,9 @@ import { Button } from "@/components/ui/Button";
 import { StatusPicker } from "@/components/ui/StatusPicker";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { Dropdown } from "@/components/ui/Dropdown";
+import { DatePicker } from "@/components/ui/DatePicker";
+import { Badge } from "@/components/ui/Badge";
+import { CURRENCIES, formatMoney, useBaseCurrency } from "@/lib/currency";
 import { useAuth } from "@/lib/useAuth";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -31,15 +35,29 @@ import type {
   Client,
   ClientDocument,
   ClientPortal,
+  CurrencyCode,
   DocumentCategory,
+  Invoice,
+  InvoiceDisplayStatus,
+  InvoiceStatus,
   PortalMessage,
   PortalUpdate,
 } from "@/lib/types";
 import {
   DOCUMENT_CATEGORIES,
   DOCUMENT_CATEGORY_LABELS,
+  INVOICE_STATUSES,
+  INVOICE_STATUS_LABELS,
   PORTAL_STATUSES,
+  effectiveInvoiceStatus,
 } from "@/lib/types";
+
+const INVOICE_TONES: Record<InvoiceDisplayStatus, "gray" | "blue" | "green" | "red"> = {
+  draft: "gray",
+  sent: "blue",
+  paid: "green",
+  overdue: "red",
+};
 
 /**
  * Portal management for a single client: status, login provisioning + reset,
@@ -77,6 +95,16 @@ export function ClientPortalPanel({
   const [docUrl, setDocUrl] = useState("");
   const [docCategory, setDocCategory] = useState<DocumentCategory>("proposal");
   const [docBusy, setDocBusy] = useState(false);
+  const baseCurrency = useBaseCurrency();
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [invOpen, setInvOpen] = useState(false);
+  const [invNumber, setInvNumber] = useState("");
+  const [invAmount, setInvAmount] = useState("");
+  const [invCurrency, setInvCurrency] = useState<CurrencyCode>(baseCurrency);
+  const [invIssue, setInvIssue] = useState<string | null>(null);
+  const [invDue, setInvDue] = useState<string | null>(null);
+  const [invUrl, setInvUrl] = useState("");
+  const [invBusy, setInvBusy] = useState(false);
 
   const genUsername = useMemo(
     () => (withSuffix = false) => {
@@ -107,11 +135,18 @@ export function ClientPortalPanel({
       setDocName("");
       setDocUrl("");
       setDocCategory("proposal");
+      setInvoices([]);
+      setInvOpen(false);
+      setInvNumber("");
+      setInvAmount("");
+      setInvIssue(null);
+      setInvDue(null);
+      setInvUrl("");
     });
     async function loadPanelData() {
       const supabase = createClient();
       if (!supabase) return;
-      const [msgRes, docRes] = await Promise.all([
+      const [msgRes, docRes, invRes] = await Promise.all([
         supabase
           .from("portal_messages")
           .select("*")
@@ -122,9 +157,15 @@ export function ClientPortalPanel({
           .select("*")
           .eq("client_id", clientId)
           .order("created_at", { ascending: false }),
+        supabase
+          .from("invoices")
+          .select("*")
+          .eq("client_id", clientId)
+          .order("created_at", { ascending: false }),
       ]);
       setMessages((msgRes.data as PortalMessage[]) ?? []);
       setDocuments((docRes.data as ClientDocument[]) ?? []);
+      setInvoices((invRes.data as Invoice[]) ?? []);
     }
     loadPanelData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -279,6 +320,72 @@ export function ClientPortalPanel({
     const { error } = await supabase.from("client_documents").delete().eq("id", id);
     if (error) {
       setDocuments(before);
+      toast.error(`Couldn't delete: ${error.message}`);
+    }
+  }
+
+  async function addInvoice() {
+    const number = invNumber.trim();
+    const amount = Number(invAmount);
+    if (!number || !profile || Number.isNaN(amount)) return;
+    let url = invUrl.trim();
+    if (url && !/^https?:\/\//i.test(url)) url = `https://${url}`;
+    setInvBusy(true);
+    const supabase = createClient();
+    if (!supabase) {
+      setInvBusy(false);
+      return;
+    }
+    const { data, error } = await supabase
+      .from("invoices")
+      .insert({
+        client_id: client.id,
+        number,
+        amount,
+        currency: invCurrency,
+        status: "draft",
+        issue_date: invIssue,
+        due_date: invDue,
+        document_url: url || null,
+        created_by: profile.id,
+      })
+      .select()
+      .single();
+    setInvBusy(false);
+    if (error) {
+      toast.error(`Couldn't add: ${error.message}`);
+      return;
+    }
+    setInvoices((prev) => [data as Invoice, ...prev]);
+    setInvNumber("");
+    setInvAmount("");
+    setInvIssue(null);
+    setInvDue(null);
+    setInvUrl("");
+    setInvOpen(false);
+    toast.success("Invoice created as a draft — mark it Sent to show the client");
+  }
+
+  async function updateInvoice(id: string, patch: Partial<Invoice>) {
+    const before = invoices;
+    setInvoices((prev) => prev.map((i) => (i.id === id ? { ...i, ...patch } : i)));
+    const supabase = createClient();
+    if (!supabase) return;
+    const { error } = await supabase.from("invoices").update(patch).eq("id", id);
+    if (error) {
+      setInvoices(before);
+      toast.error(`Couldn't save: ${error.message}`);
+    }
+  }
+
+  async function deleteInvoice(id: string) {
+    const before = invoices;
+    setInvoices((prev) => prev.filter((i) => i.id !== id));
+    const supabase = createClient();
+    if (!supabase) return;
+    const { error } = await supabase.from("invoices").delete().eq("id", id);
+    if (error) {
+      setInvoices(before);
       toast.error(`Couldn't delete: ${error.message}`);
     }
   }
@@ -623,6 +730,146 @@ export function ClientPortalPanel({
             ))}
           </div>
         ))}
+      </div>
+
+      {/* Invoices */}
+      <div className="flex flex-col gap-2 rounded border border-border bg-white/[0.02] p-3">
+        <div className="flex items-center gap-2">
+          <Receipt className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="text-[13px] font-medium">Invoices</span>
+          <span className="text-[11px] text-muted-foreground">drafts stay hidden</span>
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            className="ml-auto"
+            onClick={() => setInvOpen((o) => !o)}
+          >
+            <Plus className="h-3.5 w-3.5" /> New
+          </Button>
+        </div>
+
+        {invOpen && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              addInvoice();
+            }}
+            className="flex flex-col gap-2 rounded-md border border-border-subtle bg-white/[0.02] p-2.5"
+          >
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <Label>Number</Label>
+                <Input
+                  placeholder="INV-001"
+                  value={invNumber}
+                  onChange={(e) => setInvNumber(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label>Amount</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={invAmount}
+                  onChange={(e) => setInvAmount(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label>Currency</Label>
+                <Dropdown
+                  value={invCurrency}
+                  options={CURRENCIES.map((c) => ({ value: c.code, label: c.code }))}
+                  onChange={(v) => setInvCurrency(v as CurrencyCode)}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label>Issued</Label>
+                <DatePicker value={invIssue} onChange={setInvIssue} placeholder="Issue date" />
+              </div>
+              <div>
+                <Label>Due</Label>
+                <DatePicker value={invDue} onChange={setInvDue} placeholder="Due date" />
+              </div>
+            </div>
+            <div>
+              <Label>Invoice link (optional)</Label>
+              <Input
+                placeholder="drive.google.com/..."
+                value={invUrl}
+                onChange={(e) => setInvUrl(e.target.value)}
+              />
+            </div>
+            <Button
+              type="submit"
+              size="sm"
+              variant="secondary"
+              disabled={invBusy || !invNumber.trim() || invAmount === ""}
+            >
+              {invBusy ? "Creating..." : "Create draft"}
+            </Button>
+          </form>
+        )}
+
+        {invoices.length === 0 && !invOpen && (
+          <p className="py-3 text-center text-[12px] text-muted-foreground">
+            No invoices yet. Create one, then mark it Sent to show it in the portal.
+          </p>
+        )}
+
+        {invoices.map((inv) => {
+          const display = effectiveInvoiceStatus(inv);
+          return (
+            <div
+              key={inv.id}
+              className="group flex items-center gap-2 rounded-md border border-border-subtle px-2.5 py-2"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="flex items-center gap-1.5 text-[13px] font-medium">
+                  <span className="min-w-0 truncate">{inv.number}</span>
+                  {inv.document_url && (
+                    <a
+                      href={inv.document_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Open ${inv.number}`}
+                      className="shrink-0 text-muted-foreground hover:text-foreground"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  )}
+                </p>
+                <p className="text-[11px] text-muted-2">
+                  {formatMoney(inv.amount, inv.currency)}
+                  {inv.due_date ? ` · due ${formatDate(inv.due_date)}` : ""}
+                </p>
+              </div>
+              <Badge tone={INVOICE_TONES[display]}>{INVOICE_STATUS_LABELS[display]}</Badge>
+              <div className="w-[104px] shrink-0">
+                <Dropdown
+                  value={inv.status}
+                  options={INVOICE_STATUSES.map((s) => ({
+                    value: s,
+                    label: INVOICE_STATUS_LABELS[s],
+                  }))}
+                  onChange={(v) => updateInvoice(inv.id, { status: v as InvoiceStatus })}
+                />
+              </div>
+              <button
+                type="button"
+                aria-label={`Delete ${inv.number}`}
+                onClick={() => deleteInvoice(inv.id)}
+                className="shrink-0 rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-white/5 hover:text-danger group-hover:opacity-100"
+              >
+                <Trash2 className="h-3 w-3" />
+              </button>
+            </div>
+          );
+        })}
       </div>
 
       {/* Notes */}

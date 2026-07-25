@@ -256,6 +256,45 @@ export interface ClientDocument {
   created_at: string;
 }
 
+/** Stored statuses only. "Overdue" is derived from due_date at read time by
+ *  `effectiveInvoiceStatus` so it can never go stale in the database. */
+export type InvoiceStatus = "draft" | "sent" | "paid";
+export type InvoiceDisplayStatus = InvoiceStatus | "overdue";
+
+export const INVOICE_STATUSES: InvoiceStatus[] = ["draft", "sent", "paid"];
+
+export const INVOICE_STATUS_LABELS: Record<InvoiceDisplayStatus, string> = {
+  draft: "Draft",
+  sent: "Sent",
+  paid: "Paid",
+  overdue: "Overdue",
+};
+
+export interface Invoice {
+  id: string;
+  client_id: string;
+  deal_id: string | null;
+  number: string;
+  amount: number;
+  currency: CurrencyCode;
+  status: InvoiceStatus;
+  issue_date: string | null;
+  due_date: string | null;
+  document_url: string | null;
+  storage_path: string | null;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** A sent invoice past its due date reads as overdue. Paid and draft never do. */
+export function effectiveInvoiceStatus(invoice: Invoice): InvoiceDisplayStatus {
+  if (invoice.status !== "sent" || !invoice.due_date) return invoice.status;
+  const due = new Date(`${invoice.due_date}T23:59:59`);
+  return due.getTime() < Date.now() ? "overdue" : "sent";
+}
+
 export interface Notification {
   id: string;
   recipient_id: string;
@@ -314,6 +353,7 @@ export interface Database {
       portal_updates: { Row: PortalUpdate; Insert: Partial<PortalUpdate>; Update: Partial<PortalUpdate> };
       portal_messages: { Row: PortalMessage; Insert: Partial<PortalMessage>; Update: Partial<PortalMessage> };
       client_documents: { Row: ClientDocument; Insert: Partial<ClientDocument>; Update: Partial<ClientDocument> };
+      invoices: { Row: Invoice; Insert: Partial<Invoice>; Update: Partial<Invoice> };
       notifications: { Row: Notification; Insert: Partial<Notification>; Update: Partial<Notification> };
     };
   };

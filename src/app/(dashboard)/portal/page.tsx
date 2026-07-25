@@ -34,8 +34,9 @@ import type {
   Client,
   ClientDocument,
   CurrencyCode,
-  Deal,
   ClientPortal,
+  Invoice,
+  InvoiceDisplayStatus,
   PortalMessage,
   PortalUpdate,
   Project,
@@ -43,7 +44,19 @@ import type {
   TaskComment,
   TaskLink,
 } from "@/lib/types";
-import { DOCUMENT_CATEGORIES, DOCUMENT_CATEGORY_LABELS } from "@/lib/types";
+import {
+  DOCUMENT_CATEGORIES,
+  DOCUMENT_CATEGORY_LABELS,
+  INVOICE_STATUS_LABELS,
+  effectiveInvoiceStatus,
+} from "@/lib/types";
+
+const PORTAL_INVOICE_TONES: Record<InvoiceDisplayStatus, "gray" | "blue" | "green" | "red"> = {
+  draft: "gray",
+  sent: "blue",
+  paid: "green",
+  overdue: "red",
+};
 
 export default function ClientPortalPage() {
   return (
@@ -65,9 +78,7 @@ function PortalInner() {
     profile && profile.role !== "client" ? searchParams.get("client") : null;
   const isPreview = !!previewClientId;
   const { format: formatCurrency, toBase, base } = useCurrency();
-  const dealCcy = (d: Deal): CurrencyCode => (d.currency as CurrencyCode) ?? base;
   const [client, setClient] = useState<Client | null>(null);
-  const [deals, setDeals] = useState<Deal[]>([]);
   const [portal, setPortal] = useState<ClientPortal | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<ProjectTask[]>([]);
@@ -76,6 +87,7 @@ function PortalInner() {
   const [messages, setMessages] = useState<PortalMessage[]>([]);
   const [msgDraft, setMsgDraft] = useState("");
   const [documents, setDocuments] = useState<ClientDocument[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [openProject, setOpenProject] = useState<string | null>(null);
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
@@ -92,7 +104,6 @@ function PortalInner() {
 
       const [
         clientRes,
-        dealsRes,
         portalRes,
         projectsRes,
         tasksRes,
@@ -100,9 +111,9 @@ function PortalInner() {
         commentsRes,
         messagesRes,
         documentsRes,
+        invoicesRes,
       ] = await Promise.all([
           supabase.from("clients").select("*").eq("id", clientId).single(),
-          supabase.from("deals").select("*").eq("client_id", clientId),
           supabase.from("client_portals").select("*").eq("client_id", clientId).maybeSingle(),
           supabase.from("projects").select("*").eq("client_id", clientId),
           supabase.from("project_tasks").select("*"),
@@ -122,10 +133,14 @@ function PortalInner() {
             .select("*")
             .eq("client_id", clientId)
             .order("created_at", { ascending: false }),
+          supabase
+            .from("invoices")
+            .select("*")
+            .eq("client_id", clientId)
+            .order("issue_date", { ascending: false, nullsFirst: false }),
         ]);
 
       setClient((clientRes.data as Client) ?? null);
-      setDeals((dealsRes.data as Deal[]) ?? []);
       setPortal((portalRes.data as ClientPortal) ?? null);
       setProjects((projectsRes.data as Project[]) ?? []);
       setTasks((tasksRes.data as ProjectTask[]) ?? []);
@@ -133,6 +148,7 @@ function PortalInner() {
       setComments((commentsRes.data as TaskComment[]) ?? []);
       setMessages((messagesRes.data as PortalMessage[]) ?? []);
       setDocuments((documentsRes.data as ClientDocument[]) ?? []);
+      setInvoices((invoicesRes.data as Invoice[]) ?? []);
       setLoading(false);
 
       // Record that the client opened their portal (staff previews don't count).
@@ -168,10 +184,6 @@ function PortalInner() {
   const overallPct = clientTasks.length ? Math.round((doneCount / clientTasks.length) * 100) : 0;
   const approvedCount = clientTasks.filter((t) => t.approved_at).length;
   const activeProjects = projects.filter((p) => p.status !== "Delivered").length;
-  const totalValue = deals.reduce((s, d) => s + toBase(Number(d.deal_value), dealCcy(d)), 0);
-  const totalPaid = deals.reduce((s, d) => s + toBase(Number(d.paid), dealCcy(d)), 0);
-  const outstanding = totalValue - totalPaid;
-  const paidPct = totalValue > 0 ? Math.round((totalPaid / totalValue) * 100) : 0;
 
   const nextDeadline = useMemo(() => {
     const today = startOfDay(new Date());
@@ -193,6 +205,33 @@ function PortalInner() {
     }
     return out;
   }, [clientTasks]);
+
+  /** Drafts are hidden by RLS for real clients; filter again so staff previews
+   *  see exactly what the client sees. */
+  const visibleInvoices = useMemo(
+    () => invoices.filter((i) => i.status !== "draft"),
+    [invoices]
+  );
+
+  const invoiceTotals = useMemo(() => {
+    let invoiced = 0;
+    let paid = 0;
+    let overdue = 0;
+    for (const inv of visibleInvoices) {
+      const amount = toBase(Number(inv.amount), (inv.currency as CurrencyCode) ?? base);
+      invoiced += amount;
+      if (inv.status === "paid") paid += amount;
+      if (effectiveInvoiceStatus(inv) === "overdue") overdue += 1;
+    }
+    return { invoiced, paid, outstanding: invoiced - paid, overdue };
+  }, [visibleInvoices, toBase, base]);
+
+  const invoicedTotal = invoiceTotals.invoiced;
+  const invoicePaid = invoiceTotals.paid;
+  const invoiceOutstanding = invoiceTotals.outstanding;
+  const overdueCount = invoiceTotals.overdue;
+  const invoicePaidPct =
+    invoicedTotal > 0 ? Math.round((invoicePaid / invoicedTotal) * 100) : 0;
 
   /** Documents in a stable category order, empty categories omitted. */
   const groupedDocs = useMemo(
@@ -319,7 +358,7 @@ function PortalInner() {
                   <Stat icon={CheckCheck} value={String(approvedCount)} label="Approved" />
                   <Stat
                     icon={Wallet}
-                    value={formatCurrency(outstanding)}
+                    value={formatCurrency(invoiceOutstanding)}
                     label="Outstanding"
                   />
                   <Stat
@@ -591,48 +630,82 @@ function PortalInner() {
             {/* ============ PAYMENTS ============ */}
             <section>
               <SectionTitle icon={Wallet}>Payments</SectionTitle>
-              {deals.length === 0 ? (
+              {visibleInvoices.length === 0 ? (
                 <Card className="rounded-xl shadow-sm">
-                  <p className="py-6 text-center text-sm text-muted-foreground">No engagements yet.</p>
+                  <p className="py-6 text-center text-sm text-muted-foreground">
+                    No invoices yet. Anything your team issues will appear here.
+                  </p>
                 </Card>
               ) : (
                 <Card className="rounded-xl shadow-sm">
                   {/* Summary */}
                   <div className="grid grid-cols-3 gap-3 border-b border-border-subtle pb-4">
-                    <Summary label="Total value" value={formatCurrency(totalValue)} />
-                    <Summary label="Paid" value={formatCurrency(totalPaid)} tone="success" />
-                    <Summary label="Outstanding" value={formatCurrency(outstanding)} tone="warning" />
+                    <Summary label="Invoiced" value={formatCurrency(invoicedTotal)} />
+                    <Summary label="Paid" value={formatCurrency(invoicePaid)} tone="success" />
+                    <Summary
+                      label="Outstanding"
+                      value={formatCurrency(invoiceOutstanding)}
+                      tone={overdueCount > 0 ? "danger" : "warning"}
+                    />
                   </div>
                   <div className="flex items-center gap-3 py-3.5">
                     <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/10">
                       <div
                         className="h-full rounded-full bg-success transition-all"
-                        style={{ width: `${paidPct}%` }}
+                        style={{ width: `${invoicePaidPct}%` }}
                       />
                     </div>
                     <span className="shrink-0 text-xs font-medium tabular-nums text-muted-foreground">
-                      {paidPct}% paid
+                      {invoicePaidPct}% paid
                     </span>
                   </div>
-                  {/* Per-deal breakdown */}
+                  {overdueCount > 0 && (
+                    <p className="mb-1 text-xs font-medium text-danger">
+                      {overdueCount} invoice{overdueCount === 1 ? " is" : "s are"} past due.
+                    </p>
+                  )}
+                  {/* Per-invoice breakdown */}
                   <div className="flex flex-col divide-y divide-border-subtle">
-                    {deals.map((d) => {
-                      const value = Number(d.deal_value);
-                      const paid = Number(d.paid);
-                      const pct = value > 0 ? Math.round((paid / value) * 100) : 0;
-                      return (
-                        <div key={d.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 py-2.5 text-sm">
-                          <span className="min-w-0 flex-1 truncate font-medium">{d.deal_name}</span>
-                          <Badge tone={statusTone(d.deal_stage)}>{d.deal_stage}</Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {formatCurrency(paid, dealCcy(d))} of {formatCurrency(value, dealCcy(d))}
+                    {visibleInvoices.map((inv) => {
+                      const display = effectiveInvoiceStatus(inv);
+                      const row = (
+                        <>
+                          <span className="min-w-0 flex-1 truncate font-medium">{inv.number}</span>
+                          <Badge tone={PORTAL_INVOICE_TONES[display]}>
+                            {INVOICE_STATUS_LABELS[display]}
+                          </Badge>
+                          <span
+                            className={cn(
+                              "text-xs",
+                              display === "overdue" ? "text-danger" : "text-muted-foreground"
+                            )}
+                          >
+                            {inv.due_date ? `Due ${formatDate(inv.due_date)}` : "No due date"}
                           </span>
-                          <div className="h-1.5 w-24 overflow-hidden rounded-full bg-white/10">
-                            <div
-                              className={cn("h-full rounded-full", pct >= 100 ? "bg-success" : "bg-primary")}
-                              style={{ width: `${pct}%` }}
-                            />
-                          </div>
+                          <span className="font-medium tabular-nums">
+                            {formatCurrency(Number(inv.amount), inv.currency)}
+                          </span>
+                          {inv.document_url && (
+                            <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary" />
+                          )}
+                        </>
+                      );
+                      return inv.document_url ? (
+                        <a
+                          key={inv.id}
+                          href={inv.document_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="group flex flex-wrap items-center gap-x-4 gap-y-1 py-2.5 text-sm transition-colors hover:text-primary"
+                        >
+                          {row}
+                        </a>
+                      ) : (
+                        <div
+                          key={inv.id}
+                          className="group flex flex-wrap items-center gap-x-4 gap-y-1 py-2.5 text-sm"
+                        >
+                          {row}
                         </div>
                       );
                     })}
@@ -819,7 +892,7 @@ function Summary({
 }: {
   label: string;
   value: string;
-  tone?: "success" | "warning";
+  tone?: "success" | "warning" | "danger";
 }) {
   return (
     <div>
@@ -828,7 +901,8 @@ function Summary({
         className={cn(
           "mt-0.5 text-lg font-semibold tabular-nums",
           tone === "success" && "text-success",
-          tone === "warning" && "text-warning"
+          tone === "warning" && "text-warning",
+          tone === "danger" && "text-danger"
         )}
       >
         {value}
