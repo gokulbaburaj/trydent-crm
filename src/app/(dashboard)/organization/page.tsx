@@ -221,7 +221,9 @@ export default function OrganizationPage() {
   if (loading) return <TableSkeleton rows={4} />;
 
   return (
-    <div className="flex max-w-5xl flex-col gap-5">
+    // No max-width here on purpose: this is a dashboard, not a reading page, so
+    // it should use whatever room the screen gives it.
+    <div className="flex flex-col gap-5">
       <div>
         <h2 className="text-xl font-semibold tracking-tight">Organisation</h2>
         <p className="mt-0.5 text-sm text-muted-foreground">
@@ -229,7 +231,7 @@ export default function OrganizationPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {visible.map((card) => (
           <button
             key={card.label}
@@ -263,8 +265,11 @@ export default function OrganizationPage() {
       )}
 
       {/* ============ VISUALISATIONS ============ */}
+      {/* Goal progress is a list, so it takes the wide slot; the three charts
+          sit beside it on large screens rather than stacking down the left. */}
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-4">
       {showGoals && (
-        <Card className="rounded-xl shadow-sm">
+        <Card className="rounded-xl shadow-sm lg:col-span-2">
           <h3 className="text-sm font-semibold">Goal progress</h3>
           <p className="mt-0.5 text-xs text-muted-foreground">
             Active objectives, rolled up from their key results.
@@ -302,7 +307,6 @@ export default function OrganizationPage() {
         </Card>
       )}
 
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         {showRecruiting && (
           <Card className="flex flex-col rounded-xl shadow-sm">
             <h3 className="text-sm font-semibold">Hiring funnel</h3>
