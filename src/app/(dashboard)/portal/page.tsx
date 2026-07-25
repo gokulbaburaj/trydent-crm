@@ -6,10 +6,12 @@ import {
   ArrowUpRight,
   CalendarClock,
   CalendarDays,
+  CalendarPlus,
   CheckCheck,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
+  Clock,
   Columns3,
   Eye,
   FileText,
@@ -32,11 +34,12 @@ import {
   PortalTimeline,
   type PortalView,
 } from "@/components/portal/PortalTaskViews";
-import { formatDistanceToNow, parseISO, startOfDay } from "date-fns";
+import { format, formatDistanceToNow, parseISO, startOfDay } from "date-fns";
 import { Card } from "@/components/ui/Card";
 import { Badge, statusTone } from "@/components/ui/Badge";
 import { Avatar, AvatarStack } from "@/components/ui/Avatar";
-import { Input } from "@/components/ui/Input";
+import { Input, Label } from "@/components/ui/Input";
+import { DatePicker } from "@/components/ui/DatePicker";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/useAuth";
 import { createClient } from "@/lib/supabase/client";
@@ -44,12 +47,14 @@ import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/format";
 import { useCurrency } from "@/lib/currency";
 import type {
+  Activity,
   Client,
   ClientDocument,
   CurrencyCode,
   ClientPortal,
   Invoice,
   InvoiceDisplayStatus,
+  MeetingRequest,
   PortalMessage,
   PortalUpdate,
   Project,
@@ -110,6 +115,13 @@ function PortalInner() {
   const [documents, setDocuments] = useState<ClientDocument[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [team, setTeam] = useState<TeamMember[]>([]);
+  const [meetings, setMeetings] = useState<Activity[]>([]);
+  const [requests, setRequests] = useState<MeetingRequest[]>([]);
+  const [askOpen, setAskOpen] = useState(false);
+  const [askTopic, setAskTopic] = useState("");
+  const [askDate, setAskDate] = useState<string | null>(null);
+  const [askNote, setAskNote] = useState("");
+  const [askBusy, setAskBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [openProject, setOpenProject] = useState<string | null>(null);
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
@@ -136,6 +148,8 @@ function PortalInner() {
         documentsRes,
         invoicesRes,
         teamRes,
+        meetingsRes,
+        requestsRes,
       ] = await Promise.all([
           supabase.from("clients").select("*").eq("id", clientId).single(),
           supabase.from("client_portals").select("*").eq("client_id", clientId).maybeSingle(),
@@ -163,6 +177,17 @@ function PortalInner() {
             .eq("client_id", clientId)
             .order("issue_date", { ascending: false, nullsFirst: false }),
           supabase.from("team_directory").select("*"),
+          supabase
+            .from("activities")
+            .select("*")
+            .eq("client_id", clientId)
+            .eq("client_visible", true)
+            .order("activity_date", { ascending: true }),
+          supabase
+            .from("meeting_requests")
+            .select("*")
+            .eq("client_id", clientId)
+            .order("created_at", { ascending: false }),
         ]);
 
       setClient((clientRes.data as Client) ?? null);
@@ -175,6 +200,8 @@ function PortalInner() {
       setDocuments((documentsRes.data as ClientDocument[]) ?? []);
       setInvoices((invoicesRes.data as Invoice[]) ?? []);
       setTeam((teamRes.data as TeamMember[]) ?? []);
+      setMeetings((meetingsRes.data as Activity[]) ?? []);
+      setRequests((requestsRes.data as MeetingRequest[]) ?? []);
       setLoading(false);
 
       // Record that the client opened their portal (staff previews don't count).
@@ -255,6 +282,47 @@ function PortalInner() {
     }
     return map;
   }, [projects, clientTasks, teamById]);
+
+  const upcomingMeetings = useMemo(() => {
+    const cutoff = startOfDay(new Date()).getTime();
+    return meetings
+      .filter((m) => parseISO(m.activity_date).getTime() >= cutoff)
+      .slice(0, 5);
+  }, [meetings]);
+
+  const pendingRequests = useMemo(
+    () => requests.filter((r) => r.status === "pending"),
+    [requests]
+  );
+
+  async function requestMeeting() {
+    const topic = askTopic.trim();
+    if (!topic || !profile?.client_id) return;
+    setAskBusy(true);
+    const supabase = createClient();
+    if (!supabase) {
+      setAskBusy(false);
+      return;
+    }
+    const { data, error } = await supabase
+      .from("meeting_requests")
+      .insert({
+        client_id: profile.client_id,
+        requested_by: profile.id,
+        topic,
+        preferred_date: askDate,
+        note: askNote.trim() || null,
+      })
+      .select()
+      .single();
+    setAskBusy(false);
+    if (error || !data) return;
+    setRequests((prev) => [data as MeetingRequest, ...prev]);
+    setAskTopic("");
+    setAskDate(null);
+    setAskNote("");
+    setAskOpen(false);
+  }
 
   /** Everyone touching any of this client's work, across all projects. */
   const accountTeam = useMemo(() => {
@@ -723,6 +791,114 @@ function PortalInner() {
                 </div>
               </section>
             )}
+
+            {/* ============ MEETINGS ============ */}
+            <section>
+              <div className="mb-2.5 flex flex-wrap items-center gap-2">
+                <SectionTitle icon={CalendarClock} className="mb-0">
+                  Meetings
+                </SectionTitle>
+                {profile?.role === "client" && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    className="ml-auto"
+                    onClick={() => setAskOpen((o) => !o)}
+                  >
+                    <CalendarPlus className="h-3.5 w-3.5" /> Request a call
+                  </Button>
+                )}
+              </div>
+
+              {askOpen && (
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    requestMeeting();
+                  }}
+                  className="mb-3 flex flex-col gap-2.5 rounded-xl border border-border bg-surface p-3.5 shadow-sm"
+                >
+                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                    <div>
+                      <Label>What would you like to discuss?</Label>
+                      <Input
+                        placeholder="Campaign review"
+                        value={askTopic}
+                        onChange={(e) => setAskTopic(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label>Preferred date (optional)</Label>
+                      <DatePicker value={askDate} onChange={setAskDate} placeholder="Any time" />
+                    </div>
+                  </div>
+                  <div>
+                    <Label>Anything else? (optional)</Label>
+                    <Input
+                      placeholder="Mornings work best for us"
+                      value={askNote}
+                      onChange={(e) => setAskNote(e.target.value)}
+                    />
+                  </div>
+                  <Button type="submit" size="sm" disabled={askBusy || !askTopic.trim()}>
+                    {askBusy ? "Sending..." : "Send request"}
+                  </Button>
+                </form>
+              )}
+
+              {pendingRequests.length > 0 && (
+                <div className="mb-3 flex flex-col gap-1.5">
+                  {pendingRequests.map((r) => (
+                    <div
+                      key={r.id}
+                      className="flex flex-wrap items-center gap-2 rounded-lg border border-warning/30 bg-warning/5 px-3 py-2 text-sm"
+                    >
+                      <Clock className="h-3.5 w-3.5 shrink-0 text-warning" />
+                      <span className="min-w-0 flex-1 truncate">{r.topic}</span>
+                      <span className="text-xs text-warning">Awaiting a time from your team</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {upcomingMeetings.length === 0 ? (
+                <Card className="rounded-xl shadow-sm">
+                  <p className="py-6 text-center text-sm text-muted-foreground">
+                    No meetings scheduled.
+                  </p>
+                </Card>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {upcomingMeetings.map((m) => {
+                    const attendees = (m.attendee_ids ?? [])
+                      .map((id) => teamById.get(id))
+                      .filter((p): p is TeamMember => !!p);
+                    return (
+                      <Card key={m.id} className="rounded-xl shadow-sm">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                            {m.description}
+                          </span>
+                          <AvatarStack people={attendees} size="sm" />
+                          <span className="shrink-0 text-xs text-muted-foreground">
+                            {format(parseISO(m.activity_date), "EEE d MMM · h:mm a")}
+                          </span>
+                        </div>
+                        {m.location && (
+                          <p className="mt-1 text-xs text-muted-foreground">{m.location}</p>
+                        )}
+                        {m.agenda && (
+                          <p className="mt-2 whitespace-pre-line border-t border-border-subtle pt-2 text-[13px] leading-snug text-foreground-secondary">
+                            {m.agenda}
+                          </p>
+                        )}
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
 
             {/* ============ DOCUMENTS ============ */}
             {groupedDocs.length > 0 && (

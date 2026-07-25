@@ -147,6 +147,25 @@ export interface Activity {
   color: string | null;
   recurrence: Recurrence;
   recurrence_parent_id: string | null;
+  agenda: string | null;
+  notes: string | null;
+  attendee_ids: string[];
+  /** Off by default — an internal note should never leak by omission. */
+  client_visible: boolean;
+  created_at: string;
+}
+
+export type MeetingRequestStatus = "pending" | "scheduled" | "declined";
+
+export interface MeetingRequest {
+  id: string;
+  client_id: string;
+  requested_by: string | null;
+  topic: string;
+  preferred_date: string | null;
+  note: string | null;
+  status: MeetingRequestStatus;
+  activity_id: string | null;
   created_at: string;
 }
 
@@ -364,6 +383,7 @@ export interface Database {
       client_documents: { Row: ClientDocument; Insert: Partial<ClientDocument>; Update: Partial<ClientDocument> };
       invoices: { Row: Invoice; Insert: Partial<Invoice>; Update: Partial<Invoice> };
       team_directory: { Row: TeamMember; Insert: never; Update: never };
+      meeting_requests: { Row: MeetingRequest; Insert: Partial<MeetingRequest>; Update: Partial<MeetingRequest> };
       notifications: { Row: Notification; Insert: Partial<Notification>; Update: Partial<Notification> };
     };
   };

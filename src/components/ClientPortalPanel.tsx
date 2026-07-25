@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
+  CalendarClock,
   Check,
   Copy,
   ExternalLink,
@@ -40,6 +41,7 @@ import type {
   Invoice,
   InvoiceDisplayStatus,
   InvoiceStatus,
+  MeetingRequest,
   PortalMessage,
   PortalUpdate,
 } from "@/lib/types";
@@ -105,6 +107,7 @@ export function ClientPortalPanel({
   const [invDue, setInvDue] = useState<string | null>(null);
   const [invUrl, setInvUrl] = useState("");
   const [invBusy, setInvBusy] = useState(false);
+  const [requests, setRequests] = useState<MeetingRequest[]>([]);
 
   const genUsername = useMemo(
     () => (withSuffix = false) => {
@@ -142,11 +145,12 @@ export function ClientPortalPanel({
       setInvIssue(null);
       setInvDue(null);
       setInvUrl("");
+      setRequests([]);
     });
     async function loadPanelData() {
       const supabase = createClient();
       if (!supabase) return;
-      const [msgRes, docRes, invRes] = await Promise.all([
+      const [msgRes, docRes, invRes, reqRes] = await Promise.all([
         supabase
           .from("portal_messages")
           .select("*")
@@ -162,10 +166,17 @@ export function ClientPortalPanel({
           .select("*")
           .eq("client_id", clientId)
           .order("created_at", { ascending: false }),
+        supabase
+          .from("meeting_requests")
+          .select("*")
+          .eq("client_id", clientId)
+          .eq("status", "pending")
+          .order("created_at", { ascending: false }),
       ]);
       setMessages((msgRes.data as PortalMessage[]) ?? []);
       setDocuments((docRes.data as ClientDocument[]) ?? []);
       setInvoices((invRes.data as Invoice[]) ?? []);
+      setRequests((reqRes.data as MeetingRequest[]) ?? []);
     }
     loadPanelData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -388,6 +399,22 @@ export function ClientPortalPanel({
       setInvoices(before);
       toast.error(`Couldn't delete: ${error.message}`);
     }
+  }
+
+  /** Resolving a request only clears it from the queue — scheduling the actual
+   *  meeting happens on the Schedule page, where the full form lives. */
+  async function resolveRequest(id: string, status: "scheduled" | "declined") {
+    const before = requests;
+    setRequests((prev) => prev.filter((r) => r.id !== id));
+    const supabase = createClient();
+    if (!supabase) return;
+    const { error } = await supabase.from("meeting_requests").update({ status }).eq("id", id);
+    if (error) {
+      setRequests(before);
+      toast.error(`Couldn't update: ${error.message}`);
+      return;
+    }
+    toast.success(status === "scheduled" ? "Marked as scheduled" : "Request declined");
   }
 
   function copyCredentials() {
@@ -619,6 +646,56 @@ export function ClientPortalPanel({
           </Button>
         </form>
       </div>
+
+      {/* Call requests */}
+      {requests.length > 0 && (
+        <div className="flex flex-col gap-2 rounded border border-warning/30 bg-warning/5 p-3">
+          <div className="flex items-center gap-2">
+            <CalendarClock className="h-3.5 w-3.5 text-warning" />
+            <span className="text-[13px] font-medium">Call requests</span>
+            <span className="ml-auto rounded-full bg-warning/15 px-1.5 py-px text-[11px] font-medium text-warning">
+              {requests.length}
+            </span>
+          </div>
+          {requests.map((r) => (
+            <div key={r.id} className="rounded-md border border-border-subtle bg-surface p-2.5">
+              <p className="text-[13px] font-medium">{r.topic}</p>
+              <p className="mt-0.5 text-[11px] text-muted-2">
+                {r.preferred_date ? `Prefers ${formatDate(r.preferred_date)}` : "No date preference"}
+                {" · "}
+                {formatDistanceToNow(parseISO(r.created_at), { addSuffix: true })}
+              </p>
+              {r.note && (
+                <p className="mt-1.5 text-[12px] text-foreground-secondary">{r.note}</p>
+              )}
+              <div className="mt-2 flex gap-2">
+                <Link
+                  href="/schedule"
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded border border-border bg-white/5 px-3 py-1.5 text-[11px] font-medium text-foreground-secondary transition-colors hover:bg-white/10 hover:text-foreground"
+                >
+                  Open Schedule
+                </Link>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => resolveRequest(r.id, "scheduled")}
+                >
+                  Mark scheduled
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => resolveRequest(r.id, "declined")}
+                >
+                  Decline
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Documents */}
       <div className="flex flex-col gap-2 rounded border border-border bg-white/[0.02] p-3">

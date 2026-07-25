@@ -40,6 +40,7 @@ import { applyFilters, useStoredFilters } from "@/lib/filters";
 import { nextActivityPayload } from "@/lib/recurrence";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
+import { Avatar } from "@/components/ui/Avatar";
 import { Drawer } from "@/components/ui/Drawer";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { Dropdown } from "@/components/ui/Dropdown";
@@ -62,6 +63,10 @@ const emptyForm: Partial<Activity> = {
   assigned_to: null,
   activity_date: new Date().toISOString().slice(0, 16),
   recurrence: "none",
+  agenda: "",
+  notes: "",
+  attendee_ids: [],
+  client_visible: false,
 };
 
 const WEEKDAYS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
@@ -492,6 +497,60 @@ export default function SchedulePage() {
               />
             </div>
             <div>
+              <Label>Agenda</Label>
+              <Textarea
+                rows={3}
+                placeholder="What are we covering?"
+                value={editing.agenda ?? ""}
+                onChange={(e) => setEditing({ ...editing, agenda: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>Notes</Label>
+              <Textarea
+                rows={3}
+                placeholder="What was decided, and what happens next..."
+                value={editing.notes ?? ""}
+                onChange={(e) => setEditing({ ...editing, notes: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>Attendees</Label>
+              <div className="flex flex-wrap gap-1.5 rounded-md border border-white/15 bg-white/[0.02] p-2">
+                {profiles.length === 0 && (
+                  <span className="px-1 text-xs text-muted-foreground">No team members yet.</span>
+                )}
+                {profiles.map((p) => {
+                  const selected = (editing.attendee_ids ?? []).includes(p.id);
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => {
+                        const current = editing.attendee_ids ?? [];
+                        setEditing({
+                          ...editing,
+                          attendee_ids: selected
+                            ? current.filter((id) => id !== p.id)
+                            : [...current, p.id],
+                        });
+                      }}
+                      className={cn(
+                        "flex items-center gap-1.5 rounded-full border px-2 py-1 text-xs transition-colors",
+                        selected
+                          ? "border-primary/40 bg-primary/15 text-foreground"
+                          : "border-white/10 text-muted-foreground hover:bg-white/5"
+                      )}
+                    >
+                      <Avatar name={p.full_name} url={p.avatar_url} size="xs" />
+                      {p.full_name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div>
               <Label>Client</Label>
               <Dropdown
                 value={editing.client_id ?? ""}
@@ -574,6 +633,20 @@ export default function SchedulePage() {
                 className="h-4 w-4 rounded accent-primary"
               />
               Follow-up required
+            </label>
+            <label className="flex items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={!!editing.client_visible}
+                onChange={(e) => setEditing({ ...editing, client_visible: e.target.checked })}
+                className="mt-0.5 h-4 w-4 rounded accent-primary"
+              />
+              <span>
+                Show in the client portal
+                <span className="block text-xs text-muted-foreground">
+                  The client sees the date, agenda and attendees. Notes stay internal.
+                </span>
+              </span>
             </label>
             <div className="flex gap-2 pt-2">
               <Button type="submit" disabled={saving} className="flex-1">
