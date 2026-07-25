@@ -219,6 +219,43 @@ export interface PortalMessage {
   created_at: string;
 }
 
+/** Client-visible document. `url` = external link (Drive etc.);
+ *  `storage_path` is reserved for Supabase Storage uploads (Phase 2). */
+export type DocumentCategory =
+  | "proposal"
+  | "contract"
+  | "invoice"
+  | "asset"
+  | "other";
+
+export const DOCUMENT_CATEGORIES: DocumentCategory[] = [
+  "proposal",
+  "contract",
+  "invoice",
+  "asset",
+  "other",
+];
+
+export const DOCUMENT_CATEGORY_LABELS: Record<DocumentCategory, string> = {
+  proposal: "Proposals",
+  contract: "Contracts",
+  invoice: "Invoices",
+  asset: "Assets",
+  other: "Other",
+};
+
+export interface ClientDocument {
+  id: string;
+  client_id: string;
+  project_id: string | null;
+  name: string;
+  category: DocumentCategory;
+  url: string | null;
+  storage_path: string | null;
+  added_by: string | null;
+  created_at: string;
+}
+
 export interface Notification {
   id: string;
   recipient_id: string;
@@ -276,6 +313,7 @@ export interface Database {
       task_comments: { Row: TaskComment; Insert: Partial<TaskComment>; Update: Partial<TaskComment> };
       portal_updates: { Row: PortalUpdate; Insert: Partial<PortalUpdate>; Update: Partial<PortalUpdate> };
       portal_messages: { Row: PortalMessage; Insert: Partial<PortalMessage>; Update: Partial<PortalMessage> };
+      client_documents: { Row: ClientDocument; Insert: Partial<ClientDocument>; Update: Partial<ClientDocument> };
       notifications: { Row: Notification; Insert: Partial<Notification>; Update: Partial<Notification> };
     };
   };

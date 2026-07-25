@@ -2,18 +2,44 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Check, Copy, Eye, KeyRound, Link2, Megaphone, MessageSquare, MonitorSmartphone, Send } from "lucide-react";
+import {
+  Check,
+  Copy,
+  ExternalLink,
+  Eye,
+  FolderOpen,
+  KeyRound,
+  Link2,
+  Megaphone,
+  MessageSquare,
+  MonitorSmartphone,
+  Plus,
+  Send,
+  Trash2,
+} from "lucide-react";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { toast } from "@/components/Toaster";
 import { Button } from "@/components/ui/Button";
 import { StatusPicker } from "@/components/ui/StatusPicker";
 import { Input, Label, Textarea } from "@/components/ui/Input";
+import { Dropdown } from "@/components/ui/Dropdown";
 import { useAuth } from "@/lib/useAuth";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/format";
-import type { Client, ClientPortal, PortalMessage, PortalUpdate } from "@/lib/types";
-import { PORTAL_STATUSES } from "@/lib/types";
+import type {
+  Client,
+  ClientDocument,
+  ClientPortal,
+  DocumentCategory,
+  PortalMessage,
+  PortalUpdate,
+} from "@/lib/types";
+import {
+  DOCUMENT_CATEGORIES,
+  DOCUMENT_CATEGORY_LABELS,
+  PORTAL_STATUSES,
+} from "@/lib/types";
 
 /**
  * Portal management for a single client: status, login provisioning + reset,
@@ -45,6 +71,12 @@ export function ClientPortalPanel({
   const [portalBusy, setPortalBusy] = useState(false);
   const [messages, setMessages] = useState<PortalMessage[]>([]);
   const [msgDraft, setMsgDraft] = useState("");
+  const [documents, setDocuments] = useState<ClientDocument[]>([]);
+  const [docOpen, setDocOpen] = useState(false);
+  const [docName, setDocName] = useState("");
+  const [docUrl, setDocUrl] = useState("");
+  const [docCategory, setDocCategory] = useState<DocumentCategory>("proposal");
+  const [docBusy, setDocBusy] = useState(false);
 
   const genUsername = useMemo(
     () => (withSuffix = false) => {
@@ -70,24 +102,47 @@ export function ClientPortalPanel({
       setCopied(false);
       setMsgDraft("");
       setMessages([]);
+      setDocuments([]);
+      setDocOpen(false);
+      setDocName("");
+      setDocUrl("");
+      setDocCategory("proposal");
     });
-    async function loadMessages() {
+    async function loadPanelData() {
       const supabase = createClient();
       if (!supabase) return;
-      const { data } = await supabase
-        .from("portal_messages")
-        .select("*")
-        .eq("client_id", clientId)
-        .order("created_at", { ascending: true });
-      setMessages((data as PortalMessage[]) ?? []);
+      const [msgRes, docRes] = await Promise.all([
+        supabase
+          .from("portal_messages")
+          .select("*")
+          .eq("client_id", clientId)
+          .order("created_at", { ascending: true }),
+        supabase
+          .from("client_documents")
+          .select("*")
+          .eq("client_id", clientId)
+          .order("created_at", { ascending: false }),
+      ]);
+      setMessages((msgRes.data as PortalMessage[]) ?? []);
+      setDocuments((docRes.data as ClientDocument[]) ?? []);
     }
-    loadMessages();
+    loadPanelData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientId]);
 
   const clientUpdates = useMemo(
     () => updates.filter((u) => u.client_id === client.id),
     [updates, client]
+  );
+
+  /** Documents in a stable category order, empty categories omitted. */
+  const groupedDocs = useMemo(
+    () =>
+      DOCUMENT_CATEGORIES.map((c) => ({
+        category: c,
+        items: documents.filter((d) => d.category === c),
+      })).filter((g) => g.items.length > 0),
+    [documents]
   );
 
   async function setupPortal() {
@@ -180,6 +235,52 @@ export function ClientPortalPanel({
       return;
     }
     setMessages((prev) => [...prev, data as PortalMessage]);
+  }
+
+  async function addDocument() {
+    const name = docName.trim();
+    let url = docUrl.trim();
+    if (!name || !url || !profile) return;
+    if (!/^https?:\/\//i.test(url)) url = `https://${url}`;
+    setDocBusy(true);
+    const supabase = createClient();
+    if (!supabase) {
+      setDocBusy(false);
+      return;
+    }
+    const { data, error } = await supabase
+      .from("client_documents")
+      .insert({
+        client_id: client.id,
+        name,
+        url,
+        category: docCategory,
+        added_by: profile.id,
+      })
+      .select()
+      .single();
+    setDocBusy(false);
+    if (error) {
+      toast.error(`Couldn't add: ${error.message}`);
+      return;
+    }
+    setDocuments((prev) => [data as ClientDocument, ...prev]);
+    setDocName("");
+    setDocUrl("");
+    setDocOpen(false);
+    toast.success("Document added to the client portal");
+  }
+
+  async function deleteDocument(id: string) {
+    const before = documents;
+    setDocuments((prev) => prev.filter((d) => d.id !== id));
+    const supabase = createClient();
+    if (!supabase) return;
+    const { error } = await supabase.from("client_documents").delete().eq("id", id);
+    if (error) {
+      setDocuments(before);
+      toast.error(`Couldn't delete: ${error.message}`);
+    }
   }
 
   function copyCredentials() {
@@ -410,6 +511,118 @@ export function ClientPortalPanel({
             <Send className="h-3.5 w-3.5" />
           </Button>
         </form>
+      </div>
+
+      {/* Documents */}
+      <div className="flex flex-col gap-2 rounded border border-border bg-white/[0.02] p-3">
+        <div className="flex items-center gap-2">
+          <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="text-[13px] font-medium">Documents</span>
+          <span className="text-[11px] text-muted-foreground">
+            proposals, contracts, invoices
+          </span>
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            className="ml-auto"
+            onClick={() => setDocOpen((o) => !o)}
+          >
+            <Plus className="h-3.5 w-3.5" /> Add
+          </Button>
+        </div>
+
+        {docOpen && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              addDocument();
+            }}
+            className="flex flex-col gap-2 rounded-md border border-border-subtle bg-white/[0.02] p-2.5"
+          >
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label>Name</Label>
+                <Input
+                  placeholder="Q3 Proposal"
+                  value={docName}
+                  onChange={(e) => setDocName(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label>Category</Label>
+                <Dropdown
+                  value={docCategory}
+                  options={DOCUMENT_CATEGORIES.map((c) => ({
+                    value: c,
+                    label: DOCUMENT_CATEGORY_LABELS[c],
+                  }))}
+                  onChange={(v) => setDocCategory(v as DocumentCategory)}
+                />
+              </div>
+            </div>
+            <div>
+              <Label>Link</Label>
+              <Input
+                placeholder="drive.google.com/..."
+                value={docUrl}
+                onChange={(e) => setDocUrl(e.target.value)}
+              />
+              <p className="mt-1 text-[11px] text-muted-2">
+                Make sure the link is shared with your client before posting it.
+              </p>
+            </div>
+            <Button
+              type="submit"
+              size="sm"
+              variant="secondary"
+              disabled={docBusy || !docName.trim() || !docUrl.trim()}
+            >
+              {docBusy ? "Adding..." : "Add document"}
+            </Button>
+          </form>
+        )}
+
+        {documents.length === 0 && !docOpen && (
+          <p className="py-3 text-center text-[12px] text-muted-foreground">
+            No documents yet. Anything you add here shows up in {client.company}&apos;s portal.
+          </p>
+        )}
+
+        {groupedDocs.map(({ category, items }) => (
+          <div key={category} className="flex flex-col gap-1">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-2">
+              {DOCUMENT_CATEGORY_LABELS[category]}
+            </p>
+            {items.map((d) => (
+              <div
+                key={d.id}
+                className="group flex items-center gap-2 rounded-md border border-border-subtle px-2.5 py-1.5"
+              >
+                <a
+                  href={d.url ?? "#"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex min-w-0 flex-1 items-center gap-1.5 text-[13px] hover:underline"
+                >
+                  <span className="min-w-0 truncate">{d.name}</span>
+                  <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" />
+                </a>
+                <span className="shrink-0 text-[11px] text-muted-2">
+                  {formatDate(d.created_at)}
+                </span>
+                <button
+                  type="button"
+                  aria-label={`Delete ${d.name}`}
+                  onClick={() => deleteDocument(d.id)}
+                  className="shrink-0 rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-white/5 hover:text-danger group-hover:opacity-100"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        ))}
       </div>
 
       {/* Notes */}

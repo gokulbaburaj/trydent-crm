@@ -12,6 +12,7 @@ import {
   Eye,
   FileText,
   FolderKanban,
+  FolderOpen,
   LogOut,
   Megaphone,
   MessageSquare,
@@ -31,6 +32,7 @@ import { formatDate } from "@/lib/format";
 import { useCurrency } from "@/lib/currency";
 import type {
   Client,
+  ClientDocument,
   CurrencyCode,
   Deal,
   ClientPortal,
@@ -41,6 +43,7 @@ import type {
   TaskComment,
   TaskLink,
 } from "@/lib/types";
+import { DOCUMENT_CATEGORIES, DOCUMENT_CATEGORY_LABELS } from "@/lib/types";
 
 export default function ClientPortalPage() {
   return (
@@ -72,6 +75,7 @@ function PortalInner() {
   const [comments, setComments] = useState<TaskComment[]>([]);
   const [messages, setMessages] = useState<PortalMessage[]>([]);
   const [msgDraft, setMsgDraft] = useState("");
+  const [documents, setDocuments] = useState<ClientDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [openProject, setOpenProject] = useState<string | null>(null);
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
@@ -86,8 +90,17 @@ function PortalInner() {
         return;
       }
 
-      const [clientRes, dealsRes, portalRes, projectsRes, tasksRes, updatesRes, commentsRes, messagesRes] =
-        await Promise.all([
+      const [
+        clientRes,
+        dealsRes,
+        portalRes,
+        projectsRes,
+        tasksRes,
+        updatesRes,
+        commentsRes,
+        messagesRes,
+        documentsRes,
+      ] = await Promise.all([
           supabase.from("clients").select("*").eq("id", clientId).single(),
           supabase.from("deals").select("*").eq("client_id", clientId),
           supabase.from("client_portals").select("*").eq("client_id", clientId).maybeSingle(),
@@ -104,6 +117,11 @@ function PortalInner() {
             .select("*")
             .eq("client_id", clientId)
             .order("created_at", { ascending: true }),
+          supabase
+            .from("client_documents")
+            .select("*")
+            .eq("client_id", clientId)
+            .order("created_at", { ascending: false }),
         ]);
 
       setClient((clientRes.data as Client) ?? null);
@@ -114,6 +132,7 @@ function PortalInner() {
       setUpdates((updatesRes.data as PortalUpdate[]) ?? []);
       setComments((commentsRes.data as TaskComment[]) ?? []);
       setMessages((messagesRes.data as PortalMessage[]) ?? []);
+      setDocuments((documentsRes.data as ClientDocument[]) ?? []);
       setLoading(false);
 
       // Record that the client opened their portal (staff previews don't count).
@@ -174,6 +193,16 @@ function PortalInner() {
     }
     return out;
   }, [clientTasks]);
+
+  /** Documents in a stable category order, empty categories omitted. */
+  const groupedDocs = useMemo(
+    () =>
+      DOCUMENT_CATEGORIES.map((c) => ({
+        category: c,
+        items: documents.filter((d) => d.category === c),
+      })).filter((g) => g.items.length > 0),
+    [documents]
+  );
 
   const awaitingApproval = useMemo(
     () => clientTasks.filter((t) => t.status === "Done" && !t.approved_at),
@@ -516,6 +545,44 @@ function PortalInner() {
                       </div>
                       <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary" />
                     </a>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* ============ DOCUMENTS ============ */}
+            {groupedDocs.length > 0 && (
+              <section>
+                <SectionTitle icon={FolderOpen}>Documents</SectionTitle>
+                <div className="flex flex-col gap-4">
+                  {groupedDocs.map(({ category, items }) => (
+                    <div key={category}>
+                      <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-2">
+                        {DOCUMENT_CATEGORY_LABELS[category]}
+                      </p>
+                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        {items.map((d) => (
+                          <a
+                            key={d.id}
+                            href={d.url ?? "#"}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="group flex items-center gap-3 rounded-xl border border-border bg-surface p-3.5 shadow-sm transition-colors hover:border-primary/30 hover:bg-white/[0.04]"
+                          >
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/15 text-primary">
+                              <FileText className="h-4 w-4" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-medium">{d.name}</p>
+                              <p className="truncate text-xs text-muted-foreground">
+                                Added {formatDate(d.created_at)}
+                              </p>
+                            </div>
+                            <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary" />
+                          </a>
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </section>
