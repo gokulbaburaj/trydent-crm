@@ -4,6 +4,15 @@ import { useMemo } from "react";
 import { ArrowUpRight, ListChecks, Target, UserPlus, UsersRound } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { TableSkeleton } from "@/components/ui/Skeletons";
+import { PieChart } from "@/components/charts/pie-chart";
+import { PieSlice } from "@/components/charts/pie-slice";
+import { PieCenter } from "@/components/charts/pie-center";
+import { BarChart } from "@/components/charts/bar-chart";
+import { Bar } from "@/components/charts/bar";
+import { Grid } from "@/components/charts/grid";
+import { BarXAxis } from "@/components/charts/bar-x-axis";
+import { ChartTooltip } from "@/components/charts/tooltip/chart-tooltip";
+import { cn } from "@/lib/utils";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { useAuth } from "@/lib/useAuth";
 import { useTabs } from "@/lib/tabs";
@@ -21,6 +30,16 @@ import type {
   Profile,
   ProjectTask,
 } from "@/lib/types";
+import { APPLICANT_STAGES, APPLICANT_STAGE_LABELS, GOAL_STATUS_LABELS } from "@/lib/types";
+
+const CHART_COLORS = [
+  "var(--primary)",
+  "#4ea7e0",
+  "#d9a53f",
+  "#d95c8a",
+  "#4cb782",
+  "#eb5757",
+];
 
 /**
  * The organisation hub — one sidebar entry standing in for Goals, Recruiting,
@@ -139,10 +158,70 @@ export default function OrganizationPage() {
 
   const visible = cards.filter((c) => canAccess(profile?.role, c.page));
 
+  /** Hiring funnel. Rejected is excluded — it's an outcome, not a stage, and
+   *  including it makes the funnel read like a chart of failure. */
+  const funnelData = useMemo(
+    () =>
+      APPLICANT_STAGES.filter((s) => s !== "rejected").map((stage) => ({
+        stage: APPLICANT_STAGE_LABELS[stage],
+        count: applicants.filter((a) => a.stage === stage).length,
+      })),
+    [applicants]
+  );
+
+  const teamSplit = useMemo(() => {
+    const staff = profiles.filter((p) => p.role !== "client");
+    const counts = new Map<string, number>();
+    for (const p of staff) {
+      const key = p.team?.trim() || "Unassigned";
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    return Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([label, value], i) => ({
+        label,
+        value,
+        color: CHART_COLORS[i % CHART_COLORS.length],
+      }));
+  }, [profiles]);
+
+  const goalProgress = useMemo(
+    () =>
+      goals
+        .filter((g) => g.status !== "achieved")
+        .map((g) => ({
+          goal: g,
+          pct: goalPct(keyResults.filter((k) => k.goal_id === g.id), g, src),
+        })),
+    [goals, keyResults, src]
+  );
+
+  const onboardingSplit = useMemo(() => {
+    const done = onboarding.filter((t) => t.done).length;
+    const open = onboarding.length - done;
+    return [
+      { label: "Done", value: done, color: "var(--success)" },
+      { label: "Open", value: open, color: "var(--primary)" },
+    ].filter((d) => d.value > 0);
+  }, [onboarding]);
+
+  const funnelTooltip = ({ point }: { point: Record<string, unknown> }) => (
+    <div>
+      <p className="text-[11px] text-muted-foreground">{String(point.stage)}</p>
+      <p className="mt-0.5 text-[13px] font-medium tabular-nums text-foreground">
+        {Number(point.count)} applicant{Number(point.count) === 1 ? "" : "s"}
+      </p>
+    </div>
+  );
+
+  const showGoals = canAccess(profile?.role, "goals");
+  const showRecruiting = canAccess(profile?.role, "recruiting");
+  const showTeam = canAccess(profile?.role, "team");
+
   if (loading) return <TableSkeleton rows={4} />;
 
   return (
-    <div className="flex max-w-4xl flex-col gap-5">
+    <div className="flex max-w-5xl flex-col gap-5">
       <div>
         <h2 className="text-xl font-semibold tracking-tight">Organisation</h2>
         <p className="mt-0.5 text-sm text-muted-foreground">
@@ -182,6 +261,156 @@ export default function OrganizationPage() {
           </p>
         </Card>
       )}
+
+      {/* ============ VISUALISATIONS ============ */}
+      {showGoals && (
+        <Card className="rounded-xl shadow-sm">
+          <h3 className="text-sm font-semibold">Goal progress</h3>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Active objectives, rolled up from their key results.
+          </p>
+          {goalProgress.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">
+              No active goals.
+            </p>
+          ) : (
+            <div className="mt-3.5 flex flex-col gap-3">
+              {goalProgress.map(({ goal, pct }) => (
+                <div key={goal.id}>
+                  <div className="flex items-center gap-2 text-[13px]">
+                    <span className="min-w-0 flex-1 truncate">{goal.objective}</span>
+                    <span className="shrink-0 text-[11px] text-muted-2">
+                      {GOAL_STATUS_LABELS[goal.status]}
+                    </span>
+                    <span className="w-10 shrink-0 text-right text-xs font-medium tabular-nums">
+                      {pct}%
+                    </span>
+                  </div>
+                  <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-white/10">
+                    <div
+                      className={cn(
+                        "h-full rounded-full transition-all",
+                        pct >= 100 ? "bg-success" : "bg-primary"
+                      )}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      )}
+
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        {showRecruiting && (
+          <Card className="flex flex-col rounded-xl shadow-sm">
+            <h3 className="text-sm font-semibold">Hiring funnel</h3>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Where applicants sit right now. Rejected is excluded.
+            </p>
+            {applicants.length === 0 ? (
+              <p className="flex flex-1 items-center justify-center py-8 text-sm text-muted-foreground">
+                No applicants yet.
+              </p>
+            ) : (
+              <div className="mt-3">
+                <BarChart
+                  data={funnelData}
+                  xDataKey="stage"
+                  aspectRatio="5 / 3"
+                  barGap={0.3}
+                  margin={{ top: 20, right: 8, bottom: 34, left: 8 }}
+                >
+                  <Grid horizontal vertical={false} />
+                  <Bar dataKey="count" fill="var(--primary)" />
+                  <BarXAxis />
+                  <ChartTooltip content={funnelTooltip} />
+                </BarChart>
+              </div>
+            )}
+          </Card>
+        )}
+
+        {showTeam && (
+          <Card className="flex flex-col rounded-xl shadow-sm">
+            <h3 className="text-sm font-semibold">Team composition</h3>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Headcount split across teams.
+            </p>
+            {teamSplit.length === 0 ? (
+              <p className="flex flex-1 items-center justify-center py-8 text-sm text-muted-foreground">
+                No team members yet.
+              </p>
+            ) : (
+              <>
+                <div className="flex flex-1 items-center justify-center py-3">
+                  <PieChart
+                    data={teamSplit}
+                    size={180}
+                    innerRadius={52}
+                    padAngle={0.05}
+                    cornerRadius={6}
+                  >
+                    {teamSplit.map((s, i) => (
+                      <PieSlice key={s.label} index={i} />
+                    ))}
+                    <PieCenter defaultLabel="people" />
+                  </PieChart>
+                </div>
+                <div className="flex flex-wrap gap-x-3 gap-y-1.5">
+                  {teamSplit.map((s) => (
+                    <div
+                      key={s.label}
+                      className="flex items-center gap-1.5 text-xs text-muted-foreground"
+                    >
+                      <span
+                        className="h-2 w-2 rounded-full"
+                        style={{ background: s.color }}
+                      />
+                      {s.label}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </Card>
+        )}
+
+        {showRecruiting && onboardingSplit.length > 0 && (
+          <Card className="flex flex-col rounded-xl shadow-sm">
+            <h3 className="text-sm font-semibold">Onboarding</h3>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Checklist steps across everyone still in progress.
+            </p>
+            <div className="flex flex-1 items-center justify-center py-3">
+              <PieChart
+                data={onboardingSplit}
+                size={180}
+                innerRadius={52}
+                padAngle={0.05}
+                cornerRadius={6}
+              >
+                {onboardingSplit.map((s, i) => (
+                  <PieSlice key={s.label} index={i} />
+                ))}
+                <PieCenter defaultLabel="steps" />
+              </PieChart>
+            </div>
+            <div className="flex flex-wrap gap-x-3 gap-y-1.5">
+              {onboardingSplit.map((s) => (
+                <div
+                  key={s.label}
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground"
+                >
+                  <span className="h-2 w-2 rounded-full" style={{ background: s.color }} />
+                  {s.label}
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }
