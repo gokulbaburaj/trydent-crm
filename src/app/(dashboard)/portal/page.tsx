@@ -70,9 +70,14 @@ import {
   effectiveInvoiceStatus,
 } from "@/lib/types";
 
+/** Task progress is about the work items themselves. Dates get their own
+ *  section below, so Calendar and Timeline live there instead. */
 const PORTAL_VIEWS: { id: PortalView; label: string; icon: LucideIcon }[] = [
   { id: "list", label: "List", icon: ListChecks },
   { id: "board", label: "Board", icon: Columns3 },
+];
+
+const SCHEDULE_VIEWS: { id: "calendar" | "timeline"; label: string; icon: LucideIcon }[] = [
   { id: "calendar", label: "Calendar", icon: CalendarDays },
   { id: "timeline", label: "Timeline", icon: GanttChartSquare },
 ];
@@ -126,6 +131,7 @@ function PortalInner() {
   const [openProject, setOpenProject] = useState<string | null>(null);
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
   const [view, setView] = useState<PortalView>("list");
+  const [scheduleView, setScheduleView] = useState<"calendar" | "timeline">("calendar");
   const [draft, setDraft] = useState("");
 
   useEffect(() => {
@@ -520,10 +526,16 @@ function PortalInner() {
                       <button
                         key={p.id}
                         onClick={() => {
+                          // Force List back on — the expandable project rows only
+                          // exist there, so clicking a card while Board was
+                          // selected used to look like nothing happened.
+                          setView("list");
                           setOpenProject(p.id);
-                          document
-                            .getElementById("task-progress")
-                            ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                          requestAnimationFrame(() =>
+                            document
+                              .getElementById("task-progress")
+                              ?.scrollIntoView({ behavior: "smooth", block: "start" })
+                          );
                         }}
                         className="group rounded-xl border border-border bg-surface p-4 text-left shadow-sm transition-colors hover:border-primary/30 hover:bg-white/[0.04]"
                       >
@@ -594,22 +606,6 @@ function PortalInner() {
 
                 {view === "board" && (
                   <PortalBoard
-                    tasks={clientTasks}
-                    projects={projects}
-                    projectName={projectName}
-                    teamById={teamById}
-                  />
-                )}
-                {view === "calendar" && (
-                  <PortalCalendar
-                    tasks={clientTasks}
-                    projects={projects}
-                    projectName={projectName}
-                    teamById={teamById}
-                  />
-                )}
-                {view === "timeline" && (
-                  <PortalTimeline
                     tasks={clientTasks}
                     projects={projects}
                     projectName={projectName}
@@ -710,6 +706,27 @@ function PortalInner() {
                                       </span>
                                     )}
                                   </div>
+                                  {/* Links attached to this task, in context.
+                                      The Deliverables section only lists finished
+                                      work, so without this a client had no way to
+                                      reach a link on an in-progress task. */}
+                                  {(Array.isArray(t.links) ? t.links : []).length > 0 && (
+                                    <div className="flex flex-wrap gap-1.5 px-9 pb-2">
+                                      {(t.links as TaskLink[]).map((l, li) => (
+                                        <a
+                                          key={`${t.id}-link-${li}`}
+                                          href={l.url}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          className="flex items-center gap-1 rounded-md border border-border-subtle bg-white/[0.03] px-2 py-0.5 text-[11px] text-foreground-secondary transition-colors hover:border-primary/30 hover:text-primary"
+                                        >
+                                          <FileText className="h-3 w-3" />
+                                          <span className="max-w-[14rem] truncate">{l.title}</span>
+                                          <ArrowUpRight className="h-2.5 w-2.5" />
+                                        </a>
+                                      ))}
+                                    </div>
+                                  )}
                                   {expanded && (
                                     <div className="flex flex-col gap-2 px-9 pb-3">
                                       {tComments.map((c) => (
@@ -757,6 +774,51 @@ function PortalInner() {
                     );
                   })}
                 </div>
+              </section>
+            )}
+
+            {/* ============ CALENDAR ============ */}
+            {projects.length > 0 && (
+              <section>
+                <div className="mb-2.5 flex flex-wrap items-center gap-2">
+                  <SectionTitle icon={CalendarDays} className="mb-0">
+                    Calendar
+                  </SectionTitle>
+                  <div className="ml-auto flex items-center gap-0.5 rounded-lg border border-border bg-surface p-0.5">
+                    {SCHEDULE_VIEWS.map(({ id, label, icon: Icon }) => (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => setScheduleView(id)}
+                        className={cn(
+                          "flex items-center gap-1.5 rounded-md px-2 py-1 text-xs transition-colors",
+                          scheduleView === id
+                            ? "bg-white/10 font-medium text-foreground"
+                            : "text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        <Icon className="h-3.5 w-3.5" />
+                        <span className="hidden sm:inline">{label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {scheduleView === "calendar" ? (
+                  <PortalCalendar
+                    tasks={clientTasks}
+                    projects={projects}
+                    projectName={projectName}
+                    teamById={teamById}
+                  />
+                ) : (
+                  <PortalTimeline
+                    tasks={clientTasks}
+                    projects={projects}
+                    projectName={projectName}
+                    teamById={teamById}
+                  />
+                )}
               </section>
             )}
 
