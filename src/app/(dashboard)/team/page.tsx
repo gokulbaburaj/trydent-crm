@@ -19,6 +19,7 @@ import { Popover, MenuItem, MenuLabel, MenuSeparator } from "@/components/ui/Pop
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/useAuth";
+import { canSeeContractorPay } from "@/lib/permissions";
 import { useCurrency } from "@/lib/currency";
 import { useTabs } from "@/lib/tabs";
 import { cn } from "@/lib/utils";
@@ -347,13 +348,16 @@ function TeamPageInner() {
                     >
                       <Eye className="h-3.5 w-3.5" />
                     </button>
-                    <button
-                      onClick={() => setPayFor(p)}
-                      title="Payment plan"
-                      className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
-                    >
-                      <CreditCard className="h-3.5 w-3.5" />
-                    </button>
+                    {/* What a contractor is paid is admin-only. */}
+                    {canSeeContractorPay(me?.role) && (
+                      <button
+                        onClick={() => setPayFor(p)}
+                        title="Payment plan"
+                        className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+                      >
+                        <CreditCard className="h-3.5 w-3.5" />
+                      </button>
+                    )}
                   </>
                 )}
                 {p.id === me?.id ? (

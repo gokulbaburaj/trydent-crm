@@ -12,6 +12,7 @@ import { Dropdown } from "@/components/ui/Dropdown";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { TableSkeleton } from "@/components/ui/Skeletons";
+import { RequireAccess } from "@/components/RequireAccess";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/useAuth";
@@ -56,6 +57,14 @@ function currentPeriod() {
 }
 
 export default function GoalsPage() {
+  return (
+    <RequireAccess page="goals">
+      <GoalsInner />
+    </RequireAccess>
+  );
+}
+
+function GoalsInner() {
   const { profile } = useAuth();
   const { format: formatCurrency, toBase, base } = useCurrency();
 

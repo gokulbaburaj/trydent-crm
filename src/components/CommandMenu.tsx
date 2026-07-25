@@ -9,12 +9,14 @@ import {
   LayoutDashboard,
   ListChecks,
   Palette,
+  Building2,
   Settings,
   Target,
   UserPlus,
   Users,
   UsersRound,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import {
   CommandDialog,
   CommandEmpty,
@@ -27,6 +29,8 @@ import {
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { useTabs } from "@/lib/tabs";
 import { ACCENT_PRESETS, setAccent } from "@/lib/theme";
+import { useAuth } from "@/lib/useAuth";
+import { canAccess, type PageKey } from "@/lib/permissions";
 import type { Client, Deal, Project } from "@/lib/types";
 
 export const OPEN_COMMAND_MENU = "trydent-open-command-menu";
@@ -36,23 +40,25 @@ export function openCommandMenu() {
   window.dispatchEvent(new Event(OPEN_COMMAND_MENU));
 }
 
-const PAGES = [
-  { href: "/my-work", label: "My Work", icon: ListChecks },
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/clients", label: "Clients", icon: Users },
-  { href: "/pipeline", label: "Pipeline", icon: GitBranch },
-  { href: "/projects", label: "Projects", icon: FolderKanban },
-  { href: "/schedule", label: "Schedule", icon: Calendar },
-  { href: "/goals", label: "Goals", icon: Target },
-  { href: "/recruiting", label: "Recruiting", icon: UserPlus },
-  { href: "/team", label: "Team", icon: UsersRound },
-  { href: "/settings", label: "Settings", icon: Settings },
+const PAGES: { href: string; label: string; icon: LucideIcon; page: PageKey }[] = [
+  { href: "/my-work", label: "My Work", icon: ListChecks, page: "my-work" },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, page: "dashboard" },
+  { href: "/clients", label: "Clients", icon: Users, page: "clients" },
+  { href: "/pipeline", label: "Pipeline", icon: GitBranch, page: "pipeline" },
+  { href: "/projects", label: "Projects", icon: FolderKanban, page: "projects" },
+  { href: "/schedule", label: "Schedule", icon: Calendar, page: "schedule" },
+  { href: "/organization", label: "Organisation", icon: Building2, page: "organization" },
+  { href: "/goals", label: "Goals", icon: Target, page: "goals" },
+  { href: "/recruiting", label: "Recruiting", icon: UserPlus, page: "recruiting" },
+  { href: "/team", label: "Team", icon: UsersRound, page: "team" },
+  { href: "/settings", label: "Settings", icon: Settings, page: "settings" },
 ];
 
 /** ⌘K palette — real cmdk via shadcn: fuzzy matching + full keyboard model. */
 export function CommandMenu() {
   const router = useRouter();
   const { openInNewTab } = useTabs();
+  const { profile } = useAuth();
   const [open, setOpen] = useState(false);
 
   const { rows: clients } = useSupabaseTable<Client>("clients");
@@ -92,7 +98,7 @@ export function CommandMenu() {
         <CommandEmpty>No results found.</CommandEmpty>
 
         <CommandGroup heading="Pages">
-          {PAGES.map((p) => (
+          {PAGES.filter((p) => canAccess(profile?.role, p.page)).map((p) => (
             <CommandItem key={p.href} value={`page ${p.label}`} onSelect={() => go(p.href)}>
               <p.icon />
               {p.label}

@@ -11,14 +11,12 @@ import {
   FolderKanban,
   Calendar,
   UsersRound,
+  Building2,
   Settings,
-  Target,
-  UserPlus,
   ChevronDown,
   ChevronRight,
   Search,
   SquarePen,
-  Building2,
   Plus,
 } from "lucide-react";
 import {
@@ -43,31 +41,33 @@ import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { useAuth } from "@/lib/useAuth";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "@/components/Toaster";
+import { canAccess, type PageKey } from "@/lib/permissions";
 import type { Profile, Team } from "@/lib/types";
 
 interface NavItem {
   href: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
+  page: PageKey;
 }
 
 const TOP: NavItem[] = [
-  { href: "/my-work", label: "My Work", icon: ListChecks },
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/my-work", label: "My Work", icon: ListChecks, page: "my-work" },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, page: "dashboard" },
 ];
 
 const WORKSPACE: NavItem[] = [
-  { href: "/clients", label: "Clients", icon: Users },
-  { href: "/pipeline", label: "Pipeline", icon: GitBranch },
-  { href: "/projects", label: "Projects", icon: FolderKanban },
-  { href: "/schedule", label: "Schedule", icon: Calendar },
+  { href: "/clients", label: "Clients", icon: Users, page: "clients" },
+  { href: "/pipeline", label: "Pipeline", icon: GitBranch, page: "pipeline" },
+  { href: "/projects", label: "Projects", icon: FolderKanban, page: "projects" },
+  { href: "/schedule", label: "Schedule", icon: Calendar, page: "schedule" },
 ];
 
+/** Goals, Recruiting and Team moved onto the /organization hub — one entry
+ *  instead of four keeps the sidebar readable as the app grows. */
 const ORGANIZATION: NavItem[] = [
-  { href: "/goals", label: "Goals", icon: Target },
-  { href: "/recruiting", label: "Recruiting", icon: UserPlus },
-  { href: "/team", label: "Team", icon: UsersRound },
-  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/organization", label: "Organisation", icon: Building2, page: "organization" },
+  { href: "/settings", label: "Settings", icon: Settings, page: "settings" },
 ];
 
 export function Sidebar({
@@ -84,6 +84,8 @@ export function Sidebar({
 
   const { profile: me } = useAuth();
   const isAdmin = me?.role === "admin";
+  /** UI shaping only — RLS is what actually protects the data. */
+  const allowed = (items: NavItem[]) => items.filter((i) => canAccess(me?.role, i.page));
   const { rows: profiles } = useSupabaseTable<Profile>("profiles");
   const { rows: teamRows, setRows: setTeamRows } = useSupabaseTable<Team>("teams", {
     column: "name",
@@ -153,7 +155,7 @@ export function Sidebar({
       <nav className="flex flex-1 flex-col gap-1 px-2 pb-4">
         {/* Pinned top items — not collapsible, not reorderable */}
         <div className="flex flex-col gap-px">
-          {TOP.map((item) => (
+          {allowed(TOP).map((item) => (
             <NavLink key={item.href} item={item} active={!!isActive(item.href)} onNavigate={onNavigate} />
           ))}
         </div>
@@ -161,7 +163,7 @@ export function Sidebar({
         <Section
           id="workspace"
           label="Workspace"
-          items={WORKSPACE}
+          items={allowed(WORKSPACE)}
           state={state}
           onToggle={toggleSection}
           onReorder={setOrder}
@@ -244,7 +246,7 @@ export function Sidebar({
         <Section
           id="organization"
           label="Organization"
-          items={ORGANIZATION}
+          items={allowed(ORGANIZATION)}
           state={state}
           onToggle={toggleSection}
           onReorder={setOrder}

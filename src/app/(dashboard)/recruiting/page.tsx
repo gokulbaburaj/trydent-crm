@@ -12,6 +12,7 @@ import { Dropdown } from "@/components/ui/Dropdown";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { TableSkeleton } from "@/components/ui/Skeletons";
 import { KanbanBoard, type KanbanColumn } from "@/components/KanbanBoard";
+import { RequireAccess } from "@/components/RequireAccess";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -34,6 +35,14 @@ const COLUMNS: KanbanColumn[] = APPLICANT_STAGES.map((s) => ({
 }));
 
 export default function RecruitingPage() {
+  return (
+    <RequireAccess page="recruiting">
+      <RecruitingInner />
+    </RequireAccess>
+  );
+}
+
+function RecruitingInner() {
   const [tab, setTab] = useState<Tab>("applicants");
 
   return (
