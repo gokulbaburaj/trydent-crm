@@ -5,14 +5,18 @@ import { useSearchParams } from "next/navigation";
 import {
   ArrowUpRight,
   CalendarClock,
+  CalendarDays,
   CheckCheck,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
+  Columns3,
   Eye,
   FileText,
   FolderKanban,
   FolderOpen,
+  GanttChartSquare,
+  ListChecks,
   LogOut,
   Megaphone,
   MessageSquare,
@@ -20,6 +24,13 @@ import {
   Sparkles,
   Wallet,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import {
+  PortalBoard,
+  PortalCalendar,
+  PortalTimeline,
+  type PortalView,
+} from "@/components/portal/PortalTaskViews";
 import { formatDistanceToNow, parseISO, startOfDay } from "date-fns";
 import { Card } from "@/components/ui/Card";
 import { Badge, statusTone } from "@/components/ui/Badge";
@@ -50,6 +61,13 @@ import {
   INVOICE_STATUS_LABELS,
   effectiveInvoiceStatus,
 } from "@/lib/types";
+
+const PORTAL_VIEWS: { id: PortalView; label: string; icon: LucideIcon }[] = [
+  { id: "list", label: "List", icon: ListChecks },
+  { id: "board", label: "Board", icon: Columns3 },
+  { id: "calendar", label: "Calendar", icon: CalendarDays },
+  { id: "timeline", label: "Timeline", icon: GanttChartSquare },
+];
 
 const PORTAL_INVOICE_TONES: Record<InvoiceDisplayStatus, "gray" | "blue" | "green" | "red"> = {
   draft: "gray",
@@ -91,6 +109,7 @@ function PortalInner() {
   const [loading, setLoading] = useState(true);
   const [openProject, setOpenProject] = useState<string | null>(null);
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
+  const [view, setView] = useState<PortalView>("list");
   const [draft, setDraft] = useState("");
 
   useEffect(() => {
@@ -197,9 +216,12 @@ function PortalInner() {
     return dates[0] ?? null;
   }, [projects, clientTasks]);
 
+  /** Finished work only. A link on an in-progress task isn't a deliverable yet,
+   *  and showing it invites the client to open something half-built. */
   const deliverables = useMemo(() => {
     const out: { task: ProjectTask; link: TaskLink }[] = [];
     for (const t of clientTasks) {
+      if (t.status !== "Done") continue;
       const links = Array.isArray(t.links) ? t.links : [];
       for (const l of links) out.push({ task: t, link: l });
     }
@@ -431,8 +453,58 @@ function PortalInner() {
             {/* ============ TASK PROGRESS ============ */}
             {projects.length > 0 && (
               <section id="task-progress" className="scroll-mt-20">
-                <SectionTitle icon={CheckCircle2}>Task progress</SectionTitle>
-                <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
+                <div className="mb-2.5 flex flex-wrap items-center gap-2">
+                  <SectionTitle icon={CheckCircle2} className="mb-0">
+                    Task progress
+                  </SectionTitle>
+                  <div className="ml-auto flex items-center gap-0.5 rounded-lg border border-border bg-surface p-0.5">
+                    {PORTAL_VIEWS.map(({ id, label, icon: Icon }) => (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => setView(id)}
+                        className={cn(
+                          "flex items-center gap-1.5 rounded-md px-2 py-1 text-xs transition-colors",
+                          view === id
+                            ? "bg-white/10 font-medium text-foreground"
+                            : "text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        <Icon className="h-3.5 w-3.5" />
+                        <span className="hidden sm:inline">{label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {view === "board" && (
+                  <PortalBoard
+                    tasks={clientTasks}
+                    projects={projects}
+                    projectName={projectName}
+                  />
+                )}
+                {view === "calendar" && (
+                  <PortalCalendar
+                    tasks={clientTasks}
+                    projects={projects}
+                    projectName={projectName}
+                  />
+                )}
+                {view === "timeline" && (
+                  <PortalTimeline
+                    tasks={clientTasks}
+                    projects={projects}
+                    projectName={projectName}
+                  />
+                )}
+
+                <div
+                  className={cn(
+                    "overflow-hidden rounded-xl border border-border bg-surface shadow-sm",
+                    view !== "list" && "hidden"
+                  )}
+                >
                   {projects.map((p) => {
                     const pts = tasksOf.get(p.id) ?? [];
                     const open = openProject === p.id;
@@ -873,12 +945,14 @@ function Stat({
 function SectionTitle({
   icon: Icon,
   children,
+  className,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   children: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <h2 className="mb-3 flex items-center gap-2 text-[15px] font-semibold">
+    <h2 className={cn("mb-3 flex items-center gap-2 text-[15px] font-semibold", className)}>
       <Icon className="h-4 w-4 text-muted-foreground" />
       {children}
     </h2>
