@@ -26,9 +26,10 @@ export function Avatar({
 }: {
   name: string;
   url?: string | null;
-  size?: "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg";
 }) {
   const sizeClasses = {
+    xs: "h-5 w-5 text-[8px]",
     sm: "h-7 w-7 text-[10px]",
     md: "h-9 w-9 text-xs",
     lg: "h-12 w-12 text-sm",
@@ -40,7 +41,7 @@ export function Avatar({
       <img
         src={url}
         alt={name}
-        className={cn("rounded-full object-cover", sizeClasses)}
+        className={cn("shrink-0 rounded-full object-cover", sizeClasses)}
       />
     );
   }
@@ -54,6 +55,47 @@ export function Avatar({
       style={{ background: gradientFor(name) }}
     >
       {initials(name)}
+    </div>
+  );
+}
+
+/** Overlapping avatars for "who's on this". Spills into a +N chip past `max`. */
+export function AvatarStack({
+  people,
+  size = "xs",
+  max = 4,
+}: {
+  people: { id: string; full_name: string; avatar_url?: string | null }[];
+  size?: "xs" | "sm";
+  max?: number;
+}) {
+  if (people.length === 0) return null;
+  const shown = people.slice(0, max);
+  const extra = people.length - shown.length;
+  const chip = size === "xs" ? "h-5 min-w-5 text-[8px]" : "h-7 min-w-7 text-[10px]";
+
+  return (
+    <div className="flex shrink-0 items-center -space-x-1.5">
+      {shown.map((p) => (
+        <div
+          key={p.id}
+          title={p.full_name}
+          className="rounded-full ring-2 ring-surface"
+        >
+          <Avatar name={p.full_name} url={p.avatar_url} size={size} />
+        </div>
+      ))}
+      {extra > 0 && (
+        <div
+          title={people.slice(max).map((p) => p.full_name).join(", ")}
+          className={cn(
+            "flex items-center justify-center rounded-full bg-white/10 px-1 font-medium text-foreground-secondary ring-2 ring-surface",
+            chip
+          )}
+        >
+          +{extra}
+        </div>
+      )}
     </div>
   );
 }

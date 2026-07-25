@@ -295,6 +295,15 @@ export function effectiveInvoiceStatus(invoice: Invoice): InvoiceDisplayStatus {
   return due.getTime() < Date.now() ? "overdue" : "sent";
 }
 
+/** Read-only projection of staff profiles, safe to expose to portal clients.
+ *  Backed by the `team_directory` view — never carries email. */
+export interface TeamMember {
+  id: string;
+  full_name: string;
+  avatar_url: string | null;
+  role: UserRole;
+}
+
 export interface Notification {
   id: string;
   recipient_id: string;
@@ -354,6 +363,7 @@ export interface Database {
       portal_messages: { Row: PortalMessage; Insert: Partial<PortalMessage>; Update: Partial<PortalMessage> };
       client_documents: { Row: ClientDocument; Insert: Partial<ClientDocument>; Update: Partial<ClientDocument> };
       invoices: { Row: Invoice; Insert: Partial<Invoice>; Update: Partial<Invoice> };
+      team_directory: { Row: TeamMember; Insert: never; Update: never };
       notifications: { Row: Notification; Insert: Partial<Notification>; Update: Partial<Notification> };
     };
   };

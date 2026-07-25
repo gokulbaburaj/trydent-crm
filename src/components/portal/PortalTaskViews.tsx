@@ -17,7 +17,8 @@ import { CheckCheck, ChevronLeft, ChevronRight } from "lucide-react";
 import { Badge, statusTone } from "@/components/ui/Badge";
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/format";
-import type { Project, ProjectTask, TaskStatus } from "@/lib/types";
+import { Avatar } from "@/components/ui/Avatar";
+import type { Project, ProjectTask, TaskStatus, TeamMember } from "@/lib/types";
 
 /**
  * Read-only task views for the client portal: board, calendar, timeline.
@@ -38,11 +39,13 @@ interface ViewProps {
   tasks: ProjectTask[];
   projects: Project[];
   projectName: (id: string) => string;
+  /** Staff lookup from the `team_directory` view — names and avatars only. */
+  teamById: Map<string, TeamMember>;
 }
 
 /* ============================= BOARD ============================= */
 
-export function PortalBoard({ tasks, projectName }: ViewProps) {
+export function PortalBoard({ tasks, projectName, teamById }: ViewProps) {
   const columns = useMemo(
     () =>
       BOARD_COLUMNS.map((status) => ({
@@ -77,10 +80,21 @@ export function PortalBoard({ tasks, projectName }: ViewProps) {
                     <CheckCheck className="mt-0.5 h-3 w-3 shrink-0 text-success" />
                   )}
                 </p>
-                <p className="mt-1.5 truncate text-[11px] text-muted-foreground">
-                  {projectName(t.project_id)}
-                  {t.due_date ? ` · ${formatDate(t.due_date)}` : ""}
-                </p>
+                <div className="mt-1.5 flex items-center gap-2">
+                  <p className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">
+                    {projectName(t.project_id)}
+                    {t.due_date ? ` · ${formatDate(t.due_date)}` : ""}
+                  </p>
+                  {t.assigned_to && teamById.get(t.assigned_to) && (
+                    <div title={teamById.get(t.assigned_to)!.full_name}>
+                      <Avatar
+                        name={teamById.get(t.assigned_to)!.full_name}
+                        url={teamById.get(t.assigned_to)!.avatar_url}
+                        size="xs"
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>

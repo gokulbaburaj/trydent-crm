@@ -22,6 +22,7 @@ import {
   MessageSquare,
   Send,
   Sparkles,
+  Users,
   Wallet,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -34,6 +35,7 @@ import {
 import { formatDistanceToNow, parseISO, startOfDay } from "date-fns";
 import { Card } from "@/components/ui/Card";
 import { Badge, statusTone } from "@/components/ui/Badge";
+import { Avatar, AvatarStack } from "@/components/ui/Avatar";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/useAuth";
@@ -54,6 +56,7 @@ import type {
   ProjectTask,
   TaskComment,
   TaskLink,
+  TeamMember,
 } from "@/lib/types";
 import {
   DOCUMENT_CATEGORIES,
@@ -106,6 +109,7 @@ function PortalInner() {
   const [msgDraft, setMsgDraft] = useState("");
   const [documents, setDocuments] = useState<ClientDocument[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [team, setTeam] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [openProject, setOpenProject] = useState<string | null>(null);
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
@@ -131,6 +135,7 @@ function PortalInner() {
         messagesRes,
         documentsRes,
         invoicesRes,
+        teamRes,
       ] = await Promise.all([
           supabase.from("clients").select("*").eq("id", clientId).single(),
           supabase.from("client_portals").select("*").eq("client_id", clientId).maybeSingle(),
@@ -157,6 +162,7 @@ function PortalInner() {
             .select("*")
             .eq("client_id", clientId)
             .order("issue_date", { ascending: false, nullsFirst: false }),
+          supabase.from("team_directory").select("*"),
         ]);
 
       setClient((clientRes.data as Client) ?? null);
@@ -168,6 +174,7 @@ function PortalInner() {
       setMessages((messagesRes.data as PortalMessage[]) ?? []);
       setDocuments((documentsRes.data as ClientDocument[]) ?? []);
       setInvoices((invoicesRes.data as Invoice[]) ?? []);
+      setTeam((teamRes.data as TeamMember[]) ?? []);
       setLoading(false);
 
       // Record that the client opened their portal (staff previews don't count).
@@ -227,6 +234,41 @@ function PortalInner() {
     }
     return out;
   }, [clientTasks]);
+
+  const teamById = useMemo(() => new Map(team.map((m) => [m.id, m])), [team]);
+
+  /** Everyone assigned to at least one task on a project, de-duplicated and in
+   *  a stable order so the avatar stack doesn't reshuffle between renders. */
+  const projectTeam = useMemo(() => {
+    const map = new Map<string, TeamMember[]>();
+    for (const p of projects) {
+      const seen = new Set<string>();
+      const people: TeamMember[] = [];
+      for (const t of clientTasks) {
+        if (t.project_id !== p.id || !t.assigned_to || seen.has(t.assigned_to)) continue;
+        const member = teamById.get(t.assigned_to);
+        if (!member) continue;
+        seen.add(t.assigned_to);
+        people.push(member);
+      }
+      map.set(p.id, people);
+    }
+    return map;
+  }, [projects, clientTasks, teamById]);
+
+  /** Everyone touching any of this client's work, across all projects. */
+  const accountTeam = useMemo(() => {
+    const seen = new Set<string>();
+    const people: TeamMember[] = [];
+    for (const list of projectTeam.values()) {
+      for (const m of list) {
+        if (seen.has(m.id)) continue;
+        seen.add(m.id);
+        people.push(m);
+      }
+    }
+    return people;
+  }, [projectTeam]);
 
   /** Drafts are hidden by RLS for real clients; filter again so staff previews
    *  see exactly what the client sees. */
@@ -439,9 +481,14 @@ function PortalInner() {
                             </div>
                           </div>
                         )}
-                        <div className="mt-2.5 flex items-center justify-between text-xs text-muted-foreground">
-                          <span>{p.due_date ? `Due ${formatDate(p.due_date)}` : "No deadline set"}</span>
-                          <ChevronRight className="h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100" />
+                        <div className="mt-2.5 flex items-center gap-2 text-xs text-muted-foreground">
+                          <span className="min-w-0 truncate">
+                            {p.due_date ? `Due ${formatDate(p.due_date)}` : "No deadline set"}
+                          </span>
+                          <div className="ml-auto flex items-center gap-1.5">
+                            <AvatarStack people={projectTeam.get(p.id) ?? []} />
+                            <ChevronRight className="h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100" />
+                          </div>
                         </div>
                       </button>
                     );
@@ -482,6 +529,7 @@ function PortalInner() {
                     tasks={clientTasks}
                     projects={projects}
                     projectName={projectName}
+                    teamById={teamById}
                   />
                 )}
                 {view === "calendar" && (
@@ -489,6 +537,7 @@ function PortalInner() {
                     tasks={clientTasks}
                     projects={projects}
                     projectName={projectName}
+                    teamById={teamById}
                   />
                 )}
                 {view === "timeline" && (
@@ -496,6 +545,7 @@ function PortalInner() {
                     tasks={clientTasks}
                     projects={projects}
                     projectName={projectName}
+                    teamById={teamById}
                   />
                 )}
 
@@ -520,6 +570,7 @@ function PortalInner() {
                             <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                           )}
                           <span className="min-w-0 flex-1 truncate text-sm font-medium">{p.name}</span>
+                          <AvatarStack people={projectTeam.get(p.id) ?? []} />
                           <span className="shrink-0 text-xs text-muted-foreground">
                             {pts.filter((t) => t.status === "Done").length}/{pts.length} done
                           </span>
@@ -546,6 +597,18 @@ function PortalInner() {
                                     >
                                       {t.name}
                                     </span>
+                                    {t.assigned_to && teamById.get(t.assigned_to) && (
+                                      <div
+                                        title={teamById.get(t.assigned_to)!.full_name}
+                                        className="shrink-0"
+                                      >
+                                        <Avatar
+                                          name={teamById.get(t.assigned_to)!.full_name}
+                                          url={teamById.get(t.assigned_to)!.avatar_url}
+                                          size="xs"
+                                        />
+                                      </div>
+                                    )}
                                     {t.approved_at ? (
                                       <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-[10px] font-medium text-success">
                                         <CheckCheck className="h-3 w-3" /> Approved
@@ -909,6 +972,24 @@ function PortalInner() {
                     </form>
                   )}
                 </Card>
+
+                {/* Your team */}
+                {accountTeam.length > 0 && (
+                  <Card className="rounded-xl shadow-sm">
+                    <div className="mb-2.5 flex items-center gap-2">
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <h3 className="text-sm font-semibold">Your team</h3>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      {accountTeam.map((m) => (
+                        <div key={m.id} className="flex items-center gap-2.5">
+                          <Avatar name={m.full_name} url={m.avatar_url} size="sm" />
+                          <span className="min-w-0 truncate text-[13px]">{m.full_name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                )}
               </aside>
             </div>
           </>
