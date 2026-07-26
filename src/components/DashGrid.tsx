@@ -100,7 +100,12 @@ export function DashGrid({ storageKey, cards }: { storageKey: string; cards: Das
 
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-      <div ref={gridRef} className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      {/* auto-rows-fr keeps every row the same height rather than letting one
+          tall card stretch its row and leave the others ragged. */}
+      <div
+        ref={gridRef}
+        className="grid grid-cols-1 items-stretch gap-4 lg:auto-rows-fr lg:grid-cols-3"
+      >
         {order.map((id) => {
           const def = cards.find((c) => c.id === id);
           if (!def) return null;
@@ -164,7 +169,10 @@ function DashCell({
         } as React.CSSProperties
       }
       className={cn(
-        "group/dash relative rounded-md transition-[box-shadow,opacity] duration-150",
+        // h-full + stretching the child card is what stops a short card from
+        // floating at the top of a tall row with dead space underneath. Every
+        // card in a row now shares the row's height.
+        "group/dash relative h-full rounded-md transition-[box-shadow,opacity] duration-150 [&>*]:h-full",
         (isOver || resizing) && "ring-1 ring-primary/60",
         isDragging && "opacity-40"
       )}

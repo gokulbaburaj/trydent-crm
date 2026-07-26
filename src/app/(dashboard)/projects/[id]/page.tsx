@@ -487,12 +487,6 @@ export default function ProjectDetailPage() {
             </div>
             <h1 className="truncate text-[24px] font-semibold tracking-tight">{project.name}</h1>
           </div>
-          <StatusPicker
-            align="right"
-            value={project.status}
-            options={PROJECT_STATUSES}
-            onChange={(status) => updateProject({ status })}
-          />
         </div>
         <textarea
           rows={2}
@@ -508,7 +502,19 @@ export default function ProjectDetailPage() {
         />
         {/* Every control gets a label — an unlabelled chip row leaves you
             guessing which date is the start and who the person is. */}
+        {/* Status sits with the other project attributes rather than floating
+            in the top-right corner away from everything it relates to. */}
         <div className="mt-4 flex flex-wrap items-end gap-x-5 gap-y-3">
+          <div>
+            <Label>Status</Label>
+            <div className="flex h-9 items-center">
+              <StatusPicker
+                value={project.status}
+                options={PROJECT_STATUSES}
+                onChange={(status) => updateProject({ status })}
+              />
+            </div>
+          </div>
           <div>
             <Label>Starts</Label>
             <div className="w-36">
@@ -717,7 +723,7 @@ export default function ProjectDetailPage() {
           </Card>
           )},
           { id: "tasks", defaultSpan: 1, render: () => (
-          <Card>
+          <Card className="flex flex-col overflow-hidden">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="flex items-center gap-2 text-sm font-semibold">
                 Tasks
@@ -744,11 +750,13 @@ export default function ProjectDetailPage() {
                 </Button>
               )}
             </form>
-            <div className="flex flex-col">
+            {/* Scrolls rather than growing: the card keeps its slot in the grid
+                however many tasks land in it. */}
+            <div className="-mr-1 flex min-h-0 flex-1 flex-col overflow-y-auto pr-1">
               {active.length === 0 && (
                 <p className="py-6 text-center text-sm text-muted-foreground">No tasks yet.</p>
               )}
-              {[...notStarted, ...inProgress, ...done].slice(0, 7).map((t) => (
+              {[...notStarted, ...inProgress, ...done].map((t) => (
                 <div
                   key={t.id}
                   className="group flex items-center gap-2.5 rounded px-1.5 py-1.5 hover:bg-white/5"
@@ -792,8 +800,8 @@ export default function ProjectDetailPage() {
             <MiniCalendar tasks={active} meetings={clientMeetings} />
           ) },
           { id: "meetings", defaultSpan: 1, render: () => (
-          <Card>
-            <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold">
+          <Card className="flex flex-col overflow-hidden">
+            <h3 className="mb-3 flex shrink-0 items-center gap-2 text-sm font-semibold">
               Upcoming Meetings
               <span className="rounded bg-white/5 px-1.5 py-0.5 text-xs font-normal text-muted-foreground">
                 {upcomingSchedule.length}
@@ -811,7 +819,7 @@ export default function ProjectDetailPage() {
                 Nothing scheduled with {clientName(project.client_id)}.
               </p>
             )}
-            <div className="flex flex-col gap-1">
+            <div className="-mr-1 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto pr-1">
               {upcomingSchedule.map((a, i) =>
                 i === 0 ? (
                   <div key={a.id} className="rounded-md bg-primary p-3 text-primary-foreground">
@@ -842,9 +850,11 @@ export default function ProjectDetailPage() {
           </Card>
           )},
           { id: "timeline", defaultSpan: 2, render: () => (
-          <Card>
-            <h3 className="mb-3 text-sm font-semibold">Tasks Timeline</h3>
-            <TasksTimeline tasks={active} />
+          <Card className="flex flex-col overflow-hidden">
+            <h3 className="mb-3 shrink-0 text-sm font-semibold">Tasks Timeline</h3>
+            <div className="-mr-1 min-h-0 flex-1 overflow-y-auto pr-1">
+              <TasksTimeline tasks={active} />
+            </div>
           </Card>
           )},
           ]}
@@ -1294,6 +1304,21 @@ function MiniCalendar({
     return set;
   }, [meetings]);
 
+  /** Day key → what's on it, for the hover card. */
+  const byDay = useMemo(() => {
+    const map = new Map<string, { meetings: Activity[]; tasks: ProjectTask[] }>();
+    const bucket = (k: string) => {
+      const existing = map.get(k);
+      if (existing) return existing;
+      const fresh = { meetings: [] as Activity[], tasks: [] as ProjectTask[] };
+      map.set(k, fresh);
+      return fresh;
+    };
+    for (const m of meetings) bucket(m.activity_date.slice(0, 10)).meetings.push(m);
+    for (const t of tasks) if (t.due_date) bucket(t.due_date.slice(0, 10)).tasks.push(t);
+    return map;
+  }, [meetings, tasks]);
+
   return (
     <Card>
       <div className="mb-2 flex items-center justify-between">
@@ -1322,11 +1347,12 @@ function MiniCalendar({
           const key = format(day, "yyyy-MM-dd");
           const hasDue = dueDays.has(key);
           const hasMeeting = meetingDays.has(key);
+          const detail = byDay.get(key);
           return (
             <span
               key={day.toISOString()}
               className={cn(
-                "relative mx-auto flex h-8 w-8 items-center justify-center rounded-full text-xs",
+                "group/day relative mx-auto flex h-8 w-8 items-center justify-center rounded-full text-xs",
                 isToday(day)
                   ? "bg-primary font-semibold text-primary-foreground"
                   : hasDue || hasMeeting
@@ -1342,6 +1368,27 @@ function MiniCalendar({
                 <span className="absolute bottom-0.5 flex gap-0.5">
                   {hasDue && <span className="h-1 w-1 rounded-full bg-primary" />}
                   {hasMeeting && <span className="h-1 w-1 rounded-full bg-warning" />}
+                </span>
+              )}
+              {detail && (
+                <span className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-1 hidden w-52 -translate-x-1/2 flex-col gap-1 rounded-lg border border-border bg-surface p-2.5 text-left shadow-xl group-hover/day:flex">
+                  <span className="text-[11px] font-medium text-foreground">
+                    {format(day, "EEEE, MMM d")}
+                  </span>
+                  {detail.meetings.map((m) => (
+                    <span key={m.id} className="flex items-start gap-1.5 text-[11px]">
+                      <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-warning" />
+                      <span className="min-w-0 flex-1 text-foreground-secondary">
+                        {format(parseISO(m.activity_date), "HH:mm")} · {m.description}
+                      </span>
+                    </span>
+                  ))}
+                  {detail.tasks.map((t) => (
+                    <span key={t.id} className="flex items-start gap-1.5 text-[11px]">
+                      <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                      <span className="min-w-0 flex-1 text-foreground-secondary">{t.name}</span>
+                    </span>
+                  ))}
                 </span>
               )}
             </span>
@@ -1409,18 +1456,47 @@ function ProjectCalendar({
             const dayMeetings = meetingsOn(day);
             const isSelected = !!selected && isSameDay(day, selected);
             const overflow = dayTasks.length + dayMeetings.length - 2;
+            const busy = dayTasks.length + dayMeetings.length > 0;
             return (
               <button
                 key={day.toISOString()}
                 onClick={() => setSelected(isSelected ? null : day)}
                 className={cn(
-                  "flex h-20 flex-col items-stretch gap-0.5 overflow-hidden rounded border p-1 text-left transition-colors",
+                  // `group/day` + `relative` are what let the hover card below
+                  // anchor to this cell.
+                  "group/day relative flex h-20 flex-col items-stretch gap-0.5 rounded border p-1 text-left transition-colors",
                   isSelected
                     ? "border-primary bg-primary/10"
                     : "border-transparent hover:bg-white/5",
                   !isSameMonth(day, month) && "opacity-40"
                 )}
               >
+                {/* Hover detail. Only rendered for days that have something on
+                    them, so an empty cell doesn't flash an empty card. */}
+                {busy && (
+                  <span className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-1 hidden w-56 -translate-x-1/2 flex-col gap-1 rounded-lg border border-border bg-surface p-2.5 text-left shadow-xl group-hover/day:flex">
+                    <span className="text-[11px] font-medium text-foreground">
+                      {format(day, "EEEE, MMM d")}
+                    </span>
+                    {dayMeetings.map((m) => (
+                      <span key={m.id} className="flex items-start gap-1.5 text-[11px]">
+                        <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-warning" />
+                        <span className="min-w-0 flex-1 text-foreground-secondary">
+                          {format(parseISO(m.activity_date), "HH:mm")} · {m.description}
+                        </span>
+                      </span>
+                    ))}
+                    {dayTasks.map((t) => (
+                      <span key={t.id} className="flex items-start gap-1.5 text-[11px]">
+                        <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                        <span className="min-w-0 flex-1 text-foreground-secondary">
+                          {t.name}
+                          <span className="ml-1 text-muted-2">due</span>
+                        </span>
+                      </span>
+                    ))}
+                  </span>
+                )}
                 <span
                   className={cn(
                     "self-end text-xs",
@@ -1432,14 +1508,15 @@ function ProjectCalendar({
                   {format(day, "d")}
                 </span>
                 {/* Meetings lead: a fixed time matters more at a glance than a
-                    due date, and the distinct colour keeps the two readable. */}
+                    due date. The yellow token is a pale fill, so the text has
+                    to be dark — white on it was effectively invisible. */}
                 {dayMeetings.slice(0, 2).map((m) => (
                   <span
                     key={m.id}
-                    title={m.description}
-                    className="truncate rounded px-1 py-px text-[10px] font-medium text-white"
+                    className="truncate rounded px-1 py-px text-[10px] font-semibold"
                     style={{
                       background: "var(--event-yellow-bg)",
+                      color: "#3d2c05",
                       boxShadow: "inset 2px 0 0 0 var(--event-yellow-bar)",
                     }}
                   >
