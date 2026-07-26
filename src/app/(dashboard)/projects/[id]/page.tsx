@@ -38,6 +38,7 @@ import {
   Plus,
   Trash2,
   User,
+  Users,
 } from "lucide-react";
 import { toast } from "@/components/Toaster";
 import { BulkActionBar } from "@/components/BulkActionBar";
@@ -48,11 +49,13 @@ import { ProjectPageSkeleton } from "@/components/ui/Skeletons";
 import { TaskDetailDrawer } from "@/components/TaskDetailDrawer";
 import { Button } from "@/components/ui/Button";
 import { Badge, statusTone } from "@/components/ui/Badge";
+import { Avatar, AvatarStack } from "@/components/ui/Avatar";
 import { Card } from "@/components/ui/Card";
 import { StatusPicker } from "@/components/ui/StatusPicker";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { Popover, MenuItem, MenuLabel } from "@/components/ui/Popover";
-import { Input, Label } from "@/components/ui/Input";
+import { Input, Label, Textarea } from "@/components/ui/Input";
+import { Drawer } from "@/components/ui/Drawer";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { useStaffProfiles } from "@/lib/useStaffProfiles";
 import { applyFilters, useStoredFilters } from "@/lib/filters";
@@ -121,6 +124,24 @@ export default function ProjectDetailPage() {
 
   // Shared across all project pages so saved views work anywhere.
   const { filters, views, setFilters, setViews } = useStoredFilters("project-tasks");
+
+  const [meetingOpen, setMeetingOpen] = useState(false);
+  const [meetingTitle, setMeetingTitle] = useState("");
+  const [meetingDate, setMeetingDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
+  const [meetingTime, setMeetingTime] = useState("10:00");
+  const [meetingAgenda, setMeetingAgenda] = useState("");
+  const [meetingAttendees, setMeetingAttendees] = useState<string[]>([]);
+  const [meetingVisible, setMeetingVisible] = useState(false);
+  const [meetingBusy, setMeetingBusy] = useState(false);
+
+  /** Resolved member profiles, in the order they were added. */
+  const projectMembers = useMemo(
+    () =>
+      (project?.member_ids ?? [])
+        .map((id) => profiles.find((p) => p.id === id))
+        .filter((p): p is NonNullable<typeof p> => !!p),
+    [project, profiles]
+  );
 
   const taskLabels = useMemo(
     () =>
@@ -215,6 +236,44 @@ export default function ProjectDetailPage() {
       .sort((a, b) => parseISO(a.activity_date).getTime() - parseISO(b.activity_date).getTime())
       .slice(0, 4);
   }, [activities, project]);
+
+  /** Schedule a meeting without leaving the project. Attendees default to the
+   *  project team, which is the whole point of having one. */
+  async function createMeeting() {
+    const description = meetingTitle.trim();
+    if (!description || !project) return;
+    setMeetingBusy(true);
+    const supabase = createClient();
+    if (!supabase) {
+      setMeetingBusy(false);
+      return;
+    }
+    const { data, error } = await supabase
+      .from("activities")
+      .insert({
+        description,
+        client_id: project.client_id,
+        assigned_to: project.owner,
+        activity_date: `${meetingDate}T${meetingTime}`,
+        agenda: meetingAgenda.trim() || null,
+        attendee_ids: meetingAttendees,
+        client_visible: meetingVisible,
+        recurrence: "none",
+        follow_up_required: false,
+      })
+      .select()
+      .single();
+    setMeetingBusy(false);
+    if (error || !data) {
+      toast.error(`Couldn't schedule: ${error?.message ?? "unknown error"}`);
+      return;
+    }
+    setActivityRows((prev) => [data as Activity, ...prev]);
+    setMeetingOpen(false);
+    setMeetingTitle("");
+    setMeetingAgenda("");
+    toast.success("Meeting scheduled");
+  }
 
   const migrationMissing =
     !!tasksError &&
@@ -548,6 +607,57 @@ export default function ProjectDetailPage() {
             )}
           </Popover>
           </div>
+          <div>
+            <Label>Team</Label>
+            <Popover
+              trigger={
+                <button className="flex h-9 items-center gap-2 rounded-md border border-white/5 bg-white/5 px-2.5 text-xs font-medium text-foreground-secondary hover:bg-white/10">
+                  {projectMembers.length > 0 ? (
+                    <>
+                      <AvatarStack people={projectMembers} />
+                      {projectMembers.length} on this
+                    </>
+                  ) : (
+                    <>
+                      <Users className="h-3 w-3 text-muted-foreground" /> Add team
+                    </>
+                  )}
+                </button>
+              }
+            >
+              {() => (
+                <>
+                  <MenuLabel>Project team</MenuLabel>
+                  {profiles.length === 0 && (
+                    <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                      No team members yet.
+                    </div>
+                  )}
+                  {profiles.map((p) => {
+                    const on = (project.member_ids ?? []).includes(p.id);
+                    return (
+                      <MenuItem
+                        key={p.id}
+                        selected={on}
+                        onClick={() => {
+                          const current = project.member_ids ?? [];
+                          updateProject({
+                            member_ids: on
+                              ? current.filter((id) => id !== p.id)
+                              : [...current, p.id],
+                          });
+                          // Stay open — picking a team is a multi-step action
+                          // and reopening the menu per person is tedious.
+                        }}
+                      >
+                        {p.full_name}
+                      </MenuItem>
+                    );
+                  })}
+                </>
+              )}
+            </Popover>
+          </div>
         </div>
       </Card>
 
@@ -681,6 +791,13 @@ export default function ProjectDetailPage() {
               <span className="rounded bg-white/5 px-1.5 py-0.5 text-xs font-normal text-muted-foreground">
                 {upcomingSchedule.length}
               </span>
+              <button
+                type="button"
+                onClick={() => setMeetingOpen(true)}
+                className="ml-auto flex items-center gap-1 rounded-md px-1.5 py-1 text-[11px] font-normal text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+              >
+                <Plus className="h-3 w-3" /> Schedule
+              </button>
             </h3>
             {upcomingSchedule.length === 0 && (
               <p className="py-6 text-center text-sm text-muted-foreground">
@@ -976,6 +1093,116 @@ export default function ProjectDetailPage() {
         onDelete={deleteTask}
         onSkip={skipTask}
       />
+
+      {/* Schedule a meeting */}
+      <Drawer
+        open={meetingOpen}
+        onClose={() => setMeetingOpen(false)}
+        title="Schedule a meeting"
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            createMeeting();
+          }}
+          className="flex flex-col gap-4"
+        >
+          <div>
+            <Label>What is it about?</Label>
+            <Input
+              placeholder="Weekly check-in"
+              value={meetingTitle}
+              onChange={(e) => setMeetingTitle(e.target.value)}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Date</Label>
+              <DatePicker
+                value={meetingDate}
+                onChange={(d) => setMeetingDate(d ?? format(new Date(), "yyyy-MM-dd"))}
+              />
+            </div>
+            <div>
+              <Label>Time</Label>
+              <Input
+                type="time"
+                value={meetingTime}
+                onChange={(e) => setMeetingTime(e.target.value)}
+              />
+            </div>
+          </div>
+          <div>
+            <Label>Agenda</Label>
+            <Textarea
+              rows={3}
+              placeholder="What are we covering?"
+              value={meetingAgenda}
+              onChange={(e) => setMeetingAgenda(e.target.value)}
+            />
+          </div>
+          <div>
+            <Label>Attendees</Label>
+            <div className="flex flex-wrap gap-1.5 rounded-md border border-white/15 bg-white/[0.02] p-2">
+              {profiles.length === 0 && (
+                <span className="px-1 text-xs text-muted-foreground">
+                  No team members yet.
+                </span>
+              )}
+              {profiles.map((p) => {
+                const on = meetingAttendees.includes(p.id);
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() =>
+                      setMeetingAttendees((prev) =>
+                        on ? prev.filter((id) => id !== p.id) : [...prev, p.id]
+                      )
+                    }
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-full border px-2 py-1 text-xs transition-colors",
+                      on
+                        ? "border-primary/40 bg-primary/15 text-foreground"
+                        : "border-white/10 text-muted-foreground hover:bg-white/5"
+                    )}
+                  >
+                    <Avatar name={p.full_name} url={p.avatar_url} size="xs" />
+                    {p.full_name}
+                  </button>
+                );
+              })}
+            </div>
+            {projectMembers.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setMeetingAttendees(projectMembers.map((p) => p.id))}
+                className="mt-1.5 text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+              >
+                Add everyone on this project
+              </button>
+            )}
+          </div>
+          <label className="flex items-start gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={meetingVisible}
+              onChange={(e) => setMeetingVisible(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded accent-primary"
+            />
+            <span>
+              Show in the client portal
+              <span className="block text-xs text-muted-foreground">
+                {clientName(project.client_id)} will see the time, agenda and attendees.
+              </span>
+            </span>
+          </label>
+          <Button type="submit" disabled={meetingBusy || !meetingTitle.trim()}>
+            {meetingBusy ? "Scheduling..." : "Schedule meeting"}
+          </Button>
+        </form>
+      </Drawer>
     </div>
   );
 }

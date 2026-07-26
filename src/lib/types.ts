@@ -497,7 +497,10 @@ export interface Project {
   name: string;
   client_id: string;
   status: ProjectStatus;
+  /** The single accountable lead. */
   owner: string | null;
+  /** Everyone else on the project, lead included after the backfill. */
+  member_ids: string[];
   start_date: string | null;
   due_date: string | null;
   description: string | null;
