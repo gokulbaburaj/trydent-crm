@@ -169,15 +169,15 @@ function DashCell({
         } as React.CSSProperties
       }
       className={cn(
-        // h-full + stretching the child card is what stops a short card from
-        // floating at the top of a tall row with dead space underneath. Every
-        // card in a row now shares the row's height.
-        "group/dash relative h-full rounded-md transition-[box-shadow,opacity] duration-150 [&>*]:h-full",
+        "group/dash relative h-full rounded-md transition-[box-shadow,opacity] duration-150",
         (isOver || resizing) && "ring-1 ring-primary/60",
         isDragging && "opacity-40"
       )}
     >
-      {children}
+      {/* The card is wrapped so `h-full` reaches it without also stretching the
+          drag and resize handles below — a `[&>*]` selector caught those too
+          and rendered the grip as a full-height bar. */}
+      <div className="h-full [&>*]:h-full">{children}</div>
 
       {/* Drag-to-rearrange handle */}
       <button

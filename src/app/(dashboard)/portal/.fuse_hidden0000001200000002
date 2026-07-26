@@ -537,7 +537,7 @@ function PortalInner() {
                               ?.scrollIntoView({ behavior: "smooth", block: "start" })
                           );
                         }}
-                        className="group rounded-xl border border-border bg-surface p-4 text-left lift shadow-sm hover:border-primary/30 hover:bg-white/[0.04]"
+                        className="group rounded-xl border border-border bg-surface p-4 text-left shadow-sm transition-colors hover:border-primary/30 hover:bg-white/[0.04]"
                       >
                         <div className="flex items-center justify-between gap-2">
                           <span className="truncate text-sm font-medium">{p.name}</span>
@@ -833,7 +833,7 @@ function PortalInner() {
                       href={link.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="group flex items-center gap-3 rounded-xl border border-border bg-surface p-3.5 lift shadow-sm hover:border-primary/30 hover:bg-white/[0.04]"
+                      className="group flex items-center gap-3 rounded-xl border border-border bg-surface p-3.5 shadow-sm transition-colors hover:border-primary/30 hover:bg-white/[0.04]"
                     >
                       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/15 text-primary">
                         <FileText className="h-4 w-4" />
@@ -979,7 +979,7 @@ function PortalInner() {
                             href={d.url ?? "#"}
                             target="_blank"
                             rel="noreferrer"
-                            className="group flex items-center gap-3 rounded-xl border border-border bg-surface p-3.5 lift shadow-sm hover:border-primary/30 hover:bg-white/[0.04]"
+                            className="group flex items-center gap-3 rounded-xl border border-border bg-surface p-3.5 shadow-sm transition-colors hover:border-primary/30 hover:bg-white/[0.04]"
                           >
                             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/15 text-primary">
                               <FileText className="h-4 w-4" />

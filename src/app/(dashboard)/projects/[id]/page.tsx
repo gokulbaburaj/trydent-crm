@@ -1352,7 +1352,7 @@ function MiniCalendar({
             <span
               key={day.toISOString()}
               className={cn(
-                "group/day relative mx-auto flex h-8 w-8 items-center justify-center rounded-full text-xs",
+                "hover-reveal-host relative mx-auto flex h-8 w-8 items-center justify-center rounded-full text-xs",
                 isToday(day)
                   ? "bg-primary font-semibold text-primary-foreground"
                   : hasDue || hasMeeting
@@ -1371,7 +1371,7 @@ function MiniCalendar({
                 </span>
               )}
               {detail && (
-                <span className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-1 hidden w-52 -translate-x-1/2 flex-col gap-1 rounded-lg border border-border bg-surface p-2.5 text-left shadow-xl group-hover/day:flex">
+                <span className="hover-reveal pointer-events-none absolute bottom-full left-1/2 z-30 mb-1 flex w-52 flex-col gap-1 rounded-lg border border-border bg-surface p-2.5 text-left shadow-xl">
                   <span className="text-[11px] font-medium text-foreground">
                     {format(day, "EEEE, MMM d")}
                   </span>
@@ -1462,9 +1462,8 @@ function ProjectCalendar({
                 key={day.toISOString()}
                 onClick={() => setSelected(isSelected ? null : day)}
                 className={cn(
-                  // `group/day` + `relative` are what let the hover card below
-                  // anchor to this cell.
-                  "group/day relative flex h-20 flex-col items-stretch gap-0.5 rounded border p-1 text-left transition-colors",
+                  // `hover-reveal-host` + `relative` anchor the hover card below.
+                  "hover-reveal-host relative flex h-20 flex-col items-stretch gap-0.5 rounded border p-1 text-left transition-colors",
                   isSelected
                     ? "border-primary bg-primary/10"
                     : "border-transparent hover:bg-white/5",
@@ -1474,7 +1473,7 @@ function ProjectCalendar({
                 {/* Hover detail. Only rendered for days that have something on
                     them, so an empty cell doesn't flash an empty card. */}
                 {busy && (
-                  <span className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-1 hidden w-56 -translate-x-1/2 flex-col gap-1 rounded-lg border border-border bg-surface p-2.5 text-left shadow-xl group-hover/day:flex">
+                  <span className="hover-reveal pointer-events-none absolute bottom-full left-1/2 z-30 mb-1 flex w-56 flex-col gap-1 rounded-lg border border-border bg-surface p-2.5 text-left shadow-xl">
                     <span className="text-[11px] font-medium text-foreground">
                       {format(day, "EEEE, MMM d")}
                     </span>

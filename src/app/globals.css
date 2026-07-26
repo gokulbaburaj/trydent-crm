@@ -234,6 +234,65 @@
   animation: fade-up 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* ---- Hover reveal ----------------------------------------------------- */
+/* `hidden` → `flex` can't be transitioned, so hover cards stay in the layout
+   and animate opacity + blur + lift instead. Put `.hover-reveal` on the panel
+   and `.hover-reveal-host` on the element being hovered. */
+.hover-reveal {
+  opacity: 0;
+  visibility: hidden;
+  filter: blur(6px);
+  transform: translate(-50%, 4px) scale(0.97);
+  transition:
+    opacity 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    filter 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    visibility 0s linear 180ms;
+}
+.hover-reveal-host:hover .hover-reveal,
+.hover-reveal-host:focus-visible .hover-reveal {
+  opacity: 1;
+  visibility: visible;
+  filter: blur(0);
+  transform: translate(-50%, 0) scale(1);
+  transition-delay: 0s, 0s, 0s, 0s;
+}
+
+/* ---- Interaction micro-motion ---------------------------------------- */
+/* Buttons and other pressables get a subtle depress. Applied globally so the
+   whole app feels responsive without touching every component. */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+a[href] {
+  transition:
+    transform 120ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 120ms ease-out,
+    background-color 140ms ease-out,
+    border-color 140ms ease-out,
+    color 140ms ease-out;
+}
+button:not(:disabled):active,
+[role="button"]:not([aria-disabled="true"]):active {
+  transform: scale(0.97);
+}
+
+/* Cards lift slightly on hover where they're interactive. */
+.lift {
+  transition:
+    transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 180ms ease-out;
+}
+.lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px -12px rgb(0 0 0 / 0.55);
+}
+
+/* Numbers that change (counters, totals) shouldn't just snap. */
+.tabular-nums {
+  transition: color 160ms ease-out;
+}
+
 /* View Transitions — used for card reorders, calendar drops, theme changes */
 ::view-transition-old(root),
 ::view-transition-new(root) {
@@ -251,6 +310,21 @@
   .animate-fade,
   .animate-row {
     animation: none;
+  }
+  .hover-reveal {
+    filter: none;
+    transform: translate(-50%, 0);
+    transition: opacity 1ms linear, visibility 1ms linear;
+  }
+  .hover-reveal-host:hover .hover-reveal {
+    transform: translate(-50%, 0);
+  }
+  .lift:hover {
+    transform: none;
+  }
+  button:not(:disabled):active,
+  [role="button"]:not([aria-disabled="true"]):active {
+    transform: none;
   }
   ::view-transition-old(*),
   ::view-transition-new(*),
