@@ -36,6 +36,7 @@ const TAB_ICONS: [string, React.ComponentType<{ className?: string }>][] = [
   ["/accounts", Wallet],
   ["/goals", Target],
   ["/recruiting", UserPlus],
+  ["/onboarding", ListChecks],
   ["/team", UsersRound],
   ["/settings", Settings],
 ];

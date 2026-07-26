@@ -266,11 +266,14 @@ export default function OrganizationPage() {
       )}
 
       {/* ============ VISUALISATIONS ============ */}
-      {/* Goal progress is a list, so it takes the wide slot; the three charts
-          sit beside it on large screens rather than stacking down the left. */}
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-4">
+      {/*
+        Goal progress gets its own full-width band rather than sharing a row
+        with the charts. It's a short list of bars, so pairing it with tall
+        donuts stretched it into a mostly-empty card AND pushed the third chart
+        onto a lonely row of its own.
+      */}
       {showGoals && (
-        <Card className="rounded-xl shadow-sm lg:col-span-2">
+        <Card className="rounded-xl shadow-sm">
           <h3 className="text-sm font-semibold">Goal progress</h3>
           <p className="mt-0.5 text-xs text-muted-foreground">
             Active objectives, rolled up from their key results.
@@ -308,6 +311,8 @@ export default function OrganizationPage() {
         </Card>
       )}
 
+      {/* The three charts share one row so none of them ends up orphaned. */}
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3">
         {showRecruiting && (
           <Card className="flex flex-col rounded-xl shadow-sm">
             <h3 className="text-sm font-semibold">Hiring funnel</h3>

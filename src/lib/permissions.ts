@@ -24,6 +24,7 @@ export type PageKey =
   | "accounts"
   | "goals"
   | "recruiting"
+  | "onboarding"
   | "team"
   | "settings"
   | "portal"
@@ -40,6 +41,7 @@ const ALL_STAFF_PAGES: PageKey[] = [
   "accounts",
   "goals",
   "recruiting",
+  "onboarding",
   "team",
   "settings",
 ];
@@ -81,6 +83,7 @@ const ROUTE_KEYS: [string, PageKey][] = [
   ["/accounts", "accounts"],
   ["/goals", "goals"],
   ["/recruiting", "recruiting"],
+  ["/onboarding", "onboarding"],
   ["/team", "team"],
   ["/settings", "settings"],
   ["/portal", "portal"],

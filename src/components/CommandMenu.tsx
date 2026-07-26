@@ -52,6 +52,7 @@ const PAGES: { href: string; label: string; icon: LucideIcon; page: PageKey }[] 
   { href: "/accounts", label: "Accounts", icon: Wallet, page: "accounts" },
   { href: "/goals", label: "Goals", icon: Target, page: "goals" },
   { href: "/recruiting", label: "Recruiting", icon: UserPlus, page: "recruiting" },
+  { href: "/onboarding", label: "Onboarding", icon: ListChecks, page: "onboarding" },
   { href: "/team", label: "Team", icon: UsersRound, page: "team" },
   { href: "/settings", label: "Settings", icon: Settings, page: "settings" },
 ];

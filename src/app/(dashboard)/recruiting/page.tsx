@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
-  ChevronDown,
-  ChevronRight,
+  ArrowUpRight,
   ExternalLink,
   ListChecks,
   Plus,
@@ -17,6 +18,7 @@ import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/ui/Avatar";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { Drawer } from "@/components/ui/Drawer";
+import { Checkbox } from "@/components/ui/Checkbox";
 import { Dropdown } from "@/components/ui/Dropdown";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { TableSkeleton } from "@/components/ui/Skeletons";
@@ -30,7 +32,6 @@ import { formatDate } from "@/lib/format";
 import type {
   Applicant,
   ApplicantStage,
-  OnboardingTask,
   OnboardingTemplate,
   OnboardingTemplateItem,
 } from "@/lib/types";
@@ -52,6 +53,7 @@ export default function RecruitingPage() {
 }
 
 function RecruitingInner() {
+  const router = useRouter();
   const [tab, setTab] = useState<Tab>("applicants");
   /** The applicant just dragged to Hired, awaiting a decision. */
   const [hired, setHired] = useState<Applicant | null>(null);
@@ -103,7 +105,8 @@ function RecruitingInner() {
             applicant={hired}
             onDone={(goToOnboarding) => {
               setHired(null);
-              if (goToOnboarding) setTab("onboarding");
+              // The live process lives on its own page now.
+              if (goToOnboarding) router.push("/onboarding");
             }}
           />
         )}
@@ -275,14 +278,12 @@ function HireForm({
         </p>
       </div>
 
-      <label className="flex items-start gap-2 text-sm">
-        <input
-          type="checkbox"
-          checked={startChecklist}
-          onChange={(e) => setStartChecklist(e.target.checked)}
-          className="mt-0.5 h-4 w-4 rounded accent-primary"
-        />
-        <span>
+      <Checkbox
+        checked={startChecklist}
+        onChange={setStartChecklist}
+        className="items-start"
+        label={
+          <span className="text-sm">
           Start their onboarding checklist
           <span className="block text-xs text-muted-foreground">
             {defaultTemplate
@@ -290,9 +291,10 @@ function HireForm({
               : templates.length > 0
                 ? "No default template set — the first one will be used."
                 : "No templates yet, so nothing will be created."}
+            </span>
           </span>
-        </span>
-      </label>
+        }
+      />
 
       {error && <p className="text-xs text-danger">{error}</p>}
 
@@ -689,14 +691,13 @@ function ApplicantDetail({
 
 /* ============================ ONBOARDING ============================ */
 
-
 /**
- * Onboarding: templates on one side, real people on the other.
+ * Checklist templates — the GUIDELINE, not the live process.
  *
- * The flow is deliberately spelled out on screen, because "checklist templates"
- * next to "new hires" with no connecting text told you nothing about how the
- * two relate. You build a template once, then start it for a person; from that
- * moment their copy is theirs alone and editing the template won't touch it.
+ * A template describes the shape a new hire's first weeks should take. Running
+ * it against real people happens on the Onboarding page, because tracking a
+ * person's progress is a different job from defining the process and shouldn't
+ * be buried in a hiring tool.
  */
 function Onboarding() {
   const { rows: templates, setRows: setTemplates, loading } =
@@ -705,46 +706,11 @@ function Onboarding() {
     "onboarding_template_items",
     { column: "sort_order", ascending: true }
   );
-  const { rows: tasks, setRows: setTasks } = useSupabaseTable<OnboardingTask>(
-    "onboarding_tasks",
-    { column: "sort_order", ascending: true }
-  );
-  const { rows: staff } = useStaffProfiles();
 
   const [templateName, setTemplateName] = useState("");
   const [itemDrafts, setItemDrafts] = useState<Record<string, string>>({});
-  const [startOpen, setStartOpen] = useState(false);
-  const [startPerson, setStartPerson] = useState("");
-  const [startTemplate, setStartTemplate] = useState("");
-  const [startBusy, setStartBusy] = useState(false);
-  const [showTemplates, setShowTemplates] = useState(true);
 
-  const tasksByProfile = useMemo(() => {
-    const map = new Map<string, OnboardingTask[]>();
-    for (const t of tasks) {
-      const list = map.get(t.profile_id);
-      if (list) list.push(t);
-      else map.set(t.profile_id, [t]);
-    }
-    return map;
-  }, [tasks]);
-
-  /** Anyone with at least one step, newest checklists first. */
-  const peopleOnboarding = useMemo(
-    () =>
-      staff
-        .filter((p) => (tasksByProfile.get(p.id) ?? []).length > 0)
-        .map((p) => {
-          const list = tasksByProfile.get(p.id)!;
-          const done = list.filter((t) => t.done).length;
-          return { profile: p, tasks: list, done, pct: Math.round((done / list.length) * 100) };
-        })
-        .sort((a, b) => a.pct - b.pct),
-    [staff, tasksByProfile]
-  );
-
-  const inProgress = peopleOnboarding.filter((p) => p.pct < 100);
-  const finished = peopleOnboarding.filter((p) => p.pct >= 100);
+  const defaultTemplate = templates.find((t) => t.is_default) ?? null;
 
   async function addTemplate() {
     const name = templateName.trim();
@@ -762,6 +728,18 @@ function Onboarding() {
     }
     setTemplates((prev) => [...prev, data as OnboardingTemplate]);
     setTemplateName("");
+  }
+
+  async function renameTemplate(id: string, name: string) {
+    const before = templates;
+    setTemplates((prev) => prev.map((t) => (t.id === id ? { ...t, name } : t)));
+    const supabase = createClient();
+    if (!supabase) return;
+    const { error } = await supabase
+      .from("onboarding_templates")
+      .update({ name })
+      .eq("id", id);
+    if (error) setTemplates(before);
   }
 
   async function makeDefault(id: string) {
@@ -802,6 +780,23 @@ function Onboarding() {
     setItemDrafts((prev) => ({ ...prev, [templateId]: "" }));
   }
 
+  /** Steps are editable in place — a checklist you can't reword is a checklist
+   *  you'll stop maintaining. Saves on blur. */
+  async function renameItem(id: string, title: string) {
+    const before = items;
+    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, title } : i)));
+    const supabase = createClient();
+    if (!supabase) return;
+    const { error } = await supabase
+      .from("onboarding_template_items")
+      .update({ title })
+      .eq("id", id);
+    if (error) {
+      setItems(before);
+      toast.error(`Couldn't save: ${error.message}`);
+    }
+  }
+
   async function deleteItem(id: string) {
     const before = items;
     setItems((prev) => prev.filter((i) => i.id !== id));
@@ -811,82 +806,15 @@ function Onboarding() {
     if (error) setItems(before);
   }
 
-  /** Copy a template's steps onto a person. This is the missing action that
-   *  made the old screen feel broken — new hires only appeared if the database
-   *  trigger happened to fire. */
-  async function startOnboarding() {
-    if (!startPerson || !startTemplate) return;
-    const steps = items.filter((i) => i.template_id === startTemplate);
-    if (steps.length === 0) {
-      toast.error("That template has no steps yet.");
-      return;
-    }
-    setStartBusy(true);
-    const supabase = createClient();
-    if (!supabase) {
-      setStartBusy(false);
-      return;
-    }
-    const { data, error } = await supabase
-      .from("onboarding_tasks")
-      .insert(
-        steps.map((s) => ({
-          profile_id: startPerson,
-          title: s.title,
-          sort_order: s.sort_order,
-        }))
-      )
-      .select();
-    setStartBusy(false);
-    if (error || !data) {
-      toast.error(`Couldn't start: ${error?.message ?? "unknown error"}`);
-      return;
-    }
-    setTasks((prev) => [...prev, ...(data as OnboardingTask[])]);
-    setStartOpen(false);
-    setStartPerson("");
-    toast.success("Checklist started");
-  }
-
-  async function toggleTask(task: OnboardingTask) {
-    const before = tasks;
-    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, done: !t.done } : t)));
-    const supabase = createClient();
-    if (!supabase) return;
-    const { error } = await supabase
-      .from("onboarding_tasks")
-      .update({ done: !task.done })
-      .eq("id", task.id);
-    if (error) setTasks(before);
-  }
-
-  async function clearChecklist(profileId: string) {
-    const before = tasks;
-    setTasks((prev) => prev.filter((t) => t.profile_id !== profileId));
-    const supabase = createClient();
-    if (!supabase) return;
-    const { error } = await supabase
-      .from("onboarding_tasks")
-      .delete()
-      .eq("profile_id", profileId);
-    if (error) {
-      setTasks(before);
-      toast.error(`Couldn't clear: ${error.message}`);
-    }
-  }
-
   if (loading) return <TableSkeleton rows={5} />;
 
-  const defaultTemplate = templates.find((t) => t.is_default);
-
   return (
-    <div className="flex flex-col gap-5">
-      {/* How this works */}
+    <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 shadow-sm">
         <ListChecks className="h-4 w-4 shrink-0 text-muted-foreground" />
         <p className="min-w-0 flex-1 text-[13px] text-foreground-secondary">
-          Build a checklist template once, then start it for a person. Their copy is
-          independent, so editing the template later never disturbs someone mid-way through.
+          These are the guidelines — the steps a new hire should go through. Running one
+          against a real person happens on the Onboarding page.
           {defaultTemplate ? (
             <>
               {" "}
@@ -894,296 +822,147 @@ function Onboarding() {
               automatically.
             </>
           ) : (
-            " Mark a template as default and new team members will get it automatically."
+            " Mark one as default and new team members will get it automatically."
           )}
         </p>
-        <Button
-          size="sm"
-          disabled={templates.length === 0 || staff.length === 0}
-          onClick={() => {
-            setStartTemplate(defaultTemplate?.id ?? templates[0]?.id ?? "");
-            setStartOpen(true);
-          }}
+        <Link
+          href="/onboarding"
+          className="flex shrink-0 items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
         >
-          <Plus className="h-3.5 w-3.5" /> Start onboarding
-        </Button>
+          Open Onboarding <ArrowUpRight className="h-3 w-3" />
+        </Link>
       </div>
 
-      {/* In progress */}
-      <div>
-        <h3 className="mb-2.5 text-sm font-semibold">
-          In progress
-          <span className="ml-2 rounded bg-white/5 px-1.5 py-0.5 text-xs font-normal text-muted-foreground">
-            {inProgress.length}
-          </span>
-        </h3>
-        {inProgress.length === 0 ? (
-          <EmptyState
-            icon={ListChecks}
-            title="Nobody is onboarding right now"
-            description={
-              templates.length === 0
-                ? "Create a checklist template below, then start it for someone."
-                : "Use Start onboarding to give someone a checklist."
-            }
-          />
-        ) : (
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3">
-            {inProgress.map(({ profile, tasks: pTasks, done, pct }) => (
-              <Card key={profile.id} className="rounded-xl shadow-sm">
-                <div className="flex items-center gap-2.5">
-                  <Avatar name={profile.full_name} url={profile.avatar_url} size="sm" />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13px] font-medium">{profile.full_name}</p>
-                    <p className="text-[11px] text-muted-2">
-                      {done} of {pTasks.length} done
-                    </p>
-                  </div>
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3">
+        {templates.map((t) => {
+          const tItems = items.filter((i) => i.template_id === t.id);
+          return (
+            <Card key={t.id} className="rounded-xl shadow-sm">
+              <div className="flex items-center gap-2">
+                <input
+                  value={t.name}
+                  onChange={(e) =>
+                    setTemplates((prev) =>
+                      prev.map((x) => (x.id === t.id ? { ...x, name: e.target.value } : x))
+                    )
+                  }
+                  onBlur={(e) => {
+                    const v = e.target.value.trim();
+                    if (v) renameTemplate(t.id, v);
+                  }}
+                  className="min-w-0 flex-1 rounded border border-transparent bg-transparent px-1 py-0.5 text-[13px] font-medium text-foreground hover:border-border focus:border-primary/60 focus:outline-none"
+                />
+                {t.is_default ? (
+                  <Badge tone="green">Default</Badge>
+                ) : (
                   <button
                     type="button"
-                    aria-label={`Clear ${profile.full_name}'s checklist`}
-                    onClick={() => clearChecklist(profile.id)}
-                    className="rounded p-1 text-muted-foreground transition-colors hover:bg-white/5 hover:text-danger"
+                    onClick={() => makeDefault(t.id)}
+                    className="shrink-0 rounded-md px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
                   >
-                    <Trash2 className="h-3 w-3" />
+                    Make default
                   </button>
-                </div>
-                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
-                  <div
-                    className="h-full rounded-full bg-primary transition-all"
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
-                <div className="mt-2.5 flex flex-col gap-0.5">
-                  {pTasks.map((t) => (
-                    <label
-                      key={t.id}
-                      className="flex cursor-pointer items-center gap-2 rounded-md px-1 py-1 text-[13px] hover:bg-white/[0.03]"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={t.done}
-                        onChange={() => toggleTask(t)}
-                        className="h-4 w-4 shrink-0 rounded accent-primary"
-                      />
-                      <span
-                        className={cn(
-                          "min-w-0 truncate",
-                          t.done && "text-muted-foreground line-through"
-                        )}
-                      >
-                        {t.title}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </Card>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Finished */}
-      {finished.length > 0 && (
-        <div>
-          <h3 className="mb-2.5 text-sm font-semibold">Fully onboarded</h3>
-          <div className="flex flex-wrap gap-2">
-            {finished.map(({ profile, tasks: pTasks }) => (
-              <div
-                key={profile.id}
-                className="flex items-center gap-2 rounded-full border border-success/30 bg-success/10 py-1 pl-1 pr-3"
-              >
-                <Avatar name={profile.full_name} url={profile.avatar_url} size="xs" />
-                <span className="text-[13px]">{profile.full_name}</span>
-                <span className="text-[11px] text-success">{pTasks.length}/{pTasks.length}</span>
+                )}
                 <button
                   type="button"
-                  aria-label={`Clear ${profile.full_name}'s checklist`}
-                  onClick={() => clearChecklist(profile.id)}
-                  className="text-muted-foreground transition-colors hover:text-danger"
+                  aria-label={`Delete ${t.name}`}
+                  onClick={() => deleteTemplate(t.id)}
+                  className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:text-danger"
                 >
                   <Trash2 className="h-3 w-3" />
                 </button>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
+              <p className="mt-0.5 px-1 text-[11px] text-muted-2">
+                {tItems.length} step{tItems.length === 1 ? "" : "s"}
+              </p>
 
-      {/* Templates */}
-      <div>
-        <button
-          type="button"
-          onClick={() => setShowTemplates((s) => !s)}
-          className="mb-2.5 flex items-center gap-1.5 text-sm font-semibold hover:text-foreground-secondary"
-        >
-          {showTemplates ? (
-            <ChevronDown className="h-3.5 w-3.5" />
-          ) : (
-            <ChevronRight className="h-3.5 w-3.5" />
-          )}
-          Checklist templates
-          <span className="rounded bg-white/5 px-1.5 py-0.5 text-xs font-normal text-muted-foreground">
-            {templates.length}
-          </span>
-        </button>
-
-        {showTemplates && (
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3">
-            {templates.map((t) => {
-              const tItems = items.filter((i) => i.template_id === t.id);
-              return (
-                <Card key={t.id} className="rounded-xl shadow-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="min-w-0 flex-1 truncate text-[13px] font-medium">
-                      {t.name}
+              <div className="mt-2.5 flex flex-col gap-1">
+                {tItems.map((i, idx) => (
+                  <div
+                    key={i.id}
+                    className="group flex items-center gap-2 rounded-md border border-border-subtle pl-2.5 pr-1 transition-colors focus-within:border-primary/40"
+                  >
+                    <span className="w-4 shrink-0 text-[11px] tabular-nums text-muted-2">
+                      {idx + 1}
                     </span>
-                    {t.is_default ? (
-                      <Badge tone="green">Default</Badge>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => makeDefault(t.id)}
-                        className="rounded-md px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
-                      >
-                        Make default
-                      </button>
-                    )}
+                    {/* Click straight into the text and retype it. */}
+                    <input
+                      value={i.title}
+                      onChange={(e) =>
+                        setItems((prev) =>
+                          prev.map((x) =>
+                            x.id === i.id ? { ...x, title: e.target.value } : x
+                          )
+                        )
+                      }
+                      onBlur={(e) => {
+                        const v = e.target.value.trim();
+                        if (v && v !== i.title) renameItem(i.id, v);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") e.currentTarget.blur();
+                      }}
+                      className="min-w-0 flex-1 bg-transparent py-1.5 text-[13px] text-foreground focus:outline-none"
+                    />
                     <button
                       type="button"
-                      aria-label={`Delete ${t.name}`}
-                      onClick={() => deleteTemplate(t.id)}
-                      className="rounded p-1 text-muted-foreground transition-colors hover:text-danger"
+                      aria-label={`Delete ${i.title}`}
+                      onClick={() => deleteItem(i.id)}
+                      className="shrink-0 rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:text-danger group-hover:opacity-100"
                     >
                       <Trash2 className="h-3 w-3" />
                     </button>
                   </div>
-                  <p className="mt-0.5 text-[11px] text-muted-2">
-                    {tItems.length} step{tItems.length === 1 ? "" : "s"}
-                  </p>
+                ))}
+              </div>
 
-                  <div className="mt-2.5 flex flex-col gap-1">
-                    {tItems.map((i, idx) => (
-                      <div
-                        key={i.id}
-                        className="group flex items-center gap-2 rounded-md border border-border-subtle px-2.5 py-1.5"
-                      >
-                        <span className="w-4 shrink-0 text-[11px] tabular-nums text-muted-2">
-                          {idx + 1}
-                        </span>
-                        <span className="min-w-0 flex-1 truncate text-[13px]">{i.title}</span>
-                        <button
-                          type="button"
-                          aria-label={`Delete ${i.title}`}
-                          onClick={() => deleteItem(i.id)}
-                          className="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-danger group-hover:opacity-100"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      addItem(t.id);
-                    }}
-                    className="mt-2 flex items-center gap-2"
-                  >
-                    <Input
-                      placeholder="Add a step..."
-                      value={itemDrafts[t.id] ?? ""}
-                      onChange={(e) =>
-                        setItemDrafts((prev) => ({ ...prev, [t.id]: e.target.value }))
-                      }
-                    />
-                    <Button
-                      type="submit"
-                      size="sm"
-                      variant="secondary"
-                      disabled={!(itemDrafts[t.id] ?? "").trim()}
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                    </Button>
-                  </form>
-                </Card>
-              );
-            })}
-
-            <Card className="flex flex-col justify-center rounded-xl border-dashed shadow-sm">
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
-                  addTemplate();
+                  addItem(t.id);
                 }}
-                className="flex flex-col gap-2"
+                className="mt-2 flex items-center gap-2"
               >
-                <Label>New template</Label>
                 <Input
-                  placeholder="Standard onboarding"
-                  value={templateName}
-                  onChange={(e) => setTemplateName(e.target.value)}
+                  placeholder="Add a step..."
+                  value={itemDrafts[t.id] ?? ""}
+                  onChange={(e) =>
+                    setItemDrafts((prev) => ({ ...prev, [t.id]: e.target.value }))
+                  }
                 />
                 <Button
                   type="submit"
                   size="sm"
                   variant="secondary"
-                  disabled={!templateName.trim()}
+                  disabled={!(itemDrafts[t.id] ?? "").trim()}
                 >
-                  <Plus className="h-3.5 w-3.5" /> Create template
+                  <Plus className="h-3.5 w-3.5" />
                 </Button>
               </form>
             </Card>
-          </div>
-        )}
-      </div>
+          );
+        })}
 
-      {/* Start onboarding */}
-      <Drawer
-        open={startOpen}
-        onClose={() => setStartOpen(false)}
-        title="Start onboarding"
-      >
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            startOnboarding();
-          }}
-          className="flex flex-col gap-4"
-        >
-          <div>
-            <Label>Who</Label>
-            <Dropdown
-              value={startPerson}
-              placeholder="Choose a team member"
-              options={staff.map((p) => ({ value: p.id, label: p.full_name }))}
-              onChange={setStartPerson}
+        <Card className="flex flex-col justify-center rounded-xl border-dashed shadow-sm">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              addTemplate();
+            }}
+            className="flex flex-col gap-2"
+          >
+            <Label>New template</Label>
+            <Input
+              placeholder="Standard onboarding"
+              value={templateName}
+              onChange={(e) => setTemplateName(e.target.value)}
             />
-            {startPerson && (tasksByProfile.get(startPerson)?.length ?? 0) > 0 && (
-              <p className="mt-1 text-[11px] text-warning">
-                This person already has a checklist. Starting another will add its steps
-                on top.
-              </p>
-            )}
-          </div>
-          <div>
-            <Label>Template</Label>
-            <Dropdown
-              value={startTemplate}
-              placeholder="Choose a template"
-              options={templates.map((t) => ({
-                value: t.id,
-                label: `${t.name} (${items.filter((i) => i.template_id === t.id).length} steps)`,
-              }))}
-              onChange={setStartTemplate}
-            />
-          </div>
-          <Button type="submit" disabled={startBusy || !startPerson || !startTemplate}>
-            {startBusy ? "Starting..." : "Start checklist"}
-          </Button>
-        </form>
-      </Drawer>
+            <Button type="submit" size="sm" variant="secondary" disabled={!templateName.trim()}>
+              <Plus className="h-3.5 w-3.5" /> Create template
+            </Button>
+          </form>
+        </Card>
+      </div>
     </div>
   );
 }

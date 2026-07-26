@@ -69,6 +69,7 @@ const WORKSPACE: NavItem[] = [
 const ORGANIZATION: NavItem[] = [
   { href: "/organization", label: "Organisation", icon: Building2, page: "organization" },
   { href: "/accounts", label: "Accounts", icon: Wallet, page: "accounts" },
+  { href: "/onboarding", label: "Onboarding", icon: ListChecks, page: "onboarding" },
   { href: "/settings", label: "Settings", icon: Settings, page: "settings" },
 ];
 
