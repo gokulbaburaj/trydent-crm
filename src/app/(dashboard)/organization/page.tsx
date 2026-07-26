@@ -12,6 +12,7 @@ import { Bar } from "@/components/charts/bar";
 import { Grid } from "@/components/charts/grid";
 import { BarXAxis } from "@/components/charts/bar-x-axis";
 import { ChartTooltip } from "@/components/charts/tooltip/chart-tooltip";
+import { TooltipContent } from "@/components/charts/tooltip/tooltip-content";
 import { cn } from "@/lib/utils";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { useAuth } from "@/lib/useAuth";
@@ -206,12 +207,12 @@ export default function OrganizationPage() {
   }, [onboarding]);
 
   const funnelTooltip = ({ point }: { point: Record<string, unknown> }) => (
-    <div>
-      <p className="text-[11px] text-muted-foreground">{String(point.stage)}</p>
-      <p className="mt-0.5 text-[13px] font-medium tabular-nums text-foreground">
-        {Number(point.count)} applicant{Number(point.count) === 1 ? "" : "s"}
-      </p>
-    </div>
+    <TooltipContent
+      title={String(point.stage)}
+      rows={[
+        { color: "var(--chart-1)", label: "Applicants", value: Number(point.count) },
+      ]}
+    />
   );
 
   const showGoals = canAccess(profile?.role, "goals");

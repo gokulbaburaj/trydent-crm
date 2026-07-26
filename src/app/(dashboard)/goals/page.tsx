@@ -4,8 +4,8 @@ import { useMemo, useState } from "react";
 import { Plus, Target, Trash2 } from "lucide-react";
 import { toast } from "@/components/Toaster";
 import { Card } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { StatusPicker } from "@/components/ui/StatusPicker";
 import { Avatar } from "@/components/ui/Avatar";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { Dropdown } from "@/components/ui/Dropdown";
@@ -344,19 +344,17 @@ function GoalsInner() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Badge tone={STATUS_TONES[goal.status]} dot>
-                  {GOAL_STATUS_LABELS[goal.status]}
-                </Badge>
-                <div className="w-32">
-                  <Dropdown
-                    value={goal.status}
-                    options={GOAL_STATUSES.map((s) => ({
-                      value: s,
-                      label: GOAL_STATUS_LABELS[s],
-                    }))}
-                    onChange={(v) => updateGoal(goal.id, { status: v as GoalStatus })}
-                  />
-                </div>
+                {/* One control, not a badge next to a dropdown saying the same
+                    thing — the badge IS the trigger. */}
+                <StatusPicker
+                  align="right"
+                  value={goal.status}
+                  options={GOAL_STATUSES}
+                  label="Goal status"
+                  renderLabel={(s) => GOAL_STATUS_LABELS[s]}
+                  toneFor={(s) => STATUS_TONES[s]}
+                  onChange={(status) => updateGoal(goal.id, { status })}
+                />
                 <button
                   type="button"
                   aria-label="Delete goal"

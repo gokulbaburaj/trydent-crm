@@ -45,11 +45,10 @@ import { Drawer } from "@/components/ui/Drawer";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { Dropdown } from "@/components/ui/Dropdown";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
-import { useStaffProfiles } from "@/lib/useStaffProfiles";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/useAuth";
 import { formatDate } from "@/lib/format";
-import type { Activity, Client, Deal, Project, ProjectTask } from "@/lib/types";
+import type { Activity, Client, Deal, Profile, Project, ProjectTask } from "@/lib/types";
 
 type Tab = "all" | "mine" | "calendar";
 type CalView = "week" | "month";
@@ -132,7 +131,7 @@ export default function SchedulePage() {
   );
   const { rows: clients } = useSupabaseTable<Client>("clients");
   const { rows: deals } = useSupabaseTable<Deal>("deals");
-  const { rows: profiles } = useStaffProfiles();
+  const { rows: profiles } = useSupabaseTable<Profile>("profiles");
   const { rows: projectTasks, setRows: setTaskRows } = useSupabaseTable<ProjectTask>("project_tasks");
   const { rows: projects, setRows: setProjectRows } = useSupabaseTable<Project>("projects");
 

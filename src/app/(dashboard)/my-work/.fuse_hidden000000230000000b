@@ -12,14 +12,13 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { TaskDetailDrawer } from "@/components/TaskDetailDrawer";
 import { TableSkeleton } from "@/components/ui/Skeletons";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
-import { useStaffProfiles } from "@/lib/useStaffProfiles";
 import { nextTaskPayload } from "@/lib/recurrence";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/useAuth";
 import { useTabs } from "@/lib/tabs";
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/format";
-import type { Project, ProjectTask } from "@/lib/types";
+import type { Profile, Project, ProjectTask } from "@/lib/types";
 import { PRIORITY_ORDER, TASK_STATUSES } from "@/lib/types";
 
 type Bucket = "Overdue" | "Today" | "This Week" | "Later";
@@ -44,7 +43,7 @@ export default function MyWorkPage() {
     { column: "due_date", ascending: true }
   );
   const { rows: projects } = useSupabaseTable<Project>("projects");
-  const { rows: profiles } = useStaffProfiles();
+  const { rows: profiles } = useSupabaseTable<Profile>("profiles");
   const [detailTaskId, setDetailTaskId] = useState<string | null>(null);
 
   const mine = useMemo(

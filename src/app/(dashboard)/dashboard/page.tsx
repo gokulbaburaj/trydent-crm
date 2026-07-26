@@ -14,6 +14,7 @@ import { Grid } from "@/components/charts/grid";
 import { BarXAxis } from "@/components/charts/bar-x-axis";
 import { XAxis } from "@/components/charts/x-axis";
 import { ChartTooltip } from "@/components/charts/tooltip/chart-tooltip";
+import { TooltipContent } from "@/components/charts/tooltip/tooltip-content";
 import { cn } from "@/lib/utils";
 import { DollarSign, TrendingUp, Users, GitBranch, ArrowRight } from "lucide-react";
 import { StatCard } from "@/components/ui/StatCard";
@@ -116,13 +117,20 @@ export default function DashboardPage() {
   }, [deals]);
 
   /** Shared tooltip so bar and area read identically. */
+  // TooltipContent is the vendored bklit panel: padded, titled, colour-dotted
+  // rows with right-aligned values. Rendering raw <div>s here is what made the
+  // old tooltips look cramped against their border.
   const revenueTooltip = ({ point }: { point: Record<string, unknown> }) => (
-    <div>
-      <p className="text-[11px] text-muted-foreground">{String(point.month)}</p>
-      <p className="mt-0.5 text-[13px] font-medium tabular-nums text-foreground">
-        {formatCurrency(Number(point.revenue))}
-      </p>
-    </div>
+    <TooltipContent
+      title={String(point.month)}
+      rows={[
+        {
+          color: "var(--chart-1)",
+          label: "Revenue",
+          value: formatCurrency(Number(point.revenue)),
+        },
+      ]}
+    />
   );
 
   const loading = dealsLoading || clientsLoading || activitiesLoading;

@@ -27,7 +27,6 @@ import { Input, Label, Textarea } from "@/components/ui/Input";
 import { Dropdown } from "@/components/ui/Dropdown";
 import { Popover, MenuItem, MenuLabel } from "@/components/ui/Popover";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
-import { useStaffProfiles } from "@/lib/useStaffProfiles";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { formatDate, initials } from "@/lib/format";
@@ -40,7 +39,8 @@ import type {
   CurrencyCode,
   Deal,
   PortalUpdate,
-  } from "@/lib/types";
+  Profile,
+} from "@/lib/types";
 import { CLIENT_STATUSES, LEAD_SOURCES } from "@/lib/types";
 
 type PageTab = "overview" | "portal" | "deals" | "activity";
@@ -59,7 +59,7 @@ export default function ClientDetailPage() {
   const { format: formatCurrency, toBase, base } = useCurrency();
   const { rows: deals } = useSupabaseTable<Deal>("deals");
   const { rows: activities } = useSupabaseTable<Activity>("activities");
-  const { rows: profiles } = useStaffProfiles();
+  const { rows: profiles } = useSupabaseTable<Profile>("profiles");
   const { rows: portals, setRows: setPortals } = useSupabaseTable<ClientPortal>("client_portals");
   const { rows: updates, setRows: setUpdates } = useSupabaseTable<PortalUpdate>("portal_updates");
 

@@ -49,7 +49,7 @@ import { useStaffProfiles } from "@/lib/useStaffProfiles";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/useAuth";
 import { formatDate } from "@/lib/format";
-import type { Activity, Client, Deal, Project, ProjectTask } from "@/lib/types";
+import type { Activity, Client, Deal, Profile, Project, ProjectTask } from "@/lib/types";
 
 type Tab = "all" | "mine" | "calendar";
 type CalView = "week" | "month";

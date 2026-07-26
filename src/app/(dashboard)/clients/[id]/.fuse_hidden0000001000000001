@@ -40,7 +40,8 @@ import type {
   CurrencyCode,
   Deal,
   PortalUpdate,
-  } from "@/lib/types";
+  Profile,
+} from "@/lib/types";
 import { CLIENT_STATUSES, LEAD_SOURCES } from "@/lib/types";
 
 type PageTab = "overview" | "portal" | "deals" | "activity";

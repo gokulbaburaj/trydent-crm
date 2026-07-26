@@ -16,7 +16,7 @@ import { useStaffProfiles } from "@/lib/useStaffProfiles";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/format";
-import type { Project, ProjectTask, Client } from "@/lib/types";
+import type { Project, ProjectTask, Client, Profile } from "@/lib/types";
 import { PROJECT_STATUSES } from "@/lib/types";
 import { useTabs } from "@/lib/tabs";
 

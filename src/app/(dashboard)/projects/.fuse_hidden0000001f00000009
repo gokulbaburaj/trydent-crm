@@ -12,11 +12,10 @@ import { Input, Label, Textarea } from "@/components/ui/Input";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { Dropdown } from "@/components/ui/Dropdown";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
-import { useStaffProfiles } from "@/lib/useStaffProfiles";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/format";
-import type { Project, ProjectTask, Client } from "@/lib/types";
+import type { Project, ProjectTask, Client, Profile } from "@/lib/types";
 import { PROJECT_STATUSES } from "@/lib/types";
 import { useTabs } from "@/lib/tabs";
 
@@ -47,7 +46,7 @@ function ProjectsPageInner() {
     { column: "created_at", ascending: false }
   );
   const { rows: clients } = useSupabaseTable<Client>("clients");
-  const { rows: profiles } = useStaffProfiles();
+  const { rows: profiles } = useSupabaseTable<Profile>("profiles");
   const { rows: tasks } = useSupabaseTable<ProjectTask>("project_tasks");
 
   const [editing, setEditing] = useState<Partial<Project> | null>(null);
