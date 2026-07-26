@@ -1563,16 +1563,38 @@ function ProjectCalendar({
 
 const TIMELINE_COLORS = ["#a855f7", "#4cb782", "#6c74dd", "#4ea7e0", "#d9a53f", "#d95c8a"];
 
-/** Gantt-style strip: bars run created → due inside a 12-day window around today. */
+/**
+ * Gantt-style strip: one bar per task, spanning its working window.
+ *
+ * Three things this gets right that the previous version didn't.
+ *
+ * 1. The window is derived from the tasks, not a fixed 12 days around today.
+ *    A task due last week or next month used to be clamped to the edge and
+ *    rendered in the wrong place; now the strip always contains its own data.
+ *
+ * 2. A bar starts at `min(created_at, due_date)`. Using `created_at` alone
+ *    broke whenever a task was entered after its deadline — a very normal thing
+ *    to do — producing a negative width that then hit a 10% minimum and pushed
+ *    the bar past its own due date. That's why several tasks appeared stacked
+ *    at the same spot regardless of when they were actually due.
+ *
+ * 3. Axis labels are positioned at their true percentage rather than spread
+ *    with `justify-between`, so a tick genuinely sits above the date it names.
+ */
 function TasksTimeline({ tasks }: { tasks: ProjectTask[] }) {
-  const windowStart = startOfDay(addDays(new Date(), -5));
-  const spanMs = 12 * 86_400_000;
   const rows = tasks
     .filter((t) => t.due_date)
     .sort((a, b) => (a.due_date ?? "").localeCompare(b.due_date ?? ""))
     .slice(0, 6);
 
-  if (rows.length === 0) {
+  const spans = rows.map((t) => {
+    const due = startOfDay(parseISO(t.due_date as string));
+    const created = startOfDay(parseISO(t.created_at));
+    // A deadline can predate the record. Whichever is earlier is the real start.
+    return { task: t, start: created < due ? created : due, end: addDays(due, 1) };
+  });
+
+  if (spans.length === 0) {
     return (
       <p className="py-8 text-center text-sm text-muted-foreground">
         Give tasks due dates and they&apos;ll appear here as a timeline.
@@ -1580,34 +1602,59 @@ function TasksTimeline({ tasks }: { tasks: ProjectTask[] }) {
     );
   }
 
+  const today = startOfDay(new Date());
+  const stamps = [
+    ...spans.map((s) => s.start.getTime()),
+    ...spans.map((s) => s.end.getTime()),
+    today.getTime(),
+  ];
+  // One day of breathing room so nothing is flush against the edge.
+  const rawMin = addDays(new Date(Math.min(...stamps)), -1);
+  const rawMax = addDays(new Date(Math.max(...stamps)), 1);
+  const DAY = 86_400_000;
+  // Keep a floor on the span so a single one-day task doesn't fill the strip.
+  const spanMs = Math.max(rawMax.getTime() - rawMin.getTime(), 7 * DAY);
+  const windowStart = rawMin;
+
   const pct = (d: Date) =>
     Math.min(Math.max((d.getTime() - windowStart.getTime()) / spanMs, 0), 1) * 100;
-  const todayPct = pct(new Date());
+  const todayPct = pct(today);
+
+  // Six evenly spaced ticks across whatever range we ended up with.
+  const ticks = Array.from({ length: 6 }, (_, i) => {
+    const at = new Date(windowStart.getTime() + (spanMs * i) / 5);
+    return { at, pct: (i / 5) * 100 };
+  });
 
   return (
     <div className="relative pt-1">
       {/* Today line */}
-      <div
-        className="pointer-events-none absolute bottom-7 top-0 z-10 w-px bg-primary"
-        style={{ left: `${todayPct}%` }}
-      >
-        <span className="absolute -left-[3px] -top-1 h-2 w-2 rounded-full border-2 border-primary bg-panel" />
-      </div>
+      {todayPct > 0 && todayPct < 100 && (
+        <div
+          className="pointer-events-none absolute bottom-7 top-0 z-10 w-px bg-primary"
+          style={{ left: `${todayPct}%` }}
+        >
+          <span className="absolute -left-[3px] -top-1 h-2 w-2 rounded-full border-2 border-primary bg-panel" />
+        </div>
+      )}
 
       <div className="flex flex-col gap-2.5">
-        {rows.map((t, i) => {
-          const start = pct(startOfDay(parseISO(t.created_at)));
-          const end = pct(addDays(startOfDay(parseISO(t.due_date as string)), 1));
-          const left = Math.min(start, 90);
-          const width = Math.max(end - left, 10);
+        {spans.map(({ task: t, start, end }, i) => {
+          const left = pct(start);
+          // Floor the width in pixels, not percent, so a short task stays
+          // visible without overstating how long it ran.
+          const width = pct(end) - left;
           const color = TIMELINE_COLORS[i % TIMELINE_COLORS.length];
+          const overdue =
+            t.status !== "Done" && t.status !== "Archived" && parseISO(t.due_date!) < today;
           return (
             <div key={t.id} className="relative h-7 border-b border-dashed border-border-subtle">
               <div
-                title={`${t.name} — due ${formatDate(t.due_date)}`}
+                title={`${t.name} — due ${formatDate(t.due_date)}${overdue ? " (overdue)" : ""}`}
                 className={cn(
-                  "absolute top-0 flex h-6 items-center overflow-hidden rounded-full px-2.5 text-[11px] font-medium text-white shadow-sm",
-                  t.status === "Done" && "opacity-60"
+                  "absolute top-0 flex h-6 min-w-[3rem] items-center overflow-hidden rounded-full px-2.5 text-[11px] font-medium text-white shadow-sm",
+                  t.status === "Done" && "opacity-60",
+                  overdue && "ring-1 ring-danger"
                 )}
                 style={{ left: `${left}%`, width: `${width}%`, background: color }}
               >
@@ -1618,10 +1665,25 @@ function TasksTimeline({ tasks }: { tasks: ProjectTask[] }) {
         })}
       </div>
 
-      {/* Date labels */}
-      <div className="mt-2 flex justify-between text-[10px] tabular-nums text-muted-2">
-        {Array.from({ length: 7 }, (_, i) => addDays(windowStart, i * 2)).map((d) => (
-          <span key={d.getTime()}>{format(d, "d")}</span>
+      {/* Date labels, anchored to their true position */}
+      <div className="relative mt-2 h-4">
+        {ticks.map(({ at, pct: p }, i) => (
+          <span
+            key={at.getTime()}
+            className="absolute whitespace-nowrap text-[10px] tabular-nums text-muted-2"
+            style={{
+              left: `${p}%`,
+              // Nudge the end labels inward so they don't clip the card.
+              transform:
+                i === 0
+                  ? "translateX(0)"
+                  : i === ticks.length - 1
+                    ? "translateX(-100%)"
+                    : "translateX(-50%)",
+            }}
+          >
+            {format(at, "MMM d")}
+          </span>
         ))}
       </div>
     </div>
