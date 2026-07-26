@@ -119,7 +119,7 @@ function ProjectsPageInner() {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
           <h2 className="truncate text-sm text-muted-foreground">
             {projects.length} project{projects.length !== 1 ? "s" : ""} across{" "}
@@ -157,30 +157,39 @@ function ProjectsPageInner() {
             <div key={clientId} className="rounded-md border border-border bg-surface">
               <div
                 onClick={() => toggle(clientId)}
-                className="flex cursor-pointer items-center justify-between gap-3 px-4 py-3"
+                className="flex cursor-pointer items-center justify-between gap-2 px-3 py-3 sm:gap-3 sm:px-4"
               >
-                <div className="flex min-w-0 items-center gap-3">
+                {/* On a phone the name, the status pill and the count can't
+                    share one line — the name is what loses, and a row reading
+                    just "Active Customer · 1 project" tells you nothing. So the
+                    name gets its own line below `sm`. */}
+                <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
                   <ChevronRight
                     className={cn(
                       "h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200",
                       !isCollapsed && "rotate-90"
                     )}
                   />
-                  <span className="truncate text-sm font-semibold">
-                    {client?.company ?? "Unknown Client"}
-                  </span>
-                  {client && (
-                    <Badge tone={statusTone(client.status)} dot>
-                      {client.status}
-                    </Badge>
-                  )}
-                  <span className="shrink-0 text-xs text-muted-foreground">
-                    {items.length} project{items.length !== 1 ? "s" : ""}
-                  </span>
+                  <div className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
+                    <span className="truncate text-sm font-semibold">
+                      {client?.company ?? "Unknown Client"}
+                    </span>
+                    <div className="flex min-w-0 items-center gap-2">
+                      {client && (
+                        <Badge tone={statusTone(client.status)} dot className="shrink-0">
+                          {client.status}
+                        </Badge>
+                      )}
+                      <span className="shrink-0 text-xs text-muted-foreground">
+                        {items.length} project{items.length !== 1 ? "s" : ""}
+                      </span>
+                    </div>
+                  </div>
                 </div>
                 <Button
                   size="sm"
                   variant="secondary"
+                  className="shrink-0"
                   onClick={(e) => {
                     e.stopPropagation();
                     setEditing({ ...emptyForm, client_id: clientId });
@@ -191,7 +200,7 @@ function ProjectsPageInner() {
               </div>
 
               {!isCollapsed && (
-                <div className="grid grid-cols-1 gap-2.5 border-t border-border p-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid grid-cols-1 gap-2.5 border-t border-border p-3 sm:grid-cols-2 sm:p-4 lg:grid-cols-3">
                   {items.map((p) => {
                     const pct = completionOf(p.id);
                     return (

@@ -8,3 +8,8 @@ node_modules
 # TypeScript incremental build cache — a 300KB artifact that changes on
 # every compile. Untrack with: git rm --cached tsconfig.tsbuildinfo
 tsconfig.tsbuildinfo
+
+# Ghost files the macOS FUSE mount leaves behind when a file is rewritten while
+# something still has the old inode open. They're stale copies of real source
+# files — never commit them.
+.fuse_hidden*

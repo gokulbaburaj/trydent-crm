@@ -25,6 +25,7 @@ import { Popover, MenuItem, MenuLabel } from "@/components/ui/Popover";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { useStaffProfiles } from "@/lib/useStaffProfiles";
 import { useTabs } from "@/lib/tabs";
+import { useIsPhone } from "@/lib/useMediaQuery";
 import { applyFilters, useStoredFilters } from "@/lib/filters";
 import { createClient } from "@/lib/supabase/client";
 import { formatDate } from "@/lib/format";
@@ -82,6 +83,7 @@ export default function PipelinePage() {
 
   const { rows: projects, setRows: setProjects } = useSupabaseTable<Project>("projects");
   const { openInNewTab } = useTabs();
+  const isPhone = useIsPhone();
 
   const [stageChart, setStageChart] = useState<StageChart>("bar");
   /** The deal just dragged into Closed Won, awaiting a decision. */
@@ -248,7 +250,7 @@ export default function PipelinePage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm text-muted-foreground">
           {visibleDeals.length !== deals.length
             ? `${visibleDeals.length} of ${deals.length} deals shown`
@@ -334,8 +336,14 @@ export default function PipelinePage() {
           </div>
 
           {stageChart === "share" ? (
-            <div className="flex h-[260px] items-center justify-center gap-8">
-              <PieChart data={stageSlices} size={220} innerRadius={62} padAngle={0.05} cornerRadius={6}>
+            <div className="flex flex-col items-center justify-center gap-5 py-4 sm:h-[260px] sm:flex-row sm:gap-8 sm:py-0">
+              <PieChart
+                data={stageSlices}
+                size={isPhone ? 160 : 220}
+                innerRadius={isPhone ? 46 : 62}
+                padAngle={0.05}
+                cornerRadius={6}
+              >
                 {stageSlices.map((s, i) => (
                   <PieSlice key={s.label} index={i} />
                 ))}
@@ -353,12 +361,14 @@ export default function PipelinePage() {
             </div>
           ) : (
             // aspectRatio is width-driven: on a ~1900px card anything taller
-            // than ~6/1 turns into a wall of chart.
+            // than ~6/1 turns into a wall of chart. On a 340px phone that same
+            // ratio gives a 57px-tall plot — the bars vanish and only the
+            // labels are left, which is exactly what the screenshot showed.
             <BarChart
               data={stageBars}
               xDataKey="stage"
-              aspectRatio="6 / 1"
-              barWidth={56}
+              aspectRatio={isPhone ? "4 / 3" : "6 / 1"}
+              barWidth={isPhone ? 28 : 56}
               margin={{ top: 24, right: 16, bottom: 36, left: 16 }}
             >
               <Grid horizontal fadeHorizontal vertical={false} />
@@ -366,7 +376,9 @@ export default function PipelinePage() {
                 dataKey={stageChart === "value" ? "value" : "deals"}
                 fill="var(--chart-line-primary)" lineCap="round"
               />
-              <BarXAxis showAllLabels />
+              {/* Five stage names don't fit across a phone. Let the axis thin
+                  them out rather than printing them on top of each other. */}
+              <BarXAxis showAllLabels={!isPhone} />
               <ChartTooltip
                 content={({ point }) => (
                   <TooltipContent

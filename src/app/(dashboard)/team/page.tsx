@@ -381,7 +381,7 @@ function TeamPageInner() {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
           <p className="truncate text-sm text-muted-foreground">
             {isAdmin

@@ -514,13 +514,16 @@ export default function ProjectDetailPage() {
       </div>
 
       {/* Header card */}
-      <Card className="p-5">
+      <Card className="p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/15">
-              <Box className="h-5 w-5 text-primary" />
+          <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/15 sm:h-10 sm:w-10">
+              <Box className="h-4 w-4 text-primary sm:h-5 sm:w-5" />
             </div>
-            <h1 className="truncate text-[24px] font-semibold tracking-tight">{project.name}</h1>
+            {/* Wraps on a phone instead of truncating to "Social Media - Mark…" */}
+            <h1 className="min-w-0 text-[17px] font-semibold leading-tight tracking-tight sm:truncate sm:text-[24px]">
+              {project.name}
+            </h1>
           </div>
         </div>
         <textarea
@@ -539,8 +542,11 @@ export default function ProjectDetailPage() {
             guessing which date is the start and who the person is. */}
         {/* Status sits with the other project attributes rather than floating
             in the top-right corner away from everything it relates to. */}
-        <div className="mt-4 flex flex-wrap items-end gap-x-5 gap-y-3">
-          <div>
+        {/* Phones get a two-column grid rather than a wrapping flex row: with
+            flex-wrap the fields land at whatever x-offset the previous one
+            happened to end at, which is the ragged look in the screenshots. */}
+        <div className="mt-4 grid grid-cols-2 items-end gap-x-3 gap-y-3 sm:flex sm:flex-wrap sm:gap-x-5">
+          <div className="min-w-0">
             <Label>Status</Label>
             <div className="flex h-9 items-center">
               <StatusPicker
@@ -550,9 +556,9 @@ export default function ProjectDetailPage() {
               />
             </div>
           </div>
-          <div>
+          <div className="min-w-0">
             <Label>Starts</Label>
-            <div className="w-36">
+            <div className="w-full sm:w-36">
               <DatePicker
                 value={project.start_date}
                 placeholder="Not set"
@@ -560,9 +566,9 @@ export default function ProjectDetailPage() {
               />
             </div>
           </div>
-          <div>
+          <div className="min-w-0">
             <Label>Ends</Label>
-            <div className="w-36">
+            <div className="w-full sm:w-36">
               <DatePicker
                 value={project.due_date}
                 placeholder="Not set"
@@ -571,7 +577,7 @@ export default function ProjectDetailPage() {
             </div>
           </div>
           {project.start_date && project.due_date && (
-            <div>
+            <div className="min-w-0">
               <Label>Duration</Label>
               <div className="flex h-9 items-center text-xs text-muted-foreground">
                 {Math.max(
@@ -585,13 +591,13 @@ export default function ProjectDetailPage() {
               </div>
             </div>
           )}
-          <div>
+          <div className="min-w-0">
             <Label>Client</Label>
           <Popover
             trigger={
-              <button className="flex h-9 items-center gap-1.5 rounded-md border border-white/5 bg-white/5 px-2.5 text-xs font-medium text-foreground-secondary hover:bg-white/10">
-                <Building2 className="h-3 w-3 text-muted-foreground" />
-                {clientName(project.client_id)}
+              <button className="flex h-9 max-w-full items-center gap-1.5 overflow-hidden rounded-md border border-white/5 bg-white/5 px-2.5 text-xs font-medium text-foreground-secondary hover:bg-white/10">
+                <Building2 className="h-3 w-3 shrink-0 text-muted-foreground" />
+                <span className="truncate">{clientName(project.client_id)}</span>
               </button>
             }
           >
@@ -615,7 +621,7 @@ export default function ProjectDetailPage() {
           </Popover>
           </div>
           {projectClient && (
-            <div>
+            <div className="col-span-2 min-w-0 sm:col-span-1">
               <Label>Last contact</Label>
               {isSameDayAsToday(projectClient.last_contact) ? (
                 <div className="flex h-9 items-center gap-1.5 text-[11px] text-success">
@@ -641,21 +647,21 @@ export default function ProjectDetailPage() {
               )}
             </div>
           )}
-          <div>
+          <div className="min-w-0">
             <Label>Lead</Label>
           <Popover
             trigger={
-              <button className="flex h-9 items-center gap-2 rounded-md border border-white/5 bg-white/5 px-2.5 text-xs font-medium text-foreground-secondary hover:bg-white/10">
+              <button className="flex h-9 max-w-full items-center gap-2 overflow-hidden rounded-md border border-white/5 bg-white/5 px-2.5 text-xs font-medium text-foreground-secondary hover:bg-white/10">
                 {project.owner ? (
                   <>
-                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary/15 text-[8px] font-semibold text-primary">
+                    <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[8px] font-semibold text-primary">
                       {initials(personName(project.owner))}
                     </span>
-                    {personName(project.owner)}
+                    <span className="truncate">{personName(project.owner)}</span>
                   </>
                 ) : (
                   <>
-                    <User className="h-3 w-3 text-muted-foreground" /> Assign lead
+                    <User className="h-3 w-3 shrink-0 text-muted-foreground" /> Assign lead
                   </>
                 )}
               </button>
@@ -680,11 +686,11 @@ export default function ProjectDetailPage() {
             )}
           </Popover>
           </div>
-          <div>
+          <div className="min-w-0">
             <Label>Team</Label>
             <Popover
               trigger={
-                <button className="flex h-9 items-center gap-2 rounded-md border border-white/5 bg-white/5 px-2.5 text-xs font-medium text-foreground-secondary hover:bg-white/10">
+                <button className="flex h-9 max-w-full items-center gap-2 overflow-hidden rounded-md border border-white/5 bg-white/5 px-2.5 text-xs font-medium text-foreground-secondary hover:bg-white/10">
                   {projectMembers.length > 0 ? (
                     <>
                       <AvatarStack people={projectMembers} />
@@ -735,7 +741,7 @@ export default function ProjectDetailPage() {
       </Card>
 
       {/* View switcher */}
-      <div className="flex w-fit items-center gap-0.5 rounded-md border border-border bg-surface p-1">
+      <div className="flex w-full items-center gap-0.5 overflow-x-auto rounded-md border border-border bg-surface p-1 sm:w-fit">
         <PageTabButton active={tab === "overview"} onClick={() => switchTab("overview")} icon={LayoutDashboard} label="Overview" />
         <PageTabButton active={tab === "board"} onClick={() => switchTab("board")} icon={LayoutGrid} label="Kanban" />
         <PageTabButton active={tab === "tasks"} onClick={() => switchTab("tasks")} icon={List} label="List" />

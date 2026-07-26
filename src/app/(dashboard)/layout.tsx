@@ -111,7 +111,7 @@ export default function DashboardLayout({
 
         <div className="flex min-w-0 flex-1 flex-col">
           <TabBar />
-          <div className="min-h-0 min-w-0 flex-1 px-2 pb-2 md:pl-0">
+          <div className="min-h-0 min-w-0 flex-1 px-1.5 pb-1.5 sm:px-2 sm:pb-2 md:pl-0">
             <div className="flex h-full min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-panel">
               <Topbar
                 profile={profile}
@@ -121,7 +121,7 @@ export default function DashboardLayout({
               />
               <main
                 key={pathname}
-                className="animate-page min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6"
+                className="animate-page min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-6"
               >
                 {children}
               </main>

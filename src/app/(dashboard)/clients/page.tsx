@@ -212,7 +212,7 @@ export default function ClientsPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-0.5 rounded-md border border-border bg-surface p-1">
           <button
             onClick={() => setView("table")}

@@ -38,16 +38,18 @@ export function Drawer({
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent
         className={cn(
-          "flex max-h-[85vh] w-[calc(100vw-2rem)] flex-col gap-0 overflow-hidden border-border bg-background p-0 sm:w-full",
+          // Phones get more of the screen and tighter gutters — a 2rem inset
+          // plus 1.5rem of padding each side left forms squeezed into ~250px.
+          "flex max-h-[90vh] w-[calc(100vw-1.5rem)] flex-col gap-0 overflow-hidden border-border bg-background p-0 sm:max-h-[85vh] sm:w-full",
           wide ? "sm:max-w-4xl" : "sm:max-w-xl"
         )}
       >
-        <DialogHeader className="shrink-0 border-b border-border px-6 py-4">
-          <DialogTitle className="text-[15px] font-semibold text-foreground">
+        <DialogHeader className="shrink-0 border-b border-border px-4 py-3 sm:px-6 sm:py-4">
+          <DialogTitle className="pr-6 text-[15px] font-semibold text-foreground">
             {title}
           </DialogTitle>
         </DialogHeader>
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">{children}</div>
       </DialogContent>
     </Dialog>
   );

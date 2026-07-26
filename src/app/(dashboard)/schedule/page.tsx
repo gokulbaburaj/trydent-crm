@@ -346,7 +346,7 @@ export default function SchedulePage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-0.5 rounded border border-border bg-surface p-1">
           <TabButton active={tab === "all"} onClick={() => setTab("all")} icon={List} label="All" />
           <TabButton active={tab === "mine"} onClick={() => setTab("mine")} icon={User} label="Mine" />
