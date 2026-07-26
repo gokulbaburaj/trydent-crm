@@ -4,3 +4,7 @@ node_modules
 .env*.local
 .DS_Store
 *.log
+
+# TypeScript incremental build cache — a 300KB artifact that changes on
+# every compile. Untrack with: git rm --cached tsconfig.tsbuildinfo
+tsconfig.tsbuildinfo
