@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { parseISO } from "date-fns";
+import { format, formatDistanceToNow, parseISO } from "date-fns";
 import {
   Activity as ActivityIcon,
   Building2,
@@ -13,6 +13,7 @@ import {
   LayoutDashboard,
   MonitorSmartphone,
   MoreHorizontal,
+  PhoneCall,
   Trash2,
   User,
   X,
@@ -20,6 +21,7 @@ import {
 import { toast } from "@/components/Toaster";
 import { ClientPortalPanel } from "@/components/ClientPortalPanel";
 import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 import { Badge, statusTone } from "@/components/ui/Badge";
 import { StatusPicker } from "@/components/ui/StatusPicker";
 import { DatePicker } from "@/components/ui/DatePicker";
@@ -44,6 +46,12 @@ import type {
 import { CLIENT_STATUSES, LEAD_SOURCES } from "@/lib/types";
 
 type PageTab = "overview" | "portal" | "deals" | "activity";
+
+/** True when a yyyy-MM-dd string is today's date. */
+function isToday(date: string | null | undefined) {
+  if (!date) return false;
+  return date.slice(0, 10) === format(new Date(), "yyyy-MM-dd");
+}
 
 export default function ClientDetailPage() {
   const params = useParams<{ id: string }>();
@@ -296,10 +304,37 @@ export default function ClientDetailPage() {
                   />
                 </Field>
                 <Field label="Last contact">
-                  <DatePicker
-                    value={client.last_contact}
-                    onChange={(d) => updateClient({ last_contact: d })}
-                  />
+                  <div className="flex items-center gap-2">
+                    <div className="min-w-0 flex-1">
+                      <DatePicker
+                        value={client.last_contact}
+                        onChange={(d) => updateClient({ last_contact: d })}
+                      />
+                    </div>
+                    {/* Stamping today is the common case by a mile — picking
+                        "today" out of a calendar is four clicks for one fact. */}
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      disabled={isToday(client.last_contact)}
+                      onClick={() => {
+                        const today = format(new Date(), "yyyy-MM-dd");
+                        updateClient({ last_contact: today });
+                        toast.success("Marked as contacted today");
+                      }}
+                    >
+                      <PhoneCall className="h-3.5 w-3.5" />
+                      {isToday(client.last_contact) ? "Today" : "Contacted"}
+                    </Button>
+                  </div>
+                  {client.last_contact && !isToday(client.last_contact) && (
+                    <p className="mt-1 text-[11px] text-muted-2">
+                      {formatDistanceToNow(parseISO(client.last_contact), {
+                        addSuffix: true,
+                      })}
+                    </p>
+                  )}
                 </Field>
                 <Field label="Address">
                   <Textarea
