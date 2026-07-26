@@ -101,6 +101,9 @@ export interface Profile {
   client_id: string | null;
   team: string | null;
   reports_to: string | null;
+  /** Job title, shown on their onboarding page. */
+  title: string | null;
+  start_date: string | null;
   created_at: string;
 }
 
@@ -445,13 +448,25 @@ export interface OnboardingTemplate {
   id: string;
   name: string;
   is_default: boolean;
+  /** Short note shown at the top of every checklist made from this template. */
+  welcome_note: string | null;
   created_at: string;
 }
+
+/** Phases a checklist step can belong to. Free text in the database so you can
+ *  invent new ones per template; these are just the sensible defaults. */
+export const ONBOARDING_SECTIONS = [
+  "Before first day",
+  "First day",
+  "First week",
+  "First month",
+] as const;
 
 export interface OnboardingTemplateItem {
   id: string;
   template_id: string;
   title: string;
+  section: string;
   sort_order: number;
 }
 
@@ -459,6 +474,7 @@ export interface OnboardingTask {
   id: string;
   profile_id: string;
   title: string;
+  section: string;
   done: boolean;
   sort_order: number;
   created_at: string;

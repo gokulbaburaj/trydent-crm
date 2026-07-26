@@ -35,7 +35,22 @@ import type {
   OnboardingTemplate,
   OnboardingTemplateItem,
 } from "@/lib/types";
-import { APPLICANT_STAGES, APPLICANT_STAGE_LABELS } from "@/lib/types";
+import { APPLICANT_STAGES, APPLICANT_STAGE_LABELS, ONBOARDING_SECTIONS } from "@/lib/types";
+
+/** Steps in template order, bucketed by phase, phases in canonical order. */
+function groupBySection<T extends { section: string }>(rows: T[]): [string, T[]][] {
+  const map = new Map<string, T[]>();
+  for (const r of rows) {
+    const list = map.get(r.section);
+    if (list) list.push(r);
+    else map.set(r.section, [r]);
+  }
+  const known = ONBOARDING_SECTIONS.filter((s) => map.has(s));
+  const extra = Array.from(map.keys()).filter(
+    (s) => !(ONBOARDING_SECTIONS as readonly string[]).includes(s)
+  );
+  return [...known, ...extra].map((s) => [s, map.get(s)!]);
+}
 
 type Tab = "applicants" | "onboarding";
 
@@ -709,6 +724,7 @@ function Onboarding() {
 
   const [templateName, setTemplateName] = useState("");
   const [itemDrafts, setItemDrafts] = useState<Record<string, string>>({});
+  const [sectionDrafts, setSectionDrafts] = useState<Record<string, string>>({});
 
   const defaultTemplate = templates.find((t) => t.is_default) ?? null;
 
@@ -742,6 +758,18 @@ function Onboarding() {
     if (error) setTemplates(before);
   }
 
+  async function setWelcome(id: string, welcome_note: string) {
+    const before = templates;
+    setTemplates((prev) => prev.map((t) => (t.id === id ? { ...t, welcome_note } : t)));
+    const supabase = createClient();
+    if (!supabase) return;
+    const { error } = await supabase
+      .from("onboarding_templates")
+      .update({ welcome_note: welcome_note || null })
+      .eq("id", id);
+    if (error) setTemplates(before);
+  }
+
   async function makeDefault(id: string) {
     setTemplates((prev) => prev.map((t) => ({ ...t, is_default: t.id === id })));
     const supabase = createClient();
@@ -764,12 +792,13 @@ function Onboarding() {
   async function addItem(templateId: string) {
     const title = (itemDrafts[templateId] ?? "").trim();
     if (!title) return;
+    const section = sectionDrafts[templateId] ?? ONBOARDING_SECTIONS[0];
     const existing = items.filter((i) => i.template_id === templateId);
     const supabase = createClient();
     if (!supabase) return;
     const { data, error } = await supabase
       .from("onboarding_template_items")
-      .insert({ template_id: templateId, title, sort_order: existing.length })
+      .insert({ template_id: templateId, title, section, sort_order: existing.length })
       .select()
       .single();
     if (error || !data) {
@@ -876,8 +905,15 @@ function Onboarding() {
                 {tItems.length} step{tItems.length === 1 ? "" : "s"}
               </p>
 
-              <div className="mt-2.5 flex flex-col gap-1">
-                {tItems.map((i, idx) => (
+              {/* Grouped by phase — a flat list never says WHEN a step happens. */}
+              <div className="mt-2.5 flex flex-col gap-2.5">
+                {groupBySection(tItems).map(([section, sectionItems]) => (
+                  <div key={section}>
+                    <p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-muted-2">
+                      {section}
+                    </p>
+                    <div className="flex flex-col gap-1">
+                {sectionItems.map((i, idx) => (
                   <div
                     key={i.id}
                     className="group flex items-center gap-2 rounded-md border border-border-subtle pl-2.5 pr-1 transition-colors focus-within:border-primary/40"
@@ -914,6 +950,9 @@ function Onboarding() {
                     </button>
                   </div>
                 ))}
+                    </div>
+                  </div>
+                ))}
               </div>
 
               <form
@@ -923,6 +962,13 @@ function Onboarding() {
                 }}
                 className="mt-2 flex items-center gap-2"
               >
+                <div className="w-36 shrink-0">
+                  <Dropdown
+                    value={sectionDrafts[t.id] ?? ONBOARDING_SECTIONS[0]}
+                    options={ONBOARDING_SECTIONS.map((sn) => ({ value: sn, label: sn }))}
+                    onChange={(v) => setSectionDrafts((prev) => ({ ...prev, [t.id]: v }))}
+                  />
+                </div>
                 <Input
                   placeholder="Add a step..."
                   value={itemDrafts[t.id] ?? ""}
@@ -939,6 +985,23 @@ function Onboarding() {
                   <Plus className="h-3.5 w-3.5" />
                 </Button>
               </form>
+
+              <div className="mt-2">
+                <Label>Welcome note</Label>
+                <Textarea
+                  rows={2}
+                  placeholder="Shown at the top of every checklist made from this template..."
+                  value={t.welcome_note ?? ""}
+                  onChange={(e) =>
+                    setTemplates((prev) =>
+                      prev.map((x) =>
+                        x.id === t.id ? { ...x, welcome_note: e.target.value } : x
+                      )
+                    )
+                  }
+                  onBlur={(e) => setWelcome(t.id, e.target.value)}
+                />
+              </div>
             </Card>
           );
         })}

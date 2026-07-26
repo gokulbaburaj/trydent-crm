@@ -2,9 +2,20 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowUpRight, ListChecks, Plus, Trash2 } from "lucide-react";
+import {
+  ArrowUpRight,
+  Briefcase,
+  CalendarDays,
+  CircleDot,
+  ListChecks,
+  Plus,
+  Trash2,
+  UsersRound,
+} from "lucide-react";
 import { toast } from "@/components/Toaster";
 import { Card } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
+import { DatePicker } from "@/components/ui/DatePicker";
 import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/ui/Avatar";
 import { Checkbox } from "@/components/ui/Checkbox";
@@ -24,6 +35,22 @@ import type {
   OnboardingTemplate,
   OnboardingTemplateItem,
 } from "@/lib/types";
+import { ONBOARDING_SECTIONS } from "@/lib/types";
+
+/** Steps bucketed by phase, phases in canonical order. */
+function groupBySection<T extends { section: string }>(rows: T[]): [string, T[]][] {
+  const map = new Map<string, T[]>();
+  for (const r of rows) {
+    const list = map.get(r.section);
+    if (list) list.push(r);
+    else map.set(r.section, [r]);
+  }
+  const known = ONBOARDING_SECTIONS.filter((s) => map.has(s));
+  const extra = Array.from(map.keys()).filter(
+    (s) => !(ONBOARDING_SECTIONS as readonly string[]).includes(s)
+  );
+  return [...known, ...extra].map((s) => [s, map.get(s)!]);
+}
 
 /**
  * Onboarding — the live process, one card per person.
@@ -51,10 +78,11 @@ function OnboardingInner() {
     "onboarding_template_items",
     { column: "sort_order", ascending: true }
   );
-  const { rows: staff } = useStaffProfiles();
+  const { rows: staff, setRows: setStaff } = useStaffProfiles();
 
   const [openPerson, setOpenPerson] = useState<string | null>(null);
   const [stepDraft, setStepDraft] = useState("");
+  const [stepSection, setStepSection] = useState<string>(ONBOARDING_SECTIONS[0]);
   const [startOpen, setStartOpen] = useState(false);
   const [startPerson, setStartPerson] = useState("");
   const [startTemplate, setStartTemplate] = useState("");
@@ -118,6 +146,7 @@ function OnboardingInner() {
         steps.map((s) => ({
           profile_id: startPerson,
           title: s.title,
+          section: s.section,
           sort_order: s.sort_order,
         }))
       )
@@ -150,11 +179,12 @@ function OnboardingInner() {
     const title = stepDraft.trim();
     if (!title) return;
     const existing = tasksByProfile.get(profileId) ?? [];
+    const section = stepSection;
     const supabase = createClient();
     if (!supabase) return;
     const { data, error } = await supabase
       .from("onboarding_tasks")
-      .insert({ profile_id: profileId, title, sort_order: existing.length })
+      .insert({ profile_id: profileId, title, section, sort_order: existing.length })
       .select()
       .single();
     if (error || !data) {
@@ -172,6 +202,16 @@ function OnboardingInner() {
     if (!supabase) return;
     const { error } = await supabase.from("onboarding_tasks").delete().eq("id", id);
     if (error) setTasks(before);
+  }
+
+  /** Job title and start date live on the profile so they show up everywhere,
+   *  not just here. */
+  async function updateProfile(id: string, patch: { title?: string; start_date?: string | null }) {
+    setStaff((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+    const supabase = createClient();
+    if (!supabase) return;
+    const { error } = await supabase.from("profiles").update(patch).eq("id", id);
+    if (error) toast.error(`Couldn't save: ${error.message}`);
   }
 
   async function clearChecklist(profileId: string) {
@@ -319,19 +359,18 @@ function OnboardingInner() {
           const entry = people.find((p) => p.profileId === openPerson);
           if (!entry) return null;
           const { profileId, profile, tasks: pTasks, done, pct } = entry;
+          const welcome = (defaultTemplate ?? templates[0])?.welcome_note ?? null;
           return (
             <div className="flex flex-col gap-4">
-              <div className="flex flex-wrap items-center gap-3">
+              {/* Reads like a document: title, a property table, then the
+                  checklist grouped into phases. */}
+              <div className="flex items-center gap-3">
                 <Avatar name={profile?.full_name ?? "Unknown"} url={profile?.avatar_url} size="lg" />
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold">
+                  <p className="text-lg font-semibold tracking-tight">
                     {profile?.full_name ?? "Unknown member"}
                   </p>
-                  <p className="mt-0.5 text-[11px] text-muted-2">
-                    {[profile?.role, profile?.team, profile?.email]
-                      .filter(Boolean)
-                      .join(" · ") || "No profile details"}
-                  </p>
+                  <p className="text-[11px] text-muted-2">{profile?.email}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-lg font-semibold tabular-nums">{pct}%</p>
@@ -351,8 +390,48 @@ function OnboardingInner() {
                 />
               </div>
 
-              <div className="flex flex-col gap-1">
-                {pTasks.map((t, i) => (
+              <div className="flex flex-col gap-1.5">
+                <PropRow icon={CircleDot} label="Status">
+                  <Badge tone={pct >= 100 ? "green" : pct > 0 ? "yellow" : "gray"}>
+                    {pct >= 100 ? "Complete" : pct > 0 ? "In progress" : "Not started"}
+                  </Badge>
+                </PropRow>
+                <PropRow icon={Briefcase} label="Position">
+                  <input
+                    defaultValue={profile?.title ?? ""}
+                    placeholder="Add a job title"
+                    onBlur={(e) => profile && updateProfile(profile.id, { title: e.target.value })}
+                    className="w-full min-w-0 rounded border border-transparent bg-transparent px-1 py-0.5 text-[13px] hover:border-border focus:border-primary/60 focus:outline-none"
+                  />
+                </PropRow>
+                <PropRow icon={CalendarDays} label="Start date">
+                  <div className="w-44">
+                    <DatePicker
+                      value={profile?.start_date ?? null}
+                      placeholder="Not set"
+                      onChange={(d) => profile && updateProfile(profile.id, { start_date: d })}
+                    />
+                  </div>
+                </PropRow>
+                <PropRow icon={UsersRound} label="Team">
+                  <span className="text-[13px] text-foreground-secondary">
+                    {profile?.team ?? "No team"}
+                  </span>
+                </PropRow>
+              </div>
+
+              {welcome && (
+                <div className="rounded-lg border border-warning/25 bg-warning/10 p-3 text-[13px] leading-relaxed text-foreground-secondary">
+                  {welcome}
+                </div>
+              )}
+
+              <div className="flex flex-col gap-4">
+                {groupBySection(pTasks).map(([section, sectionTasks]) => (
+                  <div key={section}>
+                    <h4 className="mb-1.5 text-[13px] font-semibold">{section}</h4>
+                    <div className="flex flex-col gap-1">
+                {sectionTasks.map((t, i) => (
                   <div
                     key={t.id}
                     className="group flex items-center gap-2 rounded-md border border-border-subtle px-2.5 py-2 transition-colors hover:border-white/15"
@@ -385,6 +464,9 @@ function OnboardingInner() {
                     </button>
                   </div>
                 ))}
+                    </div>
+                  </div>
+                ))}
               </div>
 
               <form
@@ -394,6 +476,13 @@ function OnboardingInner() {
                 }}
                 className="flex items-center gap-2"
               >
+                <div className="w-36 shrink-0">
+                  <Dropdown
+                    value={stepSection}
+                    options={ONBOARDING_SECTIONS.map((sn) => ({ value: sn, label: sn }))}
+                    onChange={setStepSection}
+                  />
+                </div>
                 <Input
                   placeholder="Add a step just for this person..."
                   value={stepDraft}
@@ -467,6 +556,27 @@ function OnboardingInner() {
           Checklists started {formatDate(tasks[0]?.created_at)} onwards.
         </p>
       )}
+    </div>
+  );
+}
+
+/** One property line in the person document — icon, label, value. */
+function PropRow({
+  icon: Icon,
+  label,
+  children,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex w-32 shrink-0 items-center gap-1.5 text-[12px] text-muted-foreground">
+        <Icon className="h-3.5 w-3.5" />
+        {label}
+      </div>
+      <div className="min-w-0 flex-1">{children}</div>
     </div>
   );
 }
