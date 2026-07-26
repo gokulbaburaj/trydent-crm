@@ -22,6 +22,7 @@ import {
 import { toast } from "@/components/Toaster";
 import { ClientPortalPanel } from "@/components/ClientPortalPanel";
 import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 import { Badge, statusTone } from "@/components/ui/Badge";
 import { StatusPicker } from "@/components/ui/StatusPicker";
 import { DatePicker } from "@/components/ui/DatePicker";

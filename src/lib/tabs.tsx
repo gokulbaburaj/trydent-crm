@@ -139,11 +139,23 @@ export function TabsProvider({ children }: { children: React.ReactNode }) {
 
   const openInNewTab = useCallback(
     (href: string, title?: string) => {
-      const t = { id: rid(), href, title: title ?? deriveTitle(href) };
-      setTabs((prev) => [...prev, t]);
-      setActiveId(t.id);
-      prevPath.current = href;
-      router.push(href);
+      // Clicking the same project five times used to open five identical tabs.
+      // If one is already showing this href, focus it instead — that's what
+      // every browser does, and it's what people expect.
+      setTabs((prev) => {
+        const existing = prev.find((t) => t.href === href);
+        if (existing) {
+          setActiveId(existing.id);
+          prevPath.current = href;
+          router.push(href);
+          return prev;
+        }
+        const t = { id: rid(), href, title: title ?? deriveTitle(href) };
+        setActiveId(t.id);
+        prevPath.current = href;
+        router.push(href);
+        return [...prev, t];
+      });
     },
     [router]
   );
