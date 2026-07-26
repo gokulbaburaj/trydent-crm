@@ -24,11 +24,14 @@ import { DatePicker } from "@/components/ui/DatePicker";
 import { Popover, MenuItem, MenuLabel } from "@/components/ui/Popover";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { useStaffProfiles } from "@/lib/useStaffProfiles";
+import { useTabs } from "@/lib/tabs";
 import { applyFilters, useStoredFilters } from "@/lib/filters";
 import { createClient } from "@/lib/supabase/client";
 import { formatDate } from "@/lib/format";
+import { format } from "date-fns";
+import { toast } from "@/components/Toaster";
 import { CURRENCIES, useCurrency } from "@/lib/currency";
-import type { CurrencyCode, Deal, Client } from "@/lib/types";
+import type { CurrencyCode, Deal, Client, Project } from "@/lib/types";
 import { DEAL_STAGES } from "@/lib/types";
 
 /** Stage colours — first follows the user's accent, rest are fixed. */
@@ -77,7 +80,16 @@ export default function PipelinePage() {
   const { rows: clients } = useSupabaseTable<Client>("clients");
   const { rows: profiles } = useStaffProfiles();
 
+  const { rows: projects, setRows: setProjects } = useSupabaseTable<Project>("projects");
+  const { openInNewTab } = useTabs();
+
   const [stageChart, setStageChart] = useState<StageChart>("bar");
+  /** The deal just dragged into Closed Won, awaiting a decision. */
+  const [wonDeal, setWonDeal] = useState<Deal | null>(null);
+  const [projName, setProjName] = useState("");
+  const [projStart, setProjStart] = useState<string | null>(null);
+  const [projDue, setProjDue] = useState<string | null>(null);
+  const [projBusy, setProjBusy] = useState(false);
   const [selected, setSelected] = useState<Deal | null>(null);
   const [editing, setEditing] = useState<Partial<Deal> | null>(null);
   const [saving, setSaving] = useState(false);
@@ -145,6 +157,52 @@ export default function PipelinePage() {
     const supabase = createClient();
     if (!supabase) return;
     await supabase.from("deals").update({ deal_stage: stage }).eq("id", deal.id);
+
+    // Winning a deal usually means work starts — but not always, and not
+    // always as ONE project. So ask rather than auto-create, and only when
+    // there's no project already pointing at this deal.
+    if (stage === "Closed Won" && !projects.some((p) => p.deal_id === deal.id)) {
+      setWonDeal(deal);
+      setProjName(deal.deal_name);
+      setProjStart(deal.close_date ?? format(new Date(), "yyyy-MM-dd"));
+      setProjDue(null);
+    }
+  }
+
+  async function createProjectFromDeal() {
+    if (!wonDeal) return;
+    const name = projName.trim();
+    if (!name) return;
+    setProjBusy(true);
+    const supabase = createClient();
+    if (!supabase) {
+      setProjBusy(false);
+      return;
+    }
+    const { data, error } = await supabase
+      .from("projects")
+      .insert({
+        name,
+        client_id: wonDeal.client_id,
+        // Linking here is what makes the budget wire itself up in Accounts.
+        deal_id: wonDeal.id,
+        owner: wonDeal.account_owner,
+        member_ids: wonDeal.account_owner ? [wonDeal.account_owner] : [],
+        status: "Planning",
+        start_date: projStart,
+        due_date: projDue,
+      })
+      .select()
+      .single();
+    setProjBusy(false);
+    if (error || !data) {
+      toast.error(`Couldn't create: ${error?.message ?? "unknown error"}`);
+      return;
+    }
+    setProjects((prev) => [data as Project, ...prev]);
+    setWonDeal(null);
+    toast.success("Project created and linked to the deal");
+    openInNewTab(`/projects/${(data as Project).id}`, name);
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -476,6 +534,62 @@ export default function PipelinePage() {
               </Button>
               <Button type="button" variant="secondary" onClick={() => setEditing(null)}>
                 Cancel
+              </Button>
+            </div>
+          </form>
+        )}
+      </Drawer>
+
+      {/* Deal won → start the work? */}
+      <Drawer
+        open={!!wonDeal}
+        onClose={() => setWonDeal(null)}
+        title="Deal won — start a project?"
+      >
+        {wonDeal && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              createProjectFromDeal();
+            }}
+            className="flex flex-col gap-4"
+          >
+            <div className="rounded-lg border border-success/30 bg-success/10 p-3">
+              <p className="text-[13px] font-medium text-success">
+                {wonDeal.deal_name} · {formatCurrency(Number(wonDeal.deal_value), dealCcy(wonDeal))}
+              </p>
+              <p className="mt-0.5 text-[11px] text-foreground-secondary">
+                {clientName(wonDeal.client_id)}
+              </p>
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              Creating a project links it to this deal, so the budget in Accounts follows the
+              deal value automatically. Skip if this work is already running, or if the deal
+              covers several projects you&apos;ll set up separately.
+            </p>
+
+            <div>
+              <Label>Project name</Label>
+              <Input value={projName} onChange={(e) => setProjName(e.target.value)} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Starts</Label>
+                <DatePicker value={projStart} onChange={setProjStart} placeholder="Start" />
+              </div>
+              <div>
+                <Label>Ends</Label>
+                <DatePicker value={projDue} onChange={setProjDue} placeholder="Deadline" />
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-1">
+              <Button type="submit" className="flex-1" disabled={projBusy || !projName.trim()}>
+                {projBusy ? "Creating..." : "Create project"}
+              </Button>
+              <Button type="button" variant="secondary" onClick={() => setWonDeal(null)}>
+                Not now
               </Button>
             </div>
           </form>
