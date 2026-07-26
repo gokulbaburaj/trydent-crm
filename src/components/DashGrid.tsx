@@ -100,11 +100,16 @@ export function DashGrid({ storageKey, cards }: { storageKey: string; cards: Das
 
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-      {/* auto-rows-fr keeps every row the same height rather than letting one
-          tall card stretch its row and leave the others ragged. */}
+      {/*
+        Rows are a FIXED height, not `auto-rows-fr`. `fr` still resolves to the
+        tallest content, so a card with twenty tasks kept growing the row — the
+        cards were equal to each other but the dashboard as a whole still crept
+        down the page. A fixed row means every card keeps its slot and long
+        content scrolls inside it, which is what "scrollable, not taller" needs.
+      */}
       <div
         ref={gridRef}
-        className="grid grid-cols-1 items-stretch gap-4 lg:auto-rows-fr lg:grid-cols-3"
+        className="grid grid-cols-1 items-stretch gap-4 lg:auto-rows-[19rem] lg:grid-cols-3"
       >
         {order.map((id) => {
           const def = cards.find((c) => c.id === id);

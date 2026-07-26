@@ -303,10 +303,10 @@ export default function PipelinePage() {
               barWidth={56}
               margin={{ top: 24, right: 16, bottom: 36, left: 16 }}
             >
-              <Grid horizontal fadeHorizontal vertical={false} />
+              <Grid horizontal vertical={false} />
               <Bar
                 dataKey={stageChart === "value" ? "value" : "deals"}
-                fill="var(--chart-line-primary)" lineCap="round"
+                fill="var(--chart-1)"
               />
               <BarXAxis showAllLabels />
               <ChartTooltip

@@ -327,8 +327,8 @@ export default function OrganizationPage() {
                   barGap={0.3}
                   margin={{ top: 20, right: 8, bottom: 34, left: 8 }}
                 >
-                  <Grid horizontal fadeHorizontal vertical={false} />
-                  <Bar dataKey="count" fill="var(--chart-line-primary)" lineCap="round" />
+                  <Grid horizontal vertical={false} />
+                  <Bar dataKey="count" fill="var(--primary)" />
                   <BarXAxis />
                   <ChartTooltip content={funnelTooltip} />
                 </BarChart>

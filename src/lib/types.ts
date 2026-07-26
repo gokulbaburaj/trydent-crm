@@ -464,6 +464,18 @@ export interface OnboardingTask {
   created_at: string;
 }
 
+/** What one person is being paid for one project. */
+export interface ProjectAllocation {
+  id: string;
+  project_id: string;
+  profile_id: string;
+  amount: number;
+  role_label: string | null;
+  note: string | null;
+  paid: boolean;
+  created_at: string;
+}
+
 export interface Notification {
   id: string;
   recipient_id: string;
@@ -501,6 +513,9 @@ export interface Project {
   owner: string | null;
   /** Everyone else on the project, lead included after the backfill. */
   member_ids: string[];
+  /** Money allotted to this project, in `currency`. */
+  budget: number;
+  currency: CurrencyCode;
   start_date: string | null;
   due_date: string | null;
   description: string | null;
@@ -534,6 +549,7 @@ export interface Database {
       onboarding_templates: { Row: OnboardingTemplate; Insert: Partial<OnboardingTemplate>; Update: Partial<OnboardingTemplate> };
       onboarding_template_items: { Row: OnboardingTemplateItem; Insert: Partial<OnboardingTemplateItem>; Update: Partial<OnboardingTemplateItem> };
       onboarding_tasks: { Row: OnboardingTask; Insert: Partial<OnboardingTask>; Update: Partial<OnboardingTask> };
+      project_allocations: { Row: ProjectAllocation; Insert: Partial<ProjectAllocation>; Update: Partial<ProjectAllocation> };
       notifications: { Row: Notification; Insert: Partial<Notification>; Update: Partial<Notification> };
     };
   };

@@ -1512,7 +1512,7 @@ function ProjectCalendar({
                 {dayMeetings.slice(0, 2).map((m) => (
                   <span
                     key={m.id}
-                    className="truncate rounded px-1 py-px text-[10px] font-semibold"
+                    className="truncate rounded px-1 py-px text-[11px] font-semibold"
                     style={{
                       background: "var(--event-yellow-bg)",
                       color: "#3d2c05",
@@ -1525,10 +1525,10 @@ function ProjectCalendar({
                 {dayTasks.slice(0, Math.max(0, 2 - dayMeetings.length)).map((t) => (
                   <span
                     key={t.id}
-                    title={t.name}
-                    className="truncate rounded px-1 py-px text-[10px] font-medium text-white"
+                    className="truncate rounded px-1 py-px text-[11px] font-semibold"
                     style={{
                       background: "var(--event-indigo-bg)",
+                      color: "#ffffff",
                       boxShadow: "inset 2px 0 0 0 var(--event-indigo-bar)",
                     }}
                   >

@@ -13,6 +13,7 @@ import {
   UsersRound,
   Building2,
   Settings,
+  Wallet,
   ChevronDown,
   ChevronRight,
   Search,
@@ -67,6 +68,7 @@ const WORKSPACE: NavItem[] = [
  *  instead of four keeps the sidebar readable as the app grows. */
 const ORGANIZATION: NavItem[] = [
   { href: "/organization", label: "Organisation", icon: Building2, page: "organization" },
+  { href: "/accounts", label: "Accounts", icon: Wallet, page: "accounts" },
   { href: "/settings", label: "Settings", icon: Settings, page: "settings" },
 ];
 
