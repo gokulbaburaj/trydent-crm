@@ -92,6 +92,20 @@ export const TASK_STATUSES: TaskStatus[] = [
   "Archived",
 ];
 
+/**
+ * A job role. The single source of truth for "what does this person do" —
+ * replaces free text on applicants, profiles and template names.
+ * A role belongs to a team and carries the onboarding checklist for it.
+ */
+export interface Role {
+  id: string;
+  name: string;
+  team: string | null;
+  template_id: string | null;
+  sort_order: number;
+  created_at: string;
+}
+
 export interface Profile {
   id: string;
   full_name: string;
@@ -101,7 +115,9 @@ export interface Profile {
   client_id: string | null;
   team: string | null;
   reports_to: string | null;
-  /** Job title, shown on their onboarding page. */
+  /** The company role they hold — drives their team and onboarding checklist. */
+  role_id: string | null;
+  /** Free-text override when the role name isn't the whole story. */
   title: string | null;
   start_date: string | null;
   created_at: string;
@@ -435,6 +451,8 @@ export interface Applicant {
   phone: string | null;
   role_title: string | null;
   location: string | null;
+  /** The role they're being considered for. */
+  role_id: string | null;
   stage: ApplicantStage;
   source: string | null;
   resume_url: string | null;
@@ -565,6 +583,7 @@ export interface Database {
       client_documents: { Row: ClientDocument; Insert: Partial<ClientDocument>; Update: Partial<ClientDocument> };
       invoices: { Row: Invoice; Insert: Partial<Invoice>; Update: Partial<Invoice> };
       team_directory: { Row: TeamMember; Insert: never; Update: never };
+      roles: { Row: Role; Insert: Partial<Role>; Update: Partial<Role> };
       meeting_requests: { Row: MeetingRequest; Insert: Partial<MeetingRequest>; Update: Partial<MeetingRequest> };
       goals: { Row: Goal; Insert: Partial<Goal>; Update: Partial<Goal> };
       key_results: { Row: KeyResult; Insert: Partial<KeyResult>; Update: Partial<KeyResult> };

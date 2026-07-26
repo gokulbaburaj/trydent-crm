@@ -25,6 +25,7 @@ import { TableSkeleton } from "@/components/ui/Skeletons";
 import { KanbanBoard, type KanbanColumn } from "@/components/KanbanBoard";
 import { RequireAccess } from "@/components/RequireAccess";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
+import { useStaffProfiles } from "@/lib/useStaffProfiles";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/format";

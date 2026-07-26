@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Check } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Check, Plus, Trash2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "@/components/Toaster";
 import { Card } from "@/components/ui/Card";
@@ -9,6 +9,10 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
 import { Input, Label } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { Dropdown } from "@/components/ui/Dropdown";
+import { useSupabaseTable } from "@/lib/useSupabaseTable";
+import { useStaffProfiles } from "@/lib/useStaffProfiles";
+import type { OnboardingTemplate, Role } from "@/lib/types";
 import { useAuth } from "@/lib/useAuth";
 import { createClient } from "@/lib/supabase/client";
 import { CURRENCIES, setBaseCurrency, useCurrency } from "@/lib/currency";
@@ -250,6 +254,202 @@ export default function SettingsPage() {
           )}
         </p>
       </Card>
+
+      <RolesCard />
     </div>
+  );
+}
+
+/**
+ * Company roles — the admin-managed list that everything else reads from.
+ *
+ * Before this, a person's job was free text in three places (applicant, profile
+ * team, profile title) and they could disagree. A role names the job once,
+ * says which team it sits in, and points at the onboarding checklist a new
+ * hire in that role should get.
+ */
+function RolesCard() {
+  const { profile } = useAuth();
+  const { rows: roles, setRows: setRoles } = useSupabaseTable<Role>("roles", {
+    column: "sort_order",
+    ascending: true,
+  });
+  const { rows: templates } = useSupabaseTable<OnboardingTemplate>("onboarding_templates");
+  const { rows: staff } = useStaffProfiles();
+
+  const [name, setName] = useState("");
+  const [team, setTeam] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const isAdmin = profile?.role === "admin";
+
+  const teams = useMemo(
+    () =>
+      Array.from(
+        new Set([
+          ...roles.map((r) => r.team),
+          ...staff.map((p) => p.team),
+        ].filter((t): t is string => !!t))
+      ).sort(),
+    [roles, staff]
+  );
+
+  const headcount = (roleId: string) => staff.filter((p) => p.role_id === roleId).length;
+
+  async function addRole() {
+    const n = name.trim();
+    if (!n) return;
+    setBusy(true);
+    const supabase = createClient();
+    if (!supabase) {
+      setBusy(false);
+      return;
+    }
+    const { data, error } = await supabase
+      .from("roles")
+      .insert({ name: n, team: team.trim() || null, sort_order: roles.length })
+      .select()
+      .single();
+    setBusy(false);
+    if (error || !data) {
+      toast.error(
+        error?.message.includes("duplicate")
+          ? "That role already exists."
+          : `Couldn't add: ${error?.message ?? "unknown error"}`
+      );
+      return;
+    }
+    setRoles((prev) => [...prev, data as Role]);
+    setName("");
+    setTeam("");
+  }
+
+  async function updateRole(id: string, patch: Partial<Role>) {
+    const before = roles;
+    setRoles((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+    const supabase = createClient();
+    if (!supabase) return;
+    const { error } = await supabase.from("roles").update(patch).eq("id", id);
+    if (error) {
+      setRoles(before);
+      toast.error(`Couldn't save: ${error.message}`);
+    }
+  }
+
+  async function deleteRole(id: string) {
+    if (headcount(id) > 0) {
+      toast.error("Someone still holds this role. Move them first.");
+      return;
+    }
+    const before = roles;
+    setRoles((prev) => prev.filter((r) => r.id !== id));
+    const supabase = createClient();
+    if (!supabase) return;
+    const { error } = await supabase.from("roles").delete().eq("id", id);
+    if (error) {
+      setRoles(before);
+      toast.error(`Couldn't delete: ${error.message}`);
+    }
+  }
+
+  if (!isAdmin) return null;
+
+  return (
+    <Card>
+      <h3 className="text-sm font-semibold">Company roles</h3>
+      <p className="mt-0.5 text-xs text-muted-foreground">
+        The job list your whole app reads from. A role sets someone&apos;s team and the
+        onboarding checklist they get when hired.
+      </p>
+
+      <div className="mt-3.5 flex flex-col gap-1.5">
+        {roles.length === 0 && (
+          <p className="text-xs text-muted-foreground">
+            No roles yet. Add the jobs you hire for.
+          </p>
+        )}
+        {roles.map((r) => (
+          <div
+            key={r.id}
+            className="group flex flex-wrap items-center gap-2 rounded-md border border-border-subtle px-2.5 py-2"
+          >
+            <input
+              value={r.name}
+              onChange={(e) =>
+                setRoles((prev) =>
+                  prev.map((x) => (x.id === r.id ? { ...x, name: e.target.value } : x))
+                )
+              }
+              onBlur={(e) => {
+                const v = e.target.value.trim();
+                if (v && v !== r.name) updateRole(r.id, { name: v });
+              }}
+              className="min-w-0 flex-1 rounded border border-transparent bg-transparent px-1 py-0.5 text-[13px] font-medium hover:border-border focus:border-primary/60 focus:outline-none"
+            />
+            <div className="w-40">
+              <Dropdown
+                value={r.team ?? ""}
+                placeholder="No team"
+                options={[
+                  { value: "", label: "No team" },
+                  ...teams.map((t) => ({ value: t, label: t })),
+                ]}
+                onChange={(v) => updateRole(r.id, { team: v || null })}
+              />
+            </div>
+            <div className="w-48">
+              <Dropdown
+                value={r.template_id ?? ""}
+                placeholder="No checklist"
+                options={[
+                  { value: "", label: "No checklist" },
+                  ...templates.map((t) => ({ value: t.id, label: t.name })),
+                ]}
+                onChange={(v) => updateRole(r.id, { template_id: v || null })}
+              />
+            </div>
+            <span className="w-16 shrink-0 text-right text-[11px] text-muted-2">
+              {headcount(r.id)} {headcount(r.id) === 1 ? "person" : "people"}
+            </span>
+            <button
+              type="button"
+              aria-label={`Delete ${r.name}`}
+              onClick={() => deleteRole(r.id)}
+              className="rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:text-danger group-hover:opacity-100"
+            >
+              <Trash2 className="h-3 w-3" />
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          addRole();
+        }}
+        className="mt-3 flex flex-wrap items-end gap-2 rounded-lg border border-border-subtle bg-white/[0.02] p-2.5"
+      >
+        <div className="min-w-[10rem] flex-1">
+          <Label>Role name</Label>
+          <Input
+            placeholder="Video Editor"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </div>
+        <div className="w-44">
+          <Label>Team</Label>
+          <Input
+            placeholder="Video Editing"
+            value={team}
+            onChange={(e) => setTeam(e.target.value)}
+          />
+        </div>
+        <Button type="submit" size="sm" disabled={busy || !name.trim()}>
+          <Plus className="h-3.5 w-3.5" /> Add role
+        </Button>
+      </form>
+    </Card>
   );
 }

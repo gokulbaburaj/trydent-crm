@@ -34,6 +34,7 @@ import type {
   OnboardingTask,
   OnboardingTemplate,
   OnboardingTemplateItem,
+  Role,
 } from "@/lib/types";
 import { ONBOARDING_SECTIONS } from "@/lib/types";
 
@@ -79,6 +80,12 @@ function OnboardingInner() {
     { column: "sort_order", ascending: true }
   );
   const { rows: staff, setRows: setStaff } = useStaffProfiles();
+  const { rows: roles } = useSupabaseTable<Role>("roles", {
+    column: "sort_order",
+    ascending: true,
+  });
+  const roleOf = (id: string | null | undefined) =>
+    roles.find((r) => r.id === id) ?? null;
 
   const [openPerson, setOpenPerson] = useState<string | null>(null);
   const [stepDraft, setStepDraft] = useState("");
@@ -294,7 +301,9 @@ function OnboardingInner() {
                       <p className="truncate text-[13px] font-medium">{name}</p>
                       <p className="text-[11px] text-muted-2">
                         {done} of {pTasks.length} done
-                        {profile?.team ? ` · ${profile.team}` : ""}
+                        {roleOf(profile?.role_id)?.name
+                          ? ` · ${roleOf(profile?.role_id)?.name}`
+                          : ""}
                       </p>
                     </div>
                     <span className="shrink-0 text-sm font-semibold tabular-nums">{pct}%</span>
@@ -359,7 +368,12 @@ function OnboardingInner() {
           const entry = people.find((p) => p.profileId === openPerson);
           if (!entry) return null;
           const { profileId, profile, tasks: pTasks, done, pct } = entry;
-          const welcome = (defaultTemplate ?? templates[0])?.welcome_note ?? null;
+          const personRole = roleOf(profile?.role_id);
+          const welcome =
+            (personRole?.template_id
+              ? templates.find((t) => t.id === personRole.template_id)
+              : defaultTemplate ?? templates[0]
+            )?.welcome_note ?? null;
           return (
             <div className="flex flex-col gap-4">
               {/* Reads like a document: title, a property table, then the
@@ -397,12 +411,10 @@ function OnboardingInner() {
                   </Badge>
                 </PropRow>
                 <PropRow icon={Briefcase} label="Position">
-                  <input
-                    defaultValue={profile?.title ?? ""}
-                    placeholder="Add a job title"
-                    onBlur={(e) => profile && updateProfile(profile.id, { title: e.target.value })}
-                    className="w-full min-w-0 rounded border border-transparent bg-transparent px-1 py-0.5 text-[13px] hover:border-border focus:border-primary/60 focus:outline-none"
-                  />
+                  {/* The role IS the position — one list, managed in Settings. */}
+                  <span className="text-[13px] text-foreground-secondary">
+                    {roleOf(profile?.role_id)?.name ?? "No role set"}
+                  </span>
                 </PropRow>
                 <PropRow icon={CalendarDays} label="Start date">
                   <div className="w-44">
@@ -415,7 +427,7 @@ function OnboardingInner() {
                 </PropRow>
                 <PropRow icon={UsersRound} label="Team">
                   <span className="text-[13px] text-foreground-secondary">
-                    {profile?.team ?? "No team"}
+                    {roleOf(profile?.role_id)?.team ?? profile?.team ?? "No team"}
                   </span>
                 </PropRow>
               </div>
@@ -525,8 +537,18 @@ function OnboardingInner() {
               value={startPerson}
               placeholder="Choose a team member"
               options={staff.map((p) => ({ value: p.id, label: p.full_name }))}
-              onChange={setStartPerson}
+              onChange={(v) => {
+                setStartPerson(v);
+                // Pre-select the checklist their role calls for.
+                const r = roleOf(staff.find((p) => p.id === v)?.role_id);
+                if (r?.template_id) setStartTemplate(r.template_id);
+              }}
             />
+            {startPerson && roleOf(staff.find((p) => p.id === startPerson)?.role_id) && (
+              <p className="mt-1 text-[11px] text-muted-2">
+                Role: {roleOf(staff.find((p) => p.id === startPerson)?.role_id)?.name}
+              </p>
+            )}
             {startPerson && (tasksByProfile.get(startPerson)?.length ?? 0) > 0 && (
               <p className="mt-1 text-[11px] text-warning">
                 This person already has a checklist. Starting another adds its steps on top.
