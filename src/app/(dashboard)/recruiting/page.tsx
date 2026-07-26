@@ -7,7 +7,8 @@ import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/ui/Avatar";
-import { Input, Label } from "@/components/ui/Input";
+import { Input, Label, Textarea } from "@/components/ui/Input";
+import { Drawer } from "@/components/ui/Drawer";
 import { Dropdown } from "@/components/ui/Dropdown";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { TableSkeleton } from "@/components/ui/Skeletons";
@@ -101,6 +102,9 @@ function Applicants() {
   const [resumeUrl, setResumeUrl] = useState("");
   const [saving, setSaving] = useState(false);
   const [locationFilter, setLocationFilter] = useState("");
+  const [openId, setOpenId] = useState<string | null>(null);
+
+  const openApplicant = applicants.find((a) => a.id === openId) ?? null;
 
   const locations = useMemo(() => {
     const set = new Set(
@@ -163,6 +167,18 @@ function Applicants() {
     if (error) {
       setRows(before);
       toast.error(`Couldn't move: ${error.message}`);
+    }
+  }
+
+  async function updateApplicant(id: string, patch: Partial<Applicant>) {
+    const before = applicants;
+    setRows((prev) => prev.map((a) => (a.id === id ? { ...a, ...patch } : a)));
+    const supabase = createClient();
+    if (!supabase) return;
+    const { error } = await supabase.from("applicants").update(patch).eq("id", id);
+    if (error) {
+      setRows(before);
+      toast.error(`Couldn't save: ${error.message}`);
     }
   }
 
@@ -277,7 +293,10 @@ function Applicants() {
           getColumnId={(a) => a.stage}
           onMove={moveApplicant}
           renderCard={(a) => (
-            <div className="group">
+            // The whole card opens the detail modal. dnd-kit owns pointerdown
+            // for dragging, so a plain onClick is what distinguishes a click
+            // from a drag (the sensor needs 5px of movement to take over).
+            <div className="group cursor-pointer" onClick={() => setOpenId(a.id)}>
               <div className="flex items-start gap-2">
                 <Avatar name={a.full_name} size="xs" />
                 <div className="min-w-0 flex-1">
@@ -286,36 +305,148 @@ function Applicants() {
                     <p className="truncate text-[11px] text-muted-foreground">{a.role_title}</p>
                   )}
                 </div>
-                <button
-                  type="button"
-                  aria-label={`Delete ${a.full_name}`}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onClick={() => deleteApplicant(a.id)}
-                  className="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-danger group-hover:opacity-100"
-                >
-                  <Trash2 className="h-3 w-3" />
-                </button>
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-2">
                 {a.location && <span>{a.location}</span>}
                 {a.source && <span>· {a.source}</span>}
                 <span className="ml-auto">{formatDate(a.created_at)}</span>
               </div>
-              {a.resume_url && (
-                <a
-                  href={a.resume_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onPointerDown={(e) => e.stopPropagation()}
-                  className="mt-1.5 flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
-                >
-                  Resume <ExternalLink className="h-2.5 w-2.5" />
-                </a>
-              )}
             </div>
           )}
         />
       )}
+
+      <Drawer
+        open={!!openApplicant}
+        onClose={() => setOpenId(null)}
+        title={openApplicant?.full_name ?? ""}
+      >
+        {openApplicant && (
+          <ApplicantDetail
+            key={openApplicant.id}
+            applicant={openApplicant}
+            onChange={(patch) => updateApplicant(openApplicant.id, patch)}
+            onDelete={() => {
+              deleteApplicant(openApplicant.id);
+              setOpenId(null);
+            }}
+          />
+        )}
+      </Drawer>
+    </div>
+  );
+}
+
+/** Everything about one applicant, editable in place. Fields save on blur so
+ *  there's no Save button to forget. */
+function ApplicantDetail({
+  applicant,
+  onChange,
+  onDelete,
+}: {
+  applicant: Applicant;
+  onChange: (patch: Partial<Applicant>) => void;
+  onDelete: () => void;
+}) {
+  // Seeded once. The caller passes a `key` of the applicant id, so opening a
+  // different person remounts this component with fresh state — no effect
+  // needed to re-sync, which is the React-approved way to reset on prop change.
+  const [draft, setDraft] = useState(applicant);
+
+  const commit = (key: keyof Applicant) => {
+    const value = draft[key];
+    if (value !== applicant[key]) onChange({ [key]: value } as Partial<Applicant>);
+  };
+
+  const field = (key: keyof Applicant, label: string, placeholder?: string) => (
+    <div>
+      <Label>{label}</Label>
+      <Input
+        placeholder={placeholder}
+        value={(draft[key] as string) ?? ""}
+        onChange={(e) => setDraft((d) => ({ ...d, [key]: e.target.value }))}
+        onBlur={() => commit(key)}
+      />
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center gap-3">
+        <Avatar name={draft.full_name} size="lg" />
+        <div className="min-w-0 flex-1">
+          <Label>Stage</Label>
+          <div className="w-44">
+            <Dropdown
+              value={draft.stage}
+              options={APPLICANT_STAGES.map((s) => ({
+                value: s,
+                label: APPLICANT_STAGE_LABELS[s],
+              }))}
+              onChange={(v) => {
+                setDraft((d) => ({ ...d, stage: v as ApplicantStage }));
+                onChange({ stage: v as ApplicantStage });
+              }}
+            />
+          </div>
+        </div>
+        <span className="self-start text-[11px] text-muted-2">
+          Added {formatDate(applicant.created_at)}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {field("full_name", "Name")}
+        {field("role_title", "Role", "Video editor")}
+        {field("location", "Location", "Remote")}
+        {field("source", "Source", "Referral")}
+        {field("email", "Email")}
+        {field("phone", "Phone")}
+      </div>
+
+      <div>
+        <Label>Resume link</Label>
+        <div className="flex items-center gap-2">
+          <Input
+            placeholder="drive.google.com/..."
+            value={draft.resume_url ?? ""}
+            onChange={(e) => setDraft((d) => ({ ...d, resume_url: e.target.value }))}
+            onBlur={() => {
+              let url = (draft.resume_url ?? "").trim();
+              if (url && !/^https?:\/\//i.test(url)) url = `https://${url}`;
+              if (url !== (applicant.resume_url ?? "")) onChange({ resume_url: url || null });
+            }}
+          />
+          {applicant.resume_url && (
+            <a
+              href={applicant.resume_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Open resume"
+              className="shrink-0 rounded-md border border-border p-2 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          )}
+        </div>
+      </div>
+
+      <div>
+        <Label>Notes</Label>
+        <Textarea
+          rows={5}
+          placeholder="Interview impressions, salary expectations, next steps..."
+          value={draft.notes ?? ""}
+          onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value }))}
+          onBlur={() => commit("notes")}
+        />
+      </div>
+
+      <div className="flex justify-end border-t border-border-subtle pt-3">
+        <Button type="button" variant="danger" size="sm" onClick={onDelete}>
+          <Trash2 className="h-3.5 w-3.5" /> Delete applicant
+        </Button>
+      </div>
     </div>
   );
 }

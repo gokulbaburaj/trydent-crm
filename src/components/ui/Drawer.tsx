@@ -2,14 +2,25 @@
 
 import { ReactNode } from "react";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/shadcn/sheet";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/shadcn/dialog";
 import { cn } from "@/lib/utils";
 
-/** shadcn/ui Sheet with our legacy Drawer API. */
+/**
+ * Centred modal.
+ *
+ * Still called Drawer because dozens of call sites import it under that name
+ * and the props are unchanged — only the presentation moved from a right-hand
+ * sheet to a centred dialog. Renaming the file would be a large, purely
+ * cosmetic diff for no behavioural gain.
+ *
+ * The header stays fixed while the body scrolls, so a long form (task details,
+ * portal panel) keeps its title in view. Height is capped at 85vh so the modal
+ * never runs off a laptop screen.
+ */
 export function Drawer({
   open,
   onClose,
@@ -24,21 +35,20 @@ export function Drawer({
   wide?: boolean;
 }) {
   return (
-    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent
-        side="right"
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent
         className={cn(
-          "w-full gap-0 border-border bg-background p-0",
-          wide ? "sm:max-w-3xl" : "sm:max-w-md"
+          "flex max-h-[85vh] w-[calc(100vw-2rem)] flex-col gap-0 overflow-hidden border-border bg-background p-0 sm:w-full",
+          wide ? "sm:max-w-4xl" : "sm:max-w-xl"
         )}
       >
-        <SheetHeader className="border-b border-border px-6 py-4">
-          <SheetTitle className="text-[15px] font-semibold text-foreground">
+        <DialogHeader className="shrink-0 border-b border-border px-6 py-4">
+          <DialogTitle className="text-[15px] font-semibold text-foreground">
             {title}
-          </SheetTitle>
-        </SheetHeader>
-        <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
-      </SheetContent>
-    </Sheet>
+          </DialogTitle>
+        </DialogHeader>
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">{children}</div>
+      </DialogContent>
+    </Dialog>
   );
 }
