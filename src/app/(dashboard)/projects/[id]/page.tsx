@@ -228,14 +228,19 @@ export default function ProjectDetailPage() {
   const notStarted = active.filter((t) => t.status === "Not Started");
   const completion = active.length > 0 ? Math.round((done.length / active.length) * 100) : 0;
 
+  /** Everything on the calendar for this client, past and future. */
+  const clientMeetings = useMemo(
+    () => (project ? activities.filter((a) => a.client_id === project.client_id) : []),
+    [activities, project]
+  );
+
   const upcomingSchedule = useMemo(() => {
-    if (!project) return [];
     const now = new Date();
-    return activities
-      .filter((a) => a.client_id === project.client_id && parseISO(a.activity_date) >= now)
+    return clientMeetings
+      .filter((a) => parseISO(a.activity_date) >= now)
       .sort((a, b) => parseISO(a.activity_date).getTime() - parseISO(b.activity_date).getTime())
       .slice(0, 4);
-  }, [activities, project]);
+  }, [clientMeetings]);
 
   /** Schedule a meeting without leaving the project. Attendees default to the
    *  project team, which is the whole point of having one. */
@@ -783,7 +788,9 @@ export default function ProjectDetailPage() {
             </div>
           </Card>
           )},
-          { id: "calendar", defaultSpan: 1, render: () => <MiniCalendar tasks={active} /> },
+          { id: "calendar", defaultSpan: 1, render: () => (
+            <MiniCalendar tasks={active} meetings={clientMeetings} />
+          ) },
           { id: "meetings", defaultSpan: 1, render: () => (
           <Card>
             <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold">
@@ -1065,7 +1072,13 @@ export default function ProjectDetailPage() {
       )}
 
       {/* ============ CALENDAR ============ */}
-      {tab === "calendar" && <ProjectCalendar tasks={visibleActive} onQuickAdd={quickAdd} />}
+      {tab === "calendar" && (
+        <ProjectCalendar
+          tasks={visibleActive}
+          meetings={clientMeetings}
+          onQuickAdd={quickAdd}
+        />
+      )}
       </div>
 
       <BulkActionBar
@@ -1255,7 +1268,13 @@ function StatusCount({ count, label, dotClass }: { count: number; label: string;
   );
 }
 
-function MiniCalendar({ tasks }: { tasks: ProjectTask[] }) {
+function MiniCalendar({
+  tasks,
+  meetings,
+}: {
+  tasks: ProjectTask[];
+  meetings: Activity[];
+}) {
   const [month, setMonth] = useState(() => startOfMonth(new Date()));
   const grid = useMemo(() => {
     const start = startOfWeek(startOfMonth(month), { weekStartsOn: 1 });
@@ -1268,6 +1287,12 @@ function MiniCalendar({ tasks }: { tasks: ProjectTask[] }) {
     for (const t of tasks) if (t.due_date) set.add(t.due_date.slice(0, 10));
     return set;
   }, [tasks]);
+
+  const meetingDays = useMemo(() => {
+    const set = new Set<string>();
+    for (const m of meetings) set.add(m.activity_date.slice(0, 10));
+    return set;
+  }, [meetings]);
 
   return (
     <Card>
@@ -1294,7 +1319,9 @@ function MiniCalendar({ tasks }: { tasks: ProjectTask[] }) {
           <span key={d} className="py-1 text-[10px] font-medium text-muted-2">{d}</span>
         ))}
         {grid.map((day) => {
-          const hasDue = dueDays.has(format(day, "yyyy-MM-dd"));
+          const key = format(day, "yyyy-MM-dd");
+          const hasDue = dueDays.has(key);
+          const hasMeeting = meetingDays.has(key);
           return (
             <span
               key={day.toISOString()}
@@ -1302,7 +1329,7 @@ function MiniCalendar({ tasks }: { tasks: ProjectTask[] }) {
                 "relative mx-auto flex h-8 w-8 items-center justify-center rounded-full text-xs",
                 isToday(day)
                   ? "bg-primary font-semibold text-primary-foreground"
-                  : hasDue
+                  : hasDue || hasMeeting
                     ? "bg-primary/20 font-medium text-foreground"
                     : isSameMonth(day, month)
                       ? "text-foreground"
@@ -1310,8 +1337,12 @@ function MiniCalendar({ tasks }: { tasks: ProjectTask[] }) {
               )}
             >
               {format(day, "d")}
-              {hasDue && !isToday(day) && (
-                <span className="absolute bottom-0.5 h-1 w-1 rounded-full bg-primary" />
+              {/* Two dots so a day with both reads as busy at a glance. */}
+              {!isToday(day) && (hasDue || hasMeeting) && (
+                <span className="absolute bottom-0.5 flex gap-0.5">
+                  {hasDue && <span className="h-1 w-1 rounded-full bg-primary" />}
+                  {hasMeeting && <span className="h-1 w-1 rounded-full bg-warning" />}
+                </span>
               )}
             </span>
           );
@@ -1323,9 +1354,13 @@ function MiniCalendar({ tasks }: { tasks: ProjectTask[] }) {
 
 function ProjectCalendar({
   tasks,
+  meetings,
   onQuickAdd,
 }: {
   tasks: ProjectTask[];
+  /** This client's activities. Without them the calendar silently omitted every
+   *  meeting, including ones scheduled from the Overview tab. */
+  meetings: Activity[];
   onQuickAdd: (kind: "task" | "meeting", name: string, day: string) => void;
 }) {
   const [month, setMonth] = useState(() => startOfMonth(new Date()));
@@ -1339,6 +1374,11 @@ function ProjectCalendar({
 
   const tasksOn = (day: Date) =>
     tasks.filter((t) => t.due_date && isSameDay(parseISO(t.due_date), day));
+
+  const meetingsOn = (day: Date) =>
+    meetings
+      .filter((m) => isSameDay(parseISO(m.activity_date), day))
+      .sort((a, b) => a.activity_date.localeCompare(b.activity_date));
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -1366,7 +1406,9 @@ function ProjectCalendar({
         <div className="grid grid-cols-7 gap-1">
           {grid.map((day) => {
             const dayTasks = tasksOn(day);
+            const dayMeetings = meetingsOn(day);
             const isSelected = !!selected && isSameDay(day, selected);
+            const overflow = dayTasks.length + dayMeetings.length - 2;
             return (
               <button
                 key={day.toISOString()}
@@ -1389,9 +1431,25 @@ function ProjectCalendar({
                 >
                   {format(day, "d")}
                 </span>
-                {dayTasks.slice(0, 2).map((t) => (
+                {/* Meetings lead: a fixed time matters more at a glance than a
+                    due date, and the distinct colour keeps the two readable. */}
+                {dayMeetings.slice(0, 2).map((m) => (
+                  <span
+                    key={m.id}
+                    title={m.description}
+                    className="truncate rounded px-1 py-px text-[10px] font-medium text-white"
+                    style={{
+                      background: "var(--event-yellow-bg)",
+                      boxShadow: "inset 2px 0 0 0 var(--event-yellow-bar)",
+                    }}
+                  >
+                    {format(parseISO(m.activity_date), "HH:mm")} {m.description}
+                  </span>
+                ))}
+                {dayTasks.slice(0, Math.max(0, 2 - dayMeetings.length)).map((t) => (
                   <span
                     key={t.id}
+                    title={t.name}
                     className="truncate rounded px-1 py-px text-[10px] font-medium text-white"
                     style={{
                       background: "var(--event-indigo-bg)",
@@ -1401,8 +1459,8 @@ function ProjectCalendar({
                     {t.name}
                   </span>
                 ))}
-                {dayTasks.length > 2 && (
-                  <span className="px-1 text-[10px] text-muted-foreground">+{dayTasks.length - 2}</span>
+                {overflow > 0 && (
+                  <span className="px-1 text-[10px] text-muted-foreground">+{overflow}</span>
                 )}
               </button>
             );
@@ -1412,7 +1470,7 @@ function ProjectCalendar({
 
       <Card>
         <h3 className="mb-3 text-sm font-semibold text-muted-foreground">
-          {selected ? format(selected, "MMMM d, yyyy") : "Tasks with due dates"}
+          {selected ? format(selected, "MMMM d, yyyy") : "Scheduled"}
         </h3>
 
         {selected && (
@@ -1451,23 +1509,51 @@ function ProjectCalendar({
           </div>
         )}
 
-        <div className="flex flex-col divide-y divide-border-subtle">
-          {(selected ? tasksOn(selected) : tasks.filter((t) => t.due_date)).length === 0 && (
-            <p className="py-6 text-center text-sm text-muted-foreground">No tasks here.</p>
-          )}
-          {(selected
+        {(() => {
+          const shownMeetings = selected
+            ? meetingsOn(selected)
+            : [...meetings].sort((a, b) => a.activity_date.localeCompare(b.activity_date));
+          const shownTasks = selected
             ? tasksOn(selected)
             : tasks
                 .filter((t) => t.due_date)
-                .sort((a, b) => (a.due_date ?? "").localeCompare(b.due_date ?? ""))
-          ).map((t) => (
-            <div key={t.id} className="flex items-center gap-2.5 py-2.5">
-              <Badge tone={statusTone(t.status)} dot>{t.status}</Badge>
-              <span className="min-w-0 flex-1 truncate text-sm">{t.name}</span>
-              <span className="shrink-0 text-xs text-muted-foreground">{formatDate(t.due_date)}</span>
+                .sort((a, b) => (a.due_date ?? "").localeCompare(b.due_date ?? ""));
+
+          if (shownMeetings.length === 0 && shownTasks.length === 0) {
+            return (
+              <p className="py-6 text-center text-sm text-muted-foreground">
+                Nothing scheduled here.
+              </p>
+            );
+          }
+
+          return (
+            <div className="flex flex-col divide-y divide-border-subtle">
+              {shownMeetings.map((m) => (
+                <div key={m.id} className="flex items-center gap-2.5 py-2.5">
+                  <Badge tone="yellow" dot>
+                    Meeting
+                  </Badge>
+                  <span className="min-w-0 flex-1 truncate text-sm">{m.description}</span>
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    {format(parseISO(m.activity_date), "MMM d · HH:mm")}
+                  </span>
+                </div>
+              ))}
+              {shownTasks.map((t) => (
+                <div key={t.id} className="flex items-center gap-2.5 py-2.5">
+                  <Badge tone={statusTone(t.status)} dot>
+                    {t.status}
+                  </Badge>
+                  <span className="min-w-0 flex-1 truncate text-sm">{t.name}</span>
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    {formatDate(t.due_date)}
+                  </span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          );
+        })()}
       </Card>
     </div>
   );
