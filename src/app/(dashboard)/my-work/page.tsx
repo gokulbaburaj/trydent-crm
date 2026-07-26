@@ -122,7 +122,7 @@ export default function MyWorkPage() {
   if (loading) return <TableSkeleton rows={8} />;
 
   return (
-    <div className="flex max-w-3xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <div>
         <h2 className="text-xl font-semibold tracking-tight">My Work</h2>
         <p className="mt-0.5 text-sm text-muted-foreground">

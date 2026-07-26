@@ -225,7 +225,7 @@ export default function OrganizationPage() {
   return (
     // No max-width here on purpose: this is a dashboard, not a reading page, so
     // it should use whatever room the screen gives it.
-    <div className="flex flex-col gap-5">
+    <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-5">
       <div>
         <h2 className="text-xl font-semibold tracking-tight">Organisation</h2>
         <p className="mt-0.5 text-sm text-muted-foreground">

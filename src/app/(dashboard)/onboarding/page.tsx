@@ -239,7 +239,7 @@ function OnboardingInner() {
   if (loading) return <TableSkeleton rows={5} />;
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-5">
       <div className="flex flex-wrap items-center gap-3">
         <div>
           <h2 className="text-xl font-semibold tracking-tight">Onboarding</h2>

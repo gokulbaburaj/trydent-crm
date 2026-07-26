@@ -38,6 +38,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
 import { openCommandMenu } from "@/components/CommandMenu";
 import { applyOrder, useNavState } from "@/lib/nav";
+import { useTabs } from "@/lib/tabs";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { useAuth } from "@/lib/useAuth";
 import { createClient } from "@/lib/supabase/client";
@@ -362,8 +363,18 @@ function NavLink({
   active: boolean;
   onNavigate?: () => void;
 }) {
+  const { go } = useTabs();
   return (
-    <Link href={item.href} onClick={onNavigate} className={linkClass(active)}>
+    <Link
+      href={item.href}
+      onClick={(e) => {
+        // If this page is already open in another tab, jump to it instead of
+        // turning the current tab into a duplicate.
+        if (go(item.href)) e.preventDefault();
+        onNavigate?.();
+      }}
+      className={linkClass(active)}
+    >
       <item.icon className="h-4 w-4 shrink-0 text-muted-foreground" />
       {item.label}
     </Link>
@@ -382,6 +393,7 @@ function SortableNavLink({
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.href,
   });
+  const { go } = useTabs();
 
   return (
     <div
@@ -391,7 +403,14 @@ function SortableNavLink({
       {...listeners}
       className={cn("touch-none", isDragging && "opacity-60")}
     >
-      <Link href={item.href} onClick={onNavigate} className={linkClass(active)}>
+      <Link
+        href={item.href}
+        onClick={(e) => {
+          if (go(item.href)) e.preventDefault();
+          onNavigate?.();
+        }}
+        className={linkClass(active)}
+      >
         <item.icon className="h-4 w-4 shrink-0 text-muted-foreground" />
         {item.label}
       </Link>

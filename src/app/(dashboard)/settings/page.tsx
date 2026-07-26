@@ -86,7 +86,9 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="flex max-w-3xl flex-col gap-5">
+    // Settings is a stack of small independent cards, so on a wide screen it
+    // reads as two columns rather than one narrow ribbon pinned to the left.
+    <div className="mx-auto grid w-full max-w-[1400px] grid-cols-1 items-start gap-5 xl:grid-cols-2">
       <Card>
         <h3 className="mb-4 text-sm font-semibold text-muted-foreground">Your Profile</h3>
         {profile ? (
@@ -255,7 +257,10 @@ export default function SettingsPage() {
         </p>
       </Card>
 
-      <RolesCard />
+      {/* Roles is a table of rows, so it always wants the full width. */}
+      <div className="xl:col-span-2">
+        <RolesCard />
+      </div>
     </div>
   );
 }

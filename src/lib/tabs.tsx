@@ -52,6 +52,9 @@ interface TabsContextValue {
   activate: (id: string) => void;
   close: (id: string) => void;
   openInNewTab: (href: string, title?: string) => void;
+  /** Sidebar navigation: focuses an already-open tab for this href. Returns
+   *  true when it did, so the caller can suppress the default link. */
+  go: (href: string) => boolean;
   newTab: () => void;
   setTitle: (href: string, title: string) => void;
 }
@@ -161,6 +164,34 @@ export function TabsProvider({ children }: { children: React.ReactNode }) {
     [router]
   );
 
+  /**
+   * Sidebar navigation.
+   *
+   * A plain <Link> changes the route, and the active tab follows it — so
+   * clicking "Organisation" while sitting on a Team tab REWROTE that tab into a
+   * second Organisation tab, even though one was already open. Focus the
+   * existing tab when there is one; otherwise navigate normally.
+   *
+   * Returns true when it handled the click, so the caller can preventDefault.
+   */
+  const go = useCallback(
+    (href: string) => {
+      let handled = false;
+      setTabs((prev) => {
+        const existing = prev.find((t) => t.href === href);
+        if (existing && existing.id !== activeIdRef.current) {
+          handled = true;
+          setActiveId(existing.id);
+          prevPath.current = href;
+          router.push(href);
+        }
+        return prev;
+      });
+      return handled;
+    },
+    [router]
+  );
+
   const newTab = useCallback(() => openInNewTab("/dashboard"), [openInNewTab]);
 
   const close = useCallback(
@@ -194,7 +225,7 @@ export function TabsProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <TabsContext.Provider
-      value={{ tabs, activeId, activate, close, openInNewTab, newTab, setTitle }}
+      value={{ tabs, activeId, activate, close, openInNewTab, go, newTab, setTitle }}
     >
       {children}
     </TabsContext.Provider>

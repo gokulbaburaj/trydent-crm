@@ -168,7 +168,7 @@ export default function DashboardPage() {
     profile?.full_name?.split(/[@\s.]/)[0]?.replace(/^\w/, (c) => c.toUpperCase()) ?? "there";
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-6">
       {/*
         Hero band. Four headline numbers inside one tinted panel rather than
         four separate cards — the figures read as a single summary of the

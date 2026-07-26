@@ -243,7 +243,7 @@ function GoalsInner() {
   if (loading) return <TableSkeleton rows={6} />;
 
   return (
-    <div className="flex max-w-5xl flex-col gap-5">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-5">
       <div className="flex flex-wrap items-center gap-3">
         <div>
           <h2 className="text-xl font-semibold tracking-tight">Company goals</h2>
