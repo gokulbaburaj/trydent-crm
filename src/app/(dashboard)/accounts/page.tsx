@@ -1,7 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronDown, ChevronRight, Plus, Trash2, Wallet } from "lucide-react";
+import {
+  Archive,
+  ArchiveRestore,
+  ChevronDown,
+  ChevronRight,
+  Plus,
+  Trash2,
+  Wallet,
+} from "lucide-react";
 import { toast } from "@/components/Toaster";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -17,15 +25,19 @@ import { useStaffProfiles } from "@/lib/useStaffProfiles";
 import { createClient } from "@/lib/supabase/client";
 import { CURRENCIES, formatMoney, useCurrency } from "@/lib/currency";
 import { cn } from "@/lib/utils";
-import type { Client, CurrencyCode, Project, ProjectAllocation } from "@/lib/types";
+import type { Client, CurrencyCode, Deal, Project, ProjectAllocation } from "@/lib/types";
 
 /**
  * Accounts — money allotted per project, and how much of it is committed to
  * the people doing the work.
  *
- * Each project's budget is held in ITS OWN currency (same convention as deals),
- * so a project quoted in INR is never silently reported in dollars. The
- * cross-project totals at the top convert through `toBase` first.
+ * The allotment comes from the PIPELINE by default. A project links to the deal
+ * that paid for it and inherits its value and currency, so the number is
+ * entered once and can't drift. Manual entry stays available for work with no
+ * deal behind it (internal projects, favours, retainer overflow).
+ *
+ * Amounts are held in the project's own currency; the totals at the top convert
+ * through `toBase` first so mixed-currency projects add up correctly.
  */
 export default function AccountsPage() {
   return (
@@ -42,16 +54,28 @@ function AccountsInner() {
   const { rows: allocations, setRows: setAllocations } =
     useSupabaseTable<ProjectAllocation>("project_allocations");
   const { rows: clients } = useSupabaseTable<Client>("clients");
+  const { rows: deals } = useSupabaseTable<Deal>("deals");
   const { rows: staff } = useStaffProfiles();
 
   const [open, setOpen] = useState<string | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
   const [personDraft, setPersonDraft] = useState("");
   const [amountDraft, setAmountDraft] = useState("");
   const [roleDraft, setRoleDraft] = useState("");
 
   const clientName = (id: string) => clients.find((c) => c.id === id)?.company ?? "—";
   const person = (id: string) => staff.find((p) => p.id === id) ?? null;
-  const ccy = (p: Project): CurrencyCode => (p.currency as CurrencyCode) ?? base;
+  const dealFor = (p: Project) => deals.find((d) => d.id === p.deal_id) ?? null;
+
+  /** A linked deal owns both the amount and the currency. */
+  const ccy = (p: Project): CurrencyCode => {
+    const d = dealFor(p);
+    return ((d?.currency ?? p.currency) as CurrencyCode) ?? base;
+  };
+  const budgetOf = (p: Project) => {
+    const d = dealFor(p);
+    return d ? Number(d.deal_value) : Number(p.budget) || 0;
+  };
 
   const byProject = useMemo(() => {
     const map = new Map<string, ProjectAllocation[]>();
@@ -66,13 +90,14 @@ function AccountsInner() {
   const rows = useMemo(
     () =>
       projects
+        .filter((p) => showArchived || !p.archived)
         .map((p) => {
           const lines = byProject.get(p.id) ?? [];
           const committed = lines.reduce((s, a) => s + Number(a.amount), 0);
           const paidOut = lines
             .filter((a) => a.paid)
             .reduce((s, a) => s + Number(a.amount), 0);
-          const budget = Number(p.budget) || 0;
+          const budget = budgetOf(p);
           return {
             project: p,
             lines,
@@ -84,8 +109,11 @@ function AccountsInner() {
           };
         })
         .sort((a, b) => b.budget - a.budget),
-    [projects, byProject]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [projects, byProject, deals, showArchived]
   );
+
+  const archivedCount = projects.filter((p) => p.archived).length;
 
   /** Cross-project totals, converted to the display currency. */
   const totals = useMemo(() => {
@@ -168,11 +196,28 @@ function AccountsInner() {
 
   return (
     <div className="flex flex-col gap-5">
-      <div>
-        <h2 className="text-xl font-semibold tracking-tight">Accounts</h2>
-        <p className="mt-0.5 text-sm text-muted-foreground">
-          What each project is worth, and what&apos;s committed to the people working on it.
-        </p>
+      <div className="flex flex-wrap items-center gap-3">
+        <div>
+          <h2 className="text-xl font-semibold tracking-tight">Accounts</h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            What each project is worth, and what&apos;s committed to the people working on it.
+          </p>
+        </div>
+        {archivedCount > 0 && (
+          <button
+            type="button"
+            onClick={() => setShowArchived((s) => !s)}
+            className={cn(
+              "ml-auto flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs transition-colors",
+              showArchived
+                ? "border-primary/40 bg-primary/10 text-foreground"
+                : "border-border text-muted-foreground hover:bg-white/5 hover:text-foreground"
+            )}
+          >
+            <Archive className="h-3.5 w-3.5" />
+            {showArchived ? "Hiding nothing" : `Show archived (${archivedCount})`}
+          </button>
+        )}
       </div>
 
       {/* Totals */}
@@ -218,29 +263,59 @@ function AccountsInner() {
                   </span>
                 </button>
 
+                {/* The allotment comes from the deal, so it's picked once in the
+                    pipeline rather than retyped here. Manual stays available
+                    for work that has no deal behind it. */}
                 <div className="flex items-center gap-1.5">
-                  <div className="w-28">
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      aria-label={`Budget for ${project.name}`}
-                      value={budget || ""}
-                      placeholder="Budget"
-                      onChange={(e) =>
-                        updateProject(project.id, { budget: Number(e.target.value) || 0 })
-                      }
-                    />
-                  </div>
-                  <div className="w-24">
+                  <div className="w-48">
                     <Dropdown
-                      value={ccy(project)}
-                      options={CURRENCIES.map((c) => ({ value: c.code, label: c.code }))}
-                      onChange={(v) =>
-                        updateProject(project.id, { currency: v as CurrencyCode })
-                      }
+                      value={project.deal_id ?? ""}
+                      placeholder="Manual amount"
+                      options={[
+                        { value: "", label: "Manual amount" },
+                        ...deals
+                          .filter((d) => d.client_id === project.client_id)
+                          .map((d) => ({
+                            value: d.id,
+                            label: `${d.deal_name} · ${formatMoney(
+                              Number(d.deal_value),
+                              (d.currency as CurrencyCode) ?? base
+                            )}`,
+                          })),
+                      ]}
+                      onChange={(v) => updateProject(project.id, { deal_id: v || null })}
                     />
                   </div>
+                  {project.deal_id ? (
+                    <span className="w-[7.5rem] shrink-0 text-right text-sm font-medium tabular-nums">
+                      {formatMoney(budget, ccy(project))}
+                    </span>
+                  ) : (
+                    <>
+                      <div className="w-24">
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          aria-label={`Budget for ${project.name}`}
+                          value={project.budget || ""}
+                          placeholder="0.00"
+                          onChange={(e) =>
+                            updateProject(project.id, { budget: Number(e.target.value) || 0 })
+                          }
+                        />
+                      </div>
+                      <div className="w-20">
+                        <Dropdown
+                          value={project.currency ?? base}
+                          options={CURRENCIES.map((c) => ({ value: c.code, label: c.code }))}
+                          onChange={(v) =>
+                            updateProject(project.id, { currency: v as CurrencyCode })
+                          }
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 <div className="w-40 shrink-0 text-right">
@@ -260,6 +335,21 @@ function AccountsInner() {
                 </div>
 
                 <Badge tone={over ? "red" : pct >= 100 ? "green" : "gray"}>{pct}%</Badge>
+
+                <button
+                  type="button"
+                  title={project.archived ? "Restore project" : "Archive project"}
+                  onClick={() =>
+                    updateProject(project.id, { archived: !project.archived })
+                  }
+                  className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+                >
+                  {project.archived ? (
+                    <ArchiveRestore className="h-3.5 w-3.5" />
+                  ) : (
+                    <Archive className="h-3.5 w-3.5" />
+                  )}
+                </button>
               </div>
 
               <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">

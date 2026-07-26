@@ -513,9 +513,13 @@ export interface Project {
   owner: string | null;
   /** Everyone else on the project, lead included after the backfill. */
   member_ids: string[];
-  /** Money allotted to this project, in `currency`. */
+  /** When set, the project's money comes from this deal and `budget` is ignored. */
+  deal_id: string | null;
+  /** Manual allotment, used only when there's no linked deal. */
   budget: number;
   currency: CurrencyCode;
+  /** Hidden from Accounts and the Projects list, but never deleted. */
+  archived: boolean;
   start_date: string | null;
   due_date: string | null;
   description: string | null;

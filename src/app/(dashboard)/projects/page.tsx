@@ -57,10 +57,13 @@ function ProjectsPageInner() {
   const ownerName = (id: string | null) => profiles.find((p) => p.id === id)?.full_name ?? "Unassigned";
 
   // ?team= scopes to projects owned by someone on that team (sidebar sub-link).
+  // Archived projects are hidden here and in Accounts — the data stays, the
+  // clutter doesn't.
   const projects = useMemo(() => {
-    if (!teamFilter) return allProjects;
+    const live = allProjects.filter((p) => !p.archived);
+    if (!teamFilter) return live;
     const memberIds = new Set(profiles.filter((p) => p.team === teamFilter).map((p) => p.id));
-    return allProjects.filter((p) => p.owner && memberIds.has(p.owner));
+    return live.filter((p) => p.owner && memberIds.has(p.owner));
   }, [allProjects, profiles, teamFilter]);
 
   const grouped = useMemo(() => {
