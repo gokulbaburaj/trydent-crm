@@ -101,15 +101,15 @@ export function DashGrid({ storageKey, cards }: { storageKey: string; cards: Das
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
       {/*
-        Rows are a FIXED height, not `auto-rows-fr`. `fr` still resolves to the
-        tallest content, so a card with twenty tasks kept growing the row — the
-        cards were equal to each other but the dashboard as a whole still crept
-        down the page. A fixed row means every card keeps its slot and long
-        content scrolls inside it, which is what "scrollable, not taller" needs.
+        Rows size to their content, but each cell is capped (see DashCell's
+        max-height). So a row of short cards stays short instead of leaving a
+        band of dead space, and a card with twenty tasks stops at the ceiling
+        and scrolls rather than pushing the page down. Fixed rows solved the
+        second problem and caused the first.
       */}
       <div
         ref={gridRef}
-        className="grid grid-cols-1 items-stretch gap-4 lg:auto-rows-[19rem] lg:grid-cols-3"
+        className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-3"
       >
         {order.map((id) => {
           const def = cards.find((c) => c.id === id);
@@ -174,7 +174,10 @@ function DashCell({
         } as React.CSSProperties
       }
       className={cn(
-        "group/dash relative h-full rounded-md transition-[box-shadow,opacity] duration-150",
+        // The ceiling lives here rather than on the grid row: the row sizes to
+        // the tallest cell, and every cell is capped, so a row can be short but
+        // never runaway-tall.
+        "group/dash relative h-full max-h-[22rem] rounded-md transition-[box-shadow,opacity] duration-150",
         (isOver || resizing) && "ring-1 ring-primary/60",
         isDragging && "opacity-40"
       )}

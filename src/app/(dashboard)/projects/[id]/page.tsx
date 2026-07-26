@@ -811,7 +811,9 @@ export default function ProjectDetailPage() {
                 however many tasks land in it. */}
             <div className="-mr-1 flex min-h-0 flex-1 flex-col overflow-y-auto pr-1">
               {active.length === 0 && (
-                <p className="py-6 text-center text-sm text-muted-foreground">No tasks yet.</p>
+                <p className="flex flex-1 items-center justify-center py-6 text-center text-sm text-muted-foreground">
+                  No tasks yet.
+                </p>
               )}
               {[...notStarted, ...inProgress, ...done].map((t) => (
                 <div
@@ -872,7 +874,7 @@ export default function ProjectDetailPage() {
               </button>
             </h3>
             {upcomingSchedule.length === 0 && (
-              <p className="py-6 text-center text-sm text-muted-foreground">
+              <p className="flex flex-1 items-center justify-center py-6 text-center text-sm text-muted-foreground">
                 Nothing scheduled with {clientName(project.client_id)}.
               </p>
             )}
@@ -1729,7 +1731,7 @@ function TasksTimeline({ tasks }: { tasks: ProjectTask[] }) {
 
   if (spans.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-muted-foreground">
+      <p className="flex h-full items-center justify-center py-8 text-center text-sm text-muted-foreground">
         Give tasks due dates and they&apos;ll appear here as a timeline.
       </p>
     );
