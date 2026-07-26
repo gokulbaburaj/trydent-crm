@@ -16,8 +16,7 @@ import { XAxis } from "@/components/charts/x-axis";
 import { ChartTooltip } from "@/components/charts/tooltip/chart-tooltip";
 import { TooltipContent } from "@/components/charts/tooltip/tooltip-content";
 import { cn } from "@/lib/utils";
-import { DollarSign, TrendingUp, Users, GitBranch, ArrowRight } from "lucide-react";
-import { StatCard } from "@/components/ui/StatCard";
+import { ArrowRight } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
@@ -90,6 +89,24 @@ export default function DashboardPage() {
     (d) => d.deal_stage !== "Closed Won" && d.deal_stage !== "Closed Lost"
   ).length;
 
+  const wonThisYearCount = useMemo(() => {
+    const year = new Date().getFullYear();
+    return deals.filter(
+      (d) =>
+        d.deal_stage === "Closed Won" &&
+        d.close_date &&
+        new Date(d.close_date).getFullYear() === year
+    ).length;
+  }, [deals]);
+
+  /** Headline figure only — a mean over an empty pipeline is zero, not NaN. */
+  const avgDealSize = useMemo(() => {
+    if (deals.length === 0) return 0;
+    const total = deals.reduce((s, d) => s + dealBase(d), 0);
+    return total / deals.length;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deals]);
+
   // PieData shape: { label, value, color }
   const stageData = useMemo(
     () =>
@@ -151,50 +168,72 @@ export default function DashboardPage() {
     profile?.full_name?.split(/[@\s.]/)[0]?.replace(/^\w/, (c) => c.toUpperCase()) ?? "there";
 
   return (
-    <div className="relative flex flex-col gap-6">
-      {/* Whisper of brand color behind the header */}
-      <div
-        className="pointer-events-none absolute -inset-x-6 -top-6 h-44"
-        style={{
-          background:
-            "radial-gradient(55% 100% at 50% 0%, color-mix(in oklab, var(--primary) 9%, transparent), transparent)",
-        }}
-      />
+    <div className="flex flex-col gap-6">
+      {/*
+        Hero band. Four headline numbers inside one tinted panel rather than
+        four separate cards — the figures read as a single summary of the
+        business, and the size difference makes them the first thing you see.
+        Each carries a quieter second line so the number has context without
+        needing another card.
+      */}
+      <div className="relative overflow-hidden rounded-2xl border border-border">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(120% 140% at 0% 0%, color-mix(in oklab, var(--primary) 22%, transparent), transparent 60%), linear-gradient(180deg, oklch(1 0 0 / 0.05), transparent)",
+          }}
+        />
+        <div className="relative p-5 md:p-6">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-semibold tracking-tight">
+                {greeting}, {firstName}
+              </h2>
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                {new Date().toLocaleDateString("en-US", {
+                  weekday: "long",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </p>
+            </div>
+            <Link
+              href="/pipeline"
+              className="flex items-center gap-1.5 rounded-md border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-foreground-secondary transition-colors hover:bg-white/10 hover:text-foreground"
+            >
+              Open pipeline <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
 
-      <div className="relative">
-        <h2 className="text-xl font-semibold tracking-tight">
-          {greeting}, {firstName}
-        </h2>
-        <p className="mt-0.5 text-sm text-muted-foreground">
-          {new Date().toLocaleDateString("en-US", {
-            weekday: "long",
-            month: "long",
-            day: "numeric",
-          })}
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          label="Total Pipeline Value"
-          value={formatCurrency(totalPipeline)}
-          icon={DollarSign}
-        />
-        <StatCard
-          label="Closed Won This Year"
-          value={formatCurrency(closedWonThisYear)}
-          icon={TrendingUp}
-        />
-        <StatCard
-          label="Active Clients"
-          value={String(activeClients)}
-          icon={Users}
-        />
-        <StatCard
-          label="Open Deals"
-          value={String(openDeals)}
-          icon={GitBranch}
-        />
+          <div className="mt-6 grid grid-cols-1 gap-x-8 gap-y-6 border-t border-white/10 pt-5 sm:grid-cols-2 lg:grid-cols-4">
+            <HeroStat
+              label="Total pipeline value"
+              value={formatCurrency(totalPipeline)}
+              subLabel="Open deals"
+              subValue={String(openDeals)}
+            />
+            <HeroStat
+              label="Closed won this year"
+              value={formatCurrency(closedWonThisYear)}
+              subLabel="Deals won"
+              subValue={String(wonThisYearCount)}
+            />
+            <HeroStat
+              label="Active clients"
+              value={String(activeClients)}
+              subLabel="All clients"
+              subValue={String(clients.length)}
+            />
+            <HeroStat
+              label="Average deal size"
+              value={formatCurrency(avgDealSize)}
+              subLabel="Across"
+              subValue={`${deals.length} deals`}
+            />
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -338,6 +377,34 @@ export default function DashboardPage() {
           })}
         </div>
       </Card>
+    </div>
+  );
+}
+
+/** One headline figure in the hero band, with a quieter second line. */
+function HeroStat({
+  label,
+  value,
+  subLabel,
+  subValue,
+}: {
+  label: string;
+  value: string;
+  subLabel: string;
+  subValue: string;
+}) {
+  return (
+    <div className="min-w-0">
+      <p className="truncate text-[11px] uppercase tracking-wide text-muted-foreground">
+        {label}
+      </p>
+      <p className="mt-1 truncate text-[28px] font-semibold leading-none tracking-tight tabular-nums">
+        {value}
+      </p>
+      <div className="mt-2.5 flex items-baseline justify-between gap-2 text-[11px]">
+        <span className="truncate text-muted-2">{subLabel}</span>
+        <span className="shrink-0 tabular-nums text-foreground-secondary">{subValue}</span>
+      </div>
     </div>
   );
 }

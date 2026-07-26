@@ -86,7 +86,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-5 max-w-xl">
+    <div className="flex max-w-3xl flex-col gap-5">
       <Card>
         <h3 className="mb-4 text-sm font-semibold text-muted-foreground">Your Profile</h3>
         {profile ? (
@@ -371,7 +371,10 @@ function RolesCard() {
         {roles.map((r) => (
           <div
             key={r.id}
-            className="group flex flex-wrap items-center gap-2 rounded-md border border-border-subtle px-2.5 py-2"
+            // A fixed-width name input next to two fixed-width dropdowns left
+            // the name with almost no room. Grid gives it a real minimum and
+            // wraps the whole row on narrow screens instead of crushing it.
+            className="group grid grid-cols-1 items-center gap-2 rounded-md border border-border-subtle px-2.5 py-2 sm:grid-cols-[minmax(8rem,1fr)_9rem_11rem_auto_auto]"
           >
             <input
               value={r.name}
@@ -386,7 +389,7 @@ function RolesCard() {
               }}
               className="min-w-0 flex-1 rounded border border-transparent bg-transparent px-1 py-0.5 text-[13px] font-medium hover:border-border focus:border-primary/60 focus:outline-none"
             />
-            <div className="w-40">
+            <div>
               <Dropdown
                 value={r.team ?? ""}
                 placeholder="No team"
@@ -397,7 +400,7 @@ function RolesCard() {
                 onChange={(v) => updateRole(r.id, { team: v || null })}
               />
             </div>
-            <div className="w-48">
+            <div>
               <Dropdown
                 value={r.template_id ?? ""}
                 placeholder="No checklist"
@@ -408,7 +411,7 @@ function RolesCard() {
                 onChange={(v) => updateRole(r.id, { template_id: v || null })}
               />
             </div>
-            <span className="w-16 shrink-0 text-right text-[11px] text-muted-2">
+            <span className="whitespace-nowrap text-right text-[11px] text-muted-2">
               {headcount(r.id)} {headcount(r.id) === 1 ? "person" : "people"}
             </span>
             <button
