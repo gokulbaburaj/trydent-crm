@@ -133,6 +133,11 @@ export default function ProjectDetailPage() {
   // Shared across all project pages so saved views work anywhere.
   const { filters, views, setFilters, setViews } = useStoredFilters("project-tasks");
 
+  /** Hovering a task anywhere on the Overview highlights it everywhere else —
+   *  the same row of data lives in three widgets and it's otherwise hard to
+   *  tell which bar or date belongs to which task. */
+  const [hoverTask, setHoverTask] = useState<string | null>(null);
+
   const [meetingOpen, setMeetingOpen] = useState(false);
   const [meetingTitle, setMeetingTitle] = useState("");
   const [meetingDate, setMeetingDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
@@ -759,8 +764,8 @@ export default function ProjectDetailPage() {
           storageKey={`trydent-overview-layout:${projectId}`}
           cards={[
           { id: "progress", defaultSpan: 1, render: () => (
-          <Card>
-            <div className="mb-2 flex items-center justify-between">
+          <Card className="flex flex-col overflow-hidden">
+            <div className="mb-2 flex shrink-0 items-center justify-between">
               <h3 className="text-sm font-semibold">Project Progress</h3>
               <button
                 onClick={() => setTab("tasks")}
@@ -769,10 +774,12 @@ export default function ProjectDetailPage() {
                 Manage <ChevronRight className="h-3 w-3" />
               </button>
             </div>
-            <div className="flex justify-center py-2">
+            {/* The ring takes the leftover height and centres in it, so the
+                card can't end with a band of empty space. */}
+            <div className="flex min-h-0 flex-1 items-center justify-center py-2">
               <ProgressRing pct={completion} />
             </div>
-            <div className="mt-2 grid grid-cols-3 gap-2 text-center">
+            <div className="mt-2 grid shrink-0 grid-cols-3 gap-2 text-center">
               <StatusCount count={done.length} label="Done" dotClass="bg-success" />
               <StatusCount count={inProgress.length} label="In progress" dotClass="bg-blue-400" />
               <StatusCount count={notStarted.length} label="To do" dotClass="bg-muted-foreground" />
@@ -818,7 +825,12 @@ export default function ProjectDetailPage() {
               {[...notStarted, ...inProgress, ...done].map((t) => (
                 <div
                   key={t.id}
-                  className="group flex items-center gap-2.5 rounded px-1.5 py-1.5 hover:bg-white/5"
+                  onMouseEnter={() => setHoverTask(t.id)}
+                  onMouseLeave={() => setHoverTask(null)}
+                  className={cn(
+                    "group flex items-center gap-2.5 rounded px-1.5 py-1.5 transition-colors",
+                    hoverTask === t.id ? "bg-white/[0.07]" : "hover:bg-white/5"
+                  )}
                 >
                   <button
                     onClick={() =>
@@ -856,7 +868,12 @@ export default function ProjectDetailPage() {
           </Card>
           )},
           { id: "calendar", defaultSpan: 1, render: () => (
-            <MiniCalendar tasks={active} meetings={clientMeetings} />
+            <MiniCalendar
+              tasks={active}
+              meetings={clientMeetings}
+              highlightId={hoverTask}
+              onHoverTask={setHoverTask}
+            />
           ) },
           { id: "meetings", defaultSpan: 1, render: () => (
           <Card className="flex flex-col overflow-hidden">
@@ -912,7 +929,11 @@ export default function ProjectDetailPage() {
           <Card className="flex flex-col overflow-hidden">
             <h3 className="mb-3 shrink-0 text-sm font-semibold">Tasks Timeline</h3>
             <div className="-mr-1 min-h-0 flex-1 overflow-y-auto pr-1">
-              <TasksTimeline tasks={active} />
+              <TasksTimeline
+                tasks={active}
+                highlightId={hoverTask}
+                onHoverTask={setHoverTask}
+              />
             </div>
           </Card>
           )},
@@ -1340,9 +1361,13 @@ function StatusCount({ count, label, dotClass }: { count: number; label: string;
 function MiniCalendar({
   tasks,
   meetings,
+  highlightId,
 }: {
   tasks: ProjectTask[];
   meetings: Activity[];
+  /** Task hovered elsewhere on the Overview — its due date gets a ring. */
+  highlightId?: string | null;
+  onHoverTask?: (id: string | null) => void;
 }) {
   const [month, setMonth] = useState(() => startOfMonth(new Date()));
   const grid = useMemo(() => {
@@ -1362,6 +1387,13 @@ function MiniCalendar({
     for (const m of meetings) set.add(m.activity_date.slice(0, 10));
     return set;
   }, [meetings]);
+
+  /** The due date of whatever task is hovered elsewhere, so we can ring it. */
+  const highlightDay = useMemo(() => {
+    if (!highlightId) return null;
+    const t = tasks.find((x) => x.id === highlightId);
+    return t?.due_date ? t.due_date.slice(0, 10) : null;
+  }, [highlightId, tasks]);
 
   /** Day key → what's on it, for the hover card. */
   const byDay = useMemo(() => {
@@ -1423,14 +1455,15 @@ function MiniCalendar({
               className={cn(
                 // self-center keeps the circle vertically centred now that the
                 // week row can be taller than the circle itself.
-                "hover-reveal-host relative mx-auto flex h-8 w-8 shrink-0 items-center justify-center self-center rounded-full text-xs",
+                "hover-reveal-host relative mx-auto flex h-8 w-8 shrink-0 items-center justify-center self-center rounded-full text-xs transition-[box-shadow,transform] duration-150",
                 isToday(day)
                   ? "bg-primary font-semibold text-primary-foreground"
                   : hasDue || hasMeeting
                     ? "bg-primary/20 font-medium text-foreground"
                     : isSameMonth(day, month)
                       ? "text-foreground"
-                      : "text-muted-2"
+                      : "text-muted-2",
+                highlightDay === key && "scale-110 ring-2 ring-white/70"
               )}
             >
               {format(day, "d")}
@@ -1728,7 +1761,15 @@ const TIMELINE_COLORS = ["#a855f7", "#4cb782", "#6c74dd", "#4ea7e0", "#d9a53f", 
  * 3. Axis labels are positioned at their true percentage rather than spread
  *    with `justify-between`, so a tick genuinely sits above the date it names.
  */
-function TasksTimeline({ tasks }: { tasks: ProjectTask[] }) {
+function TasksTimeline({
+  tasks,
+  highlightId,
+  onHoverTask,
+}: {
+  tasks: ProjectTask[];
+  highlightId?: string | null;
+  onHoverTask?: (id: string | null) => void;
+}) {
   const rows = tasks
     .filter((t) => t.due_date)
     .sort((a, b) => (a.due_date ?? "").localeCompare(b.due_date ?? ""))
@@ -1787,6 +1828,8 @@ function TasksTimeline({ tasks }: { tasks: ProjectTask[] }) {
 
       <div className="flex flex-col gap-2.5">
         {spans.map(({ task: t, start, end }, i) => {
+          const dimmed = !!highlightId && highlightId !== t.id;
+          const lit = highlightId === t.id;
           const left = pct(start);
           // Floor the width in pixels, not percent, so a short task stays
           // visible without overstating how long it ran.
@@ -1797,11 +1840,17 @@ function TasksTimeline({ tasks }: { tasks: ProjectTask[] }) {
           return (
             <div key={t.id} className="relative h-7 border-b border-dashed border-border-subtle">
               <div
+                onMouseEnter={() => onHoverTask?.(t.id)}
+                onMouseLeave={() => onHoverTask?.(null)}
                 title={`${t.name} — due ${formatDate(t.due_date)}${overdue ? " (overdue)" : ""}`}
                 className={cn(
-                  "absolute top-0 flex h-6 min-w-[3rem] items-center overflow-hidden rounded-full px-2.5 text-[11px] font-medium text-white shadow-sm",
+                  "absolute top-0 flex h-6 min-w-[3rem] items-center overflow-hidden rounded-full px-2.5 text-[11px] font-medium text-white shadow-sm transition-[opacity,box-shadow,transform] duration-150",
                   t.status === "Done" && "opacity-60",
-                  overdue && "ring-1 ring-danger"
+                  overdue && "ring-1 ring-danger",
+                  // Fade the others rather than recolouring the target — the
+                  // bar colours already carry meaning.
+                  dimmed && "opacity-25",
+                  lit && "scale-[1.02] opacity-100 ring-2 ring-white/70"
                 )}
                 style={{ left: `${left}%`, width: `${width}%`, background: color }}
               >
