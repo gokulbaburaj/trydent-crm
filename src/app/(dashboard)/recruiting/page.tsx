@@ -53,6 +53,8 @@ export default function RecruitingPage() {
 
 function RecruitingInner() {
   const [tab, setTab] = useState<Tab>("applicants");
+  /** The applicant just dragged to Hired, awaiting a decision. */
+  const [hired, setHired] = useState<Applicant | null>(null);
 
   return (
     <div className="flex flex-col gap-5">
@@ -88,14 +90,231 @@ function RecruitingInner() {
         </div>
       </div>
 
-      {tab === "applicants" ? <Applicants /> : <Onboarding />}
+      {tab === "applicants" ? <Applicants onHired={setHired} /> : <Onboarding />}
+
+      <Drawer
+        open={!!hired}
+        onClose={() => setHired(null)}
+        title="Hired — add them to the team?"
+      >
+        {hired && (
+          <HireForm
+            key={hired.id}
+            applicant={hired}
+            onDone={(goToOnboarding) => {
+              setHired(null);
+              if (goToOnboarding) setTab("onboarding");
+            }}
+          />
+        )}
+      </Drawer>
     </div>
+  );
+}
+
+/**
+ * Turns a hired applicant into a real team member: creates their login through
+ * the admin-only API, carries over their name, email and role, and optionally
+ * starts the default onboarding checklist in the same step.
+ */
+function HireForm({
+  applicant,
+  onDone,
+}: {
+  applicant: Applicant;
+  onDone: (goToOnboarding: boolean) => void;
+}) {
+  const { rows: staff } = useStaffProfiles();
+  const { rows: templates } = useSupabaseTable<OnboardingTemplate>("onboarding_templates");
+  const { rows: items } = useSupabaseTable<OnboardingTemplateItem>(
+    "onboarding_template_items"
+  );
+
+  const defaultTemplate = templates.find((t) => t.is_default) ?? null;
+
+  const [fullName, setFullName] = useState(applicant.full_name);
+  const [email, setEmail] = useState(applicant.email ?? "");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState("contractor");
+  const [team, setTeam] = useState("");
+  const [startChecklist, setStartChecklist] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const teams = useMemo(
+    () =>
+      Array.from(
+        new Set(staff.map((p) => p.team).filter((t): t is string => !!t))
+      ).sort(),
+    [staff]
+  );
+
+  async function submit() {
+    setBusy(true);
+    setError(null);
+    const res = await fetch("/api/team-users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        full_name: fullName.trim(),
+        email: email.trim(),
+        password,
+        role,
+        team: team || null,
+      }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setBusy(false);
+      setError(json.error ?? "Couldn't create the team member.");
+      return;
+    }
+
+    // The database trigger already copies the default template onto a new
+    // profile. Only seed manually when the caller asked for it and the trigger
+    // couldn't have run (no default template set).
+    const profileId = json?.profile?.id as string | undefined;
+    if (startChecklist && profileId && !defaultTemplate && templates.length > 0) {
+      const steps = items.filter((i) => i.template_id === templates[0].id);
+      const supabase = createClient();
+      if (supabase && steps.length > 0) {
+        await supabase.from("onboarding_tasks").insert(
+          steps.map((s) => ({
+            profile_id: profileId,
+            title: s.title,
+            sort_order: s.sort_order,
+          }))
+        );
+      }
+    }
+
+    setBusy(false);
+    toast.success(`${fullName.trim()} added to the team`);
+    onDone(startChecklist);
+  }
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        submit();
+      }}
+      className="flex flex-col gap-4"
+    >
+      <div className="rounded-lg border border-success/30 bg-success/10 p-3">
+        <p className="text-[13px] font-medium text-success">{applicant.full_name}</p>
+        <p className="mt-0.5 text-[11px] text-foreground-secondary">
+          {applicant.role_title ?? "No role recorded"}
+          {applicant.location ? ` · ${applicant.location}` : ""}
+        </p>
+      </div>
+
+      <p className="text-xs text-muted-foreground">
+        This creates their login and profile. Skip if they already have an account, or if
+        they don&apos;t start for a while — they stay on the board as hired either way.
+      </p>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div>
+          <Label>Name</Label>
+          <Input value={fullName} onChange={(e) => setFullName(e.target.value)} />
+        </div>
+        <div>
+          <Label>Email</Label>
+          <Input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="they@example.com"
+          />
+        </div>
+        <div>
+          <Label>Role</Label>
+          <Dropdown
+            value={role}
+            options={[
+              { value: "contractor", label: "Contractor" },
+              { value: "rep", label: "Rep" },
+              { value: "admin", label: "Admin" },
+            ]}
+            onChange={setRole}
+          />
+        </div>
+        <div>
+          <Label>Team</Label>
+          {teams.length > 0 ? (
+            <Dropdown
+              value={team}
+              placeholder="No team"
+              options={[
+                { value: "", label: "No team" },
+                ...teams.map((t) => ({ value: t, label: t })),
+              ]}
+              onChange={setTeam}
+            />
+          ) : (
+            <Input
+              placeholder="Design"
+              value={team}
+              onChange={(e) => setTeam(e.target.value)}
+            />
+          )}
+        </div>
+      </div>
+
+      <div>
+        <Label>Temporary password</Label>
+        <Input
+          type="text"
+          placeholder="Min 8 characters"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <p className="mt-1 text-[11px] text-muted-2">
+          Share this with them; they can change it after signing in.
+        </p>
+      </div>
+
+      <label className="flex items-start gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={startChecklist}
+          onChange={(e) => setStartChecklist(e.target.checked)}
+          className="mt-0.5 h-4 w-4 rounded accent-primary"
+        />
+        <span>
+          Start their onboarding checklist
+          <span className="block text-xs text-muted-foreground">
+            {defaultTemplate
+              ? `Uses "${defaultTemplate.name}", your default template.`
+              : templates.length > 0
+                ? "No default template set — the first one will be used."
+                : "No templates yet, so nothing will be created."}
+          </span>
+        </span>
+      </label>
+
+      {error && <p className="text-xs text-danger">{error}</p>}
+
+      <div className="flex gap-2 pt-1">
+        <Button
+          type="submit"
+          className="flex-1"
+          disabled={busy || !fullName.trim() || !email.trim() || password.length < 8}
+        >
+          {busy ? "Creating..." : "Add to team"}
+        </Button>
+        <Button type="button" variant="secondary" onClick={() => onDone(false)}>
+          Not now
+        </Button>
+      </div>
+    </form>
   );
 }
 
 /* ============================ APPLICANTS ============================ */
 
-function Applicants() {
+function Applicants({ onHired }: { onHired: (a: Applicant) => void }) {
   const { rows: applicants, setRows, loading } = useSupabaseTable<Applicant>("applicants", {
     column: "created_at",
     ascending: false,
@@ -175,6 +394,15 @@ function Applicants() {
     if (error) {
       setRows(before);
       toast.error(`Couldn't move: ${error.message}`);
+      return;
+    }
+
+    // Hiring someone almost always means giving them a login — but not on the
+    // same day, and sometimes never (freelancers you already onboarded). Ask,
+    // don't assume. Skipping leaves them on the board as hired, which is still
+    // a true record.
+    if (stage === "hired") {
+      onHired({ ...applicant, stage: "hired" });
     }
   }
 

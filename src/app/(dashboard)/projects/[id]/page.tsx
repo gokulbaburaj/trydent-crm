@@ -11,6 +11,7 @@ import {
   endOfMonth,
   endOfWeek,
   format,
+  formatDistanceToNow,
   isSameDay,
   isSameMonth,
   isToday,
@@ -35,6 +36,7 @@ import {
   List,
   ListChecks,
   MoreHorizontal,
+  PhoneCall,
   Plus,
   Trash2,
   User,
@@ -70,6 +72,12 @@ import { PRIORITY_ORDER, PROJECT_STATUSES, TASK_STATUSES } from "@/lib/types";
 import { PriorityFlag } from "@/components/ui/PriorityPicker";
 import { RecurrenceIndicator } from "@/components/ui/RecurrencePicker";
 
+/** True when a yyyy-MM-dd string is today's date. */
+function isSameDayAsToday(date: string | null | undefined) {
+  if (!date) return false;
+  return date.slice(0, 10) === format(new Date(), "yyyy-MM-dd");
+}
+
 type PageTab = "overview" | "tasks" | "board" | "calendar";
 
 const BOARD_STATUSES: TaskStatus[] = ["Not Started", "In Progress", "Done"];
@@ -98,7 +106,7 @@ export default function ProjectDetailPage() {
     column: "created_at",
     ascending: true,
   });
-  const { rows: clients } = useSupabaseTable<Client>("clients");
+  const { rows: clients, setRows: setClients } = useSupabaseTable<Client>("clients");
   const { rows: profiles } = useStaffProfiles();
   const { rows: activities, setRows: setActivityRows } = useSupabaseTable<Activity>("activities");
   const { rows: allSubtasks } = useSupabaseTable<TaskItem>("task_items");
@@ -220,6 +228,28 @@ export default function ProjectDetailPage() {
   }, [projectId]);
 
   const clientName = (id: string | null) => clients.find((c) => c.id === id)?.company ?? "—";
+  const projectClient = clients.find((c) => c.id === project?.client_id) ?? null;
+
+  /**
+   * Logs contact against the CLIENT record, not the project — there's one
+   * `clients.last_contact` field, so stamping it here is the same fact the
+   * client page shows. No duplicate state, nothing to reconcile.
+   */
+  async function markContacted() {
+    if (!projectClient) return;
+    const today = format(new Date(), "yyyy-MM-dd");
+    setClients((prev) =>
+      prev.map((c) => (c.id === projectClient.id ? { ...c, last_contact: today } : c))
+    );
+    const supabase = createClient();
+    if (!supabase) return;
+    const { error } = await supabase
+      .from("clients")
+      .update({ last_contact: today })
+      .eq("id", projectClient.id);
+    if (error) toast.error(`Couldn't save: ${error.message}`);
+    else toast.success(`Logged contact with ${projectClient.company}`);
+  }
   const personName = (id: string | null) => profiles.find((p) => p.id === id)?.full_name ?? null;
 
   const active = tasks.filter((t) => t.status !== "Archived");
@@ -579,6 +609,33 @@ export default function ProjectDetailPage() {
             )}
           </Popover>
           </div>
+          {projectClient && (
+            <div>
+              <Label>Last contact</Label>
+              {isSameDayAsToday(projectClient.last_contact) ? (
+                <div className="flex h-9 items-center gap-1.5 text-[11px] text-success">
+                  <Check className="h-3 w-3" /> Contacted today
+                </div>
+              ) : (
+                <div className="flex h-9 items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={markContacted}
+                    className="flex items-center gap-1.5 rounded-md border border-white/5 bg-white/5 px-2.5 py-2 text-xs font-medium text-foreground-secondary transition-colors hover:border-primary/40 hover:bg-primary/10 hover:text-foreground"
+                  >
+                    <PhoneCall className="h-3 w-3" /> Contacted today
+                  </button>
+                  {projectClient.last_contact && (
+                    <span className="text-[11px] text-muted-2">
+                      {formatDistanceToNow(parseISO(projectClient.last_contact), {
+                        addSuffix: true,
+                      })}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
           <div>
             <Label>Lead</Label>
           <Popover
