@@ -25,6 +25,26 @@ function isHex(v: string) {
   return /^#[0-9a-fA-F]{6}$/.test(v);
 }
 
+/** Perceived brightness, 0–255. */
+export function luminanceOf(hex: string) {
+  if (!isHex(hex)) return 0;
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return 0.299 * r + 0.587 * g + 0.114 * b;
+}
+
+/**
+ * The accent drives every chart series, progress bar and highlight. On this
+ * dark shell a near-white accent makes charts read as blank blocks and a
+ * near-black one makes them vanish — both look like the app is broken rather
+ * than like a colour choice. Settings warns rather than blocks: it's your app.
+ */
+export function accentIsRisky(hex: string) {
+  const l = luminanceOf(hex);
+  return l > 225 || l < 40;
+}
+
 /** Best foreground (dark or white) for a given primary, by luminance. */
 export function foregroundFor(hex: string) {
   const r = parseInt(hex.slice(1, 3), 16);

@@ -17,7 +17,7 @@ import { useAuth } from "@/lib/useAuth";
 import { createClient } from "@/lib/supabase/client";
 import { CURRENCIES, setBaseCurrency, useCurrency } from "@/lib/currency";
 import { cn } from "@/lib/utils";
-import { ACCENT_PRESETS, useAccent } from "@/lib/theme";
+import { ACCENT_PRESETS, accentIsRisky, useAccent } from "@/lib/theme";
 
 export default function SettingsPage() {
   const { profile, isSupabaseConfigured } = useAuth();
@@ -200,6 +200,13 @@ export default function SettingsPage() {
             style={{ background: /^#[0-9a-fA-F]{6}$/.test(customHex) ? customHex : primary }}
           />
         </div>
+        {accentIsRisky(primary) && (
+          <p className="mt-2.5 text-xs text-warning">
+            This accent is very close to white or black. It drives every chart series,
+            progress bar and highlight, so on a dark background those will read as blank
+            blocks. Pick a preset above if charts look empty.
+          </p>
+        )}
       </Card>
 
       <Card>

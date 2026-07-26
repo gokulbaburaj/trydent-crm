@@ -388,12 +388,17 @@ export default function OrganizationPage() {
           </Card>
         )}
 
-        {showOnboarding && onboardingSplit.length > 0 && (
+        {showOnboarding && (
           <Card className="flex flex-col rounded-xl shadow-sm">
             <h3 className="text-sm font-semibold">Onboarding</h3>
             <p className="mt-0.5 text-xs text-muted-foreground">
               Checklist steps across everyone still in progress.
             </p>
+            {onboardingSplit.length === 0 ? (
+              <p className="flex flex-1 items-center justify-center py-8 text-sm text-muted-foreground">
+                No checklists running.
+              </p>
+            ) : (
             <div className="flex flex-1 items-center justify-center py-3">
               <PieChart
                 data={onboardingSplit}
@@ -408,17 +413,20 @@ export default function OrganizationPage() {
                 <PieCenter defaultLabel="steps" />
               </PieChart>
             </div>
-            <div className="flex flex-wrap gap-x-3 gap-y-1.5">
-              {onboardingSplit.map((s) => (
-                <div
-                  key={s.label}
-                  className="flex items-center gap-1.5 text-xs text-muted-foreground"
-                >
-                  <span className="h-2 w-2 rounded-full" style={{ background: s.color }} />
-                  {s.label}
-                </div>
-              ))}
-            </div>
+            )}
+            {onboardingSplit.length > 0 && (
+              <div className="flex flex-wrap gap-x-3 gap-y-1.5">
+                {onboardingSplit.map((s) => (
+                  <div
+                    key={s.label}
+                    className="flex items-center gap-1.5 text-xs text-muted-foreground"
+                  >
+                    <span className="h-2 w-2 rounded-full" style={{ background: s.color }} />
+                    {s.label}
+                  </div>
+                ))}
+              </div>
+            )}
           </Card>
         )}
       </div>
