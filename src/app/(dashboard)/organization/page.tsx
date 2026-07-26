@@ -133,8 +133,8 @@ export default function OrganizationPage() {
         ],
       },
       {
-        page: "recruiting",
-        href: "/recruiting",
+        page: "onboarding",
+        href: "/onboarding",
         label: "Onboarding",
         description: "Checklists for everyone still finding their feet.",
         icon: ListChecks,
@@ -218,6 +218,7 @@ export default function OrganizationPage() {
   const showGoals = canAccess(profile?.role, "goals");
   const showRecruiting = canAccess(profile?.role, "recruiting");
   const showTeam = canAccess(profile?.role, "team");
+  const showOnboarding = canAccess(profile?.role, "onboarding");
 
   if (loading) return <TableSkeleton rows={4} />;
 
@@ -387,7 +388,7 @@ export default function OrganizationPage() {
           </Card>
         )}
 
-        {showRecruiting && onboardingSplit.length > 0 && (
+        {showOnboarding && onboardingSplit.length > 0 && (
           <Card className="flex flex-col rounded-xl shadow-sm">
             <h3 className="text-sm font-semibold">Onboarding</h3>
             <p className="mt-0.5 text-xs text-muted-foreground">
