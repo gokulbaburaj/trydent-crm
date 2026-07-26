@@ -62,6 +62,7 @@ function AccountsInner() {
   const [personDraft, setPersonDraft] = useState("");
   const [amountDraft, setAmountDraft] = useState("");
   const [roleDraft, setRoleDraft] = useState("");
+  const [basisDraft, setBasisDraft] = useState<"percent" | "fixed">("percent");
 
   const clientName = (id: string) => clients.find((c) => c.id === id)?.company ?? "—";
   const person = (id: string) => staff.find((p) => p.id === id) ?? null;
@@ -87,17 +88,23 @@ function AccountsInner() {
     return map;
   }, [allocations]);
 
+  /** A percentage line is worth a share of the budget; a fixed line is its
+   *  own amount. Percentages recalculate the moment the deal value changes,
+   *  which is the whole point of using them. */
+  const payoutOf = (a: ProjectAllocation, budget: number) =>
+    a.percent != null ? (budget * Number(a.percent)) / 100 : Number(a.amount);
+
   const rows = useMemo(
     () =>
       projects
         .filter((p) => showArchived || !p.archived)
         .map((p) => {
           const lines = byProject.get(p.id) ?? [];
-          const committed = lines.reduce((s, a) => s + Number(a.amount), 0);
+          const budget = budgetOf(p);
+          const committed = lines.reduce((s, a) => s + payoutOf(a, budget), 0);
           const paidOut = lines
             .filter((a) => a.paid)
-            .reduce((s, a) => s + Number(a.amount), 0);
-          const budget = budgetOf(p);
+            .reduce((s, a) => s + payoutOf(a, budget), 0);
           return {
             project: p,
             lines,
@@ -105,7 +112,7 @@ function AccountsInner() {
             committed,
             paidOut,
             remaining: budget - committed,
-            pct: budget > 0 ? Math.min(100, Math.round((committed / budget) * 100)) : 0,
+            pct: budget > 0 ? Math.round((committed / budget) * 100) : 0,
           };
         })
         .sort((a, b) => b.budget - a.budget),
@@ -143,8 +150,8 @@ function AccountsInner() {
   }
 
   async function addAllocation(projectId: string) {
-    const amount = Number(amountDraft);
-    if (!personDraft || Number.isNaN(amount)) return;
+    const value = Number(amountDraft);
+    if (!personDraft || Number.isNaN(value)) return;
     const supabase = createClient();
     if (!supabase) return;
     const { data, error } = await supabase
@@ -152,7 +159,8 @@ function AccountsInner() {
       .insert({
         project_id: projectId,
         profile_id: personDraft,
-        amount,
+        amount: basisDraft === "fixed" ? value : 0,
+        percent: basisDraft === "percent" ? value : null,
         role_label: roleDraft.trim() || null,
       })
       .select()
@@ -263,59 +271,13 @@ function AccountsInner() {
                   </span>
                 </button>
 
-                {/* The allotment comes from the deal, so it's picked once in the
-                    pipeline rather than retyped here. Manual stays available
-                    for work that has no deal behind it. */}
-                <div className="flex items-center gap-1.5">
-                  <div className="w-48">
-                    <Dropdown
-                      value={project.deal_id ?? ""}
-                      placeholder="Manual amount"
-                      options={[
-                        { value: "", label: "Manual amount" },
-                        ...deals
-                          .filter((d) => d.client_id === project.client_id)
-                          .map((d) => ({
-                            value: d.id,
-                            label: `${d.deal_name} · ${formatMoney(
-                              Number(d.deal_value),
-                              (d.currency as CurrencyCode) ?? base
-                            )}`,
-                          })),
-                      ]}
-                      onChange={(v) => updateProject(project.id, { deal_id: v || null })}
-                    />
-                  </div>
-                  {project.deal_id ? (
-                    <span className="w-[7.5rem] shrink-0 text-right text-sm font-medium tabular-nums">
-                      {formatMoney(budget, ccy(project))}
-                    </span>
-                  ) : (
-                    <>
-                      <div className="w-24">
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          aria-label={`Budget for ${project.name}`}
-                          value={project.budget || ""}
-                          placeholder="0.00"
-                          onChange={(e) =>
-                            updateProject(project.id, { budget: Number(e.target.value) || 0 })
-                          }
-                        />
-                      </div>
-                      <div className="w-20">
-                        <Dropdown
-                          value={project.currency ?? base}
-                          options={CURRENCIES.map((c) => ({ value: c.code, label: c.code }))}
-                          onChange={(v) =>
-                            updateProject(project.id, { currency: v as CurrencyCode })
-                          }
-                        />
-                      </div>
-                    </>
-                  )}
+                {/* The allotment is always shown as a number, whatever its
+                    source — before, a linked deal hid it inside the picker. */}
+                <div className="shrink-0 text-right">
+                  <p className="text-base font-semibold tabular-nums text-foreground">
+                    {formatMoney(budget, ccy(project))}
+                  </p>
+                  <p className="text-[11px] text-muted-2">allotted</p>
                 </div>
 
                 <div className="w-40 shrink-0 text-right">
@@ -364,6 +326,62 @@ function AccountsInner() {
 
               {isOpen && (
                 <div className="mt-3.5 flex flex-col gap-2 border-t border-border-subtle pt-3">
+                  {/* Where the money comes from */}
+                  <div className="flex flex-wrap items-end gap-2 pb-1">
+                    <div className="min-w-[13rem] flex-1">
+                      <Label>Allotment source</Label>
+                      <Dropdown
+                        value={project.deal_id ?? ""}
+                        placeholder="Manual amount"
+                        options={[
+                          { value: "", label: "Manual amount" },
+                          ...deals
+                            .filter((d) => d.client_id === project.client_id)
+                            .map((d) => ({
+                              value: d.id,
+                              label: `${d.deal_name} · ${formatMoney(
+                                Number(d.deal_value),
+                                (d.currency as CurrencyCode) ?? base
+                              )}`,
+                            })),
+                        ]}
+                        onChange={(v) => updateProject(project.id, { deal_id: v || null })}
+                      />
+                    </div>
+                    {project.deal_id ? (
+                      <p className="pb-2 text-[11px] text-muted-2">
+                        Value and currency follow the deal. Change it in Pipeline.
+                      </p>
+                    ) : (
+                      <>
+                        <div className="w-28">
+                          <Label>Amount</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            aria-label={`Budget for ${project.name}`}
+                            value={project.budget || ""}
+                            placeholder="0.00"
+                            onChange={(e) =>
+                              updateProject(project.id, { budget: Number(e.target.value) || 0 })
+                            }
+                          />
+                        </div>
+                        <div className="w-24">
+                          <Label>Currency</Label>
+                          <Dropdown
+                            value={project.currency ?? base}
+                            options={CURRENCIES.map((c) => ({ value: c.code, label: c.code }))}
+                            onChange={(v) =>
+                              updateProject(project.id, { currency: v as CurrencyCode })
+                            }
+                          />
+                        </div>
+                      </>
+                    )}
+                  </div>
+
                   {lines.length === 0 && (
                     <p className="text-xs text-muted-foreground">
                       Nobody allocated yet. Add the people working on this project below.
@@ -371,6 +389,8 @@ function AccountsInner() {
                   )}
                   {lines.map((a) => {
                     const p = person(a.profile_id);
+                    const isPct = a.percent != null;
+                    const payout = payoutOf(a, budget);
                     return (
                       <div key={a.id} className="group flex flex-wrap items-center gap-2">
                         <Avatar name={p?.full_name ?? "Unknown"} url={p?.avatar_url} size="xs" />
@@ -382,18 +402,78 @@ function AccountsInner() {
                             </span>
                           )}
                         </span>
-                        <div className="w-28">
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            aria-label={`Amount for ${p?.full_name ?? "member"}`}
-                            value={a.amount}
-                            onChange={(e) =>
-                              updateAllocation(a.id, { amount: Number(e.target.value) || 0 })
-                            }
-                          />
+
+                        {/* Switch a line between a share of the fee and a flat
+                            amount. Percentages re-derive when the deal changes. */}
+                        <div className="flex shrink-0 items-center gap-0.5 rounded-md border border-border p-0.5">
+                          {(["percent", "fixed"] as const).map((mode) => {
+                            const active = mode === "percent" ? isPct : !isPct;
+                            return (
+                              <button
+                                key={mode}
+                                type="button"
+                                onClick={() =>
+                                  updateAllocation(
+                                    a.id,
+                                    mode === "percent"
+                                      ? {
+                                          percent:
+                                            budget > 0
+                                              ? Math.round((Number(a.amount) / budget) * 100)
+                                              : 0,
+                                        }
+                                      : { percent: null, amount: payout }
+                                  )
+                                }
+                                className={cn(
+                                  "rounded px-1.5 py-0.5 text-[11px] transition-colors",
+                                  active
+                                    ? "bg-white/10 font-medium text-foreground"
+                                    : "text-muted-foreground hover:text-foreground"
+                                )}
+                              >
+                                {mode === "percent" ? "%" : "Fixed"}
+                              </button>
+                            );
+                          })}
                         </div>
+
+                        {isPct ? (
+                          <div className="flex shrink-0 items-center gap-1.5">
+                            <div className="w-20">
+                              <Input
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="0.1"
+                                aria-label={`Share for ${p?.full_name ?? "member"}`}
+                                value={a.percent ?? 0}
+                                onChange={(e) =>
+                                  updateAllocation(a.id, {
+                                    percent: Number(e.target.value) || 0,
+                                  })
+                                }
+                              />
+                            </div>
+                            <span className="w-24 text-right text-[13px] tabular-nums text-foreground-secondary">
+                              {formatMoney(payout, ccy(project))}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="w-28 shrink-0">
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              aria-label={`Amount for ${p?.full_name ?? "member"}`}
+                              value={a.amount}
+                              onChange={(e) =>
+                                updateAllocation(a.id, { amount: Number(e.target.value) || 0 })
+                              }
+                            />
+                          </div>
+                        )}
+
                         <label className="flex shrink-0 cursor-pointer items-center gap-1.5 text-[11px] text-muted-foreground">
                           <input
                             type="checkbox"
@@ -439,13 +519,25 @@ function AccountsInner() {
                         onChange={(e) => setRoleDraft(e.target.value)}
                       />
                     </div>
+                    <div className="w-24">
+                      <Label>Basis</Label>
+                      <Dropdown
+                        value={basisDraft}
+                        options={[
+                          { value: "percent", label: "%" },
+                          { value: "fixed", label: "Fixed" },
+                        ]}
+                        onChange={(v) => setBasisDraft(v as "percent" | "fixed")}
+                      />
+                    </div>
                     <div className="w-28">
-                      <Label>Amount</Label>
+                      <Label>{basisDraft === "percent" ? "Share %" : "Amount"}</Label>
                       <Input
                         type="number"
                         min="0"
-                        step="0.01"
-                        placeholder="0.00"
+                        max={basisDraft === "percent" ? 100 : undefined}
+                        step={basisDraft === "percent" ? "0.1" : "0.01"}
+                        placeholder={basisDraft === "percent" ? "30" : "0.00"}
                         value={amountDraft}
                         onChange={(e) => setAmountDraft(e.target.value)}
                       />
@@ -454,6 +546,19 @@ function AccountsInner() {
                       <Plus className="h-3.5 w-3.5" /> Allocate
                     </Button>
                   </form>
+
+                  {/* Total share, so an over-allocation is obvious before it
+                      shows up as a money overrun. */}
+                  {lines.some((a) => a.percent != null) && (
+                    <p
+                      className={cn(
+                        "text-[11px]",
+                        totalPercent(lines) > 100 ? "text-danger" : "text-muted-2"
+                      )}
+                    >
+                      {totalPercent(lines)}% of the fee allocated by share.
+                    </p>
+                  )}
 
                   {paidOut > 0 && (
                     <p className="text-[11px] text-success">
@@ -467,6 +572,13 @@ function AccountsInner() {
         })}
       </div>
     </div>
+  );
+}
+
+/** Sum of the share-based lines, rounded for display. */
+function totalPercent(lines: ProjectAllocation[]) {
+  return Math.round(
+    lines.reduce((s, a) => s + (a.percent != null ? Number(a.percent) : 0), 0)
   );
 }
 

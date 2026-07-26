@@ -469,7 +469,10 @@ export interface ProjectAllocation {
   id: string;
   project_id: string;
   profile_id: string;
+  /** Fixed fee. Ignored when `percent` is set. */
   amount: number;
+  /** Share of the project budget, 0–100. Takes precedence over `amount`. */
+  percent: number | null;
   role_label: string | null;
   note: string | null;
   paid: boolean;
