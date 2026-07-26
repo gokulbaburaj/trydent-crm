@@ -1379,8 +1379,10 @@ function MiniCalendar({
   }, [meetings, tasks]);
 
   return (
-    <Card>
-      <div className="mb-2 flex items-center justify-between">
+    // The weeks stretch to fill whatever height the row gives this card, so a
+    // tall neighbour no longer leaves a band of empty space underneath.
+    <Card className="flex flex-col overflow-hidden">
+      <div className="mb-2 flex shrink-0 items-center justify-between">
         <h3 className="text-sm font-semibold">Calendar</h3>
         <div className="flex items-center gap-1">
           <button
@@ -1398,10 +1400,18 @@ function MiniCalendar({
           </button>
         </div>
       </div>
-      <div className="grid grid-cols-7 text-center">
+      <div className="grid shrink-0 grid-cols-7 text-center">
         {WEEKDAYS.map((d) => (
           <span key={d} className="py-1 text-[10px] font-medium text-muted-2">{d}</span>
         ))}
+      </div>
+      <div
+        className="grid min-h-0 flex-1 grid-cols-7 text-center"
+        style={{
+          // One row per week, each an equal share of the leftover height.
+          gridTemplateRows: `repeat(${grid.length / 7}, minmax(0, 1fr))`,
+        }}
+      >
         {grid.map((day) => {
           const key = format(day, "yyyy-MM-dd");
           const hasDue = dueDays.has(key);
@@ -1411,7 +1421,9 @@ function MiniCalendar({
             <span
               key={day.toISOString()}
               className={cn(
-                "hover-reveal-host relative mx-auto flex h-8 w-8 items-center justify-center rounded-full text-xs",
+                // self-center keeps the circle vertically centred now that the
+                // week row can be taller than the circle itself.
+                "hover-reveal-host relative mx-auto flex h-8 w-8 shrink-0 items-center justify-center self-center rounded-full text-xs",
                 isToday(day)
                   ? "bg-primary font-semibold text-primary-foreground"
                   : hasDue || hasMeeting
