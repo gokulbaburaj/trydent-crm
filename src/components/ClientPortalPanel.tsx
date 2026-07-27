@@ -32,6 +32,7 @@ import { useAuth } from "@/lib/useAuth";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/format";
+import { generatePassword } from "@/lib/password";
 import type {
   Client,
   ClientDocument,
@@ -536,12 +537,26 @@ export function ClientPortalPanel({
               </div>
               <div>
                 <Label>Set a password</Label>
-                <Input
-                  type="text"
-                  placeholder="Min 8 characters"
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                />
+                {/* Generate rather than invent one. This gets read out over a
+                    call or pasted into an email, and it's the only credential
+                    protecting a client's whole account. */}
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="text"
+                    placeholder="Min 8 characters"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    className="shrink-0"
+                    onClick={() => setLoginPassword(generatePassword())}
+                  >
+                    Generate
+                  </Button>
+                </div>
               </div>
             </div>
             {loginError && <p className="text-xs text-danger">{loginError}</p>}
