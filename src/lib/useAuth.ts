@@ -84,7 +84,6 @@ export function useAuth() {
     role: profile?.role,
     grants: grants?.pages ?? null,
     roleIsAdmin: grants?.is_admin ?? null,
-    portalOnly: profile?.portal_only ?? null,
   };
 
   return { profile, access, loading, signOut, isSupabaseConfigured };

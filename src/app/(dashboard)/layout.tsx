@@ -10,6 +10,7 @@ import { CommandMenu } from "@/components/CommandMenu";
 import { TabsProvider } from "@/lib/tabs";
 import { TooltipProvider } from "@/components/ui/Tooltip";
 import { useAuth } from "@/lib/useAuth";
+import { isPortalOnly } from "@/lib/permissions";
 
 const PAGE_TITLES: Record<string, string> = {
   "/my-work": "My Work",
@@ -43,7 +44,8 @@ export default function DashboardLayout({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { profile, loading, signOut, isSupabaseConfigured } = useAuth();
+  const { profile, access, loading, signOut, isSupabaseConfigured } = useAuth();
+  const portalOnly = isPortalOnly(access);
   const [mobileNav, setMobileNav] = useState(false);
 
   useEffect(() => {
@@ -59,19 +61,19 @@ export default function DashboardLayout({
     if (profile.role === "client" && pathname !== "/portal") {
       router.replace("/portal");
     }
-    // Which surface someone lands on is now a per-person toggle, not their
-    // employment type — an embedded contractor can have the full app.
-    if (profile.portal_only && profile.role !== "admin" && pathname !== "/staff-portal") {
+    // Which surface someone lands on falls out of their role's grants: a role
+    // holding `staff-portal` and no real staff pages IS the portal-only case.
+    if (portalOnly && pathname !== "/staff-portal") {
       router.replace("/staff-portal");
     }
-  }, [loading, profile, isSupabaseConfigured, router, pathname]);
+  }, [loading, profile, portalOnly, isSupabaseConfigured, router, pathname]);
 
   // A portal user who landed on an app route is about to be redirected — don't
   // paint the page they're leaving (this was the ~2s dashboard flash).
   const redirectPending =
     !!profile &&
     ((profile.role === "client" && pathname !== "/portal") ||
-      (profile.portal_only && profile.role !== "admin" && pathname !== "/staff-portal"));
+      (portalOnly && pathname !== "/staff-portal"));
 
   // While checking the session — or when signed out and about to redirect —
   // never render the dashboard shell (prevents the dashboard-then-login flash).
@@ -83,7 +85,7 @@ export default function DashboardLayout({
     );
   }
 
-  if (profile?.role === "client" || (profile?.portal_only && profile.role !== "admin")) {
+  if (profile?.role === "client" || portalOnly) {
     // client + contractor users get their own minimal shell rendered by their portal
     return <>{children}</>;
   }

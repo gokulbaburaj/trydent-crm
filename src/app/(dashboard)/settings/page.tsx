@@ -12,10 +12,11 @@ import { Button } from "@/components/ui/Button";
 import { Dropdown } from "@/components/ui/Dropdown";
 import { Checkbox } from "@/components/ui/Checkbox";
 import {
-  ALL_STAFF_PAGES,
   ALWAYS_GRANTED,
   ENFORCED_PAGES,
+  GRANTABLE_PAGES,
   PAGE_LABELS,
+  PORTAL_PAGE,
   isAdmin as hasAdminRights,
 } from "@/lib/permissions";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
@@ -335,7 +336,7 @@ function RolesCard() {
       .insert({
         name: n,
         team: team.trim() || null,
-        pages: [...ALWAYS_GRANTED, "projects", "schedule"],
+        pages: ["projects", "schedule"],
         sort_order: roles.length,
       })
       .select()
@@ -485,7 +486,7 @@ function RolesCard() {
                 </p>
 
                 <div className="mt-2.5 grid grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-3">
-                  {ALL_STAFF_PAGES.map((page) => {
+                  {GRANTABLE_PAGES.map((page) => {
                     const locked = ALWAYS_GRANTED.includes(page);
                     const on = locked || (r.pages ?? []).includes(page);
                     return (
@@ -509,6 +510,11 @@ function RolesCard() {
                             {ENFORCED_PAGES.includes(page) && (
                               <span className="text-[9px] uppercase tracking-wide text-warning">
                                 enforced
+                              </span>
+                            )}
+                            {page === PORTAL_PAGE && (
+                              <span className="text-[9px] uppercase tracking-wide text-muted-2">
+                                instead of the app
                               </span>
                             )}
                           </span>

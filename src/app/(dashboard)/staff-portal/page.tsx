@@ -11,6 +11,7 @@ import { PriorityFlag } from "@/components/ui/PriorityPicker";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/useAuth";
+import { isPortalOnly } from "@/lib/permissions";
 import { useCurrency } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/format";
@@ -43,13 +44,13 @@ export default function StaffPortalPage() {
 }
 
 function StaffPortalInner() {
-  const { profile, signOut } = useAuth();
+  const { profile, access, signOut } = useAuth();
   const { format: formatCurrency } = useCurrency();
   const searchParams = useSearchParams();
 
   // Anyone with the full app can preview someone's portal via ?user=<profileId>.
-  // A portal-only person can't — they'd be able to read a colleague's work.
-  const previewUserId = profile && !profile.portal_only ? searchParams.get("user") : null;
+  // Someone parked on the portal can't — they'd read a colleague's work.
+  const previewUserId = !isPortalOnly(access) ? searchParams.get("user") : null;
   const isPreview = !!previewUserId;
   const targetId = previewUserId ?? profile?.id ?? null;
 

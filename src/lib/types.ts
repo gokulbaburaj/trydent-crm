@@ -152,15 +152,6 @@ export interface Profile {
   reports_to: string | null;
   /** The company role they hold — drives their team and onboarding checklist. */
   role_id: string | null;
-  /**
-   * Send them to the cut-down staff portal instead of the full app.
-   *
-   * Separate from employment type on purpose: some contractors are embedded in
-   * the team and want the real project board, others touch one job and are
-   * better served by a single screen. That's a per-person call, not something
-   * to infer from a contract term.
-   */
-  portal_only: boolean;
   /** Free-text override when the role name isn't the whole story. */
   title: string | null;
   start_date: string | null;

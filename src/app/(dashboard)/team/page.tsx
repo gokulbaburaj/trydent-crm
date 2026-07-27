@@ -43,7 +43,6 @@ interface MemberForm {
   email: string;
   password: string;
   role: Exclude<UserRole, "client">;
-  portal_only: boolean;
   team: string;
   reports_to: string;
 }
@@ -63,7 +62,6 @@ const emptyMember: MemberForm = {
   email: "",
   password: "",
   role: "full_time",
-  portal_only: false,
   team: "",
   reports_to: "",
 };
@@ -297,30 +295,6 @@ function TeamPageInner() {
       sortKey: (p) => p.role,
     },
     {
-      header: "Sees",
-      className: "w-36",
-      // Which surface, not which employment type. An embedded contractor can
-      // have the full app; a part-timer can be portal-only.
-      render: (p: Profile) =>
-        isAdmin && p.role !== "admin" ? (
-          <div className="w-32" onClick={(e) => e.stopPropagation()}>
-            <Dropdown
-              value={p.portal_only ? "portal" : "app"}
-              options={[
-                { value: "app", label: "Full app" },
-                { value: "portal", label: "Staff portal" },
-              ]}
-              onChange={(v) => patchProfile(p.id, { portal_only: v === "portal" })}
-            />
-          </div>
-        ) : (
-          <span className="text-xs text-muted-foreground">
-            {p.role === "admin" ? "Full app" : p.portal_only ? "Staff portal" : "Full app"}
-          </span>
-        ),
-      sortKey: (p) => String(p.portal_only),
-    },
-    {
       header: "Team",
       render: (p) =>
         isAdmin ? (
@@ -361,7 +335,7 @@ function TeamPageInner() {
             className: "w-20 text-right",
             render: (p: Profile) => (
               <div className="flex items-center justify-end gap-0.5" onClick={(e) => e.stopPropagation()}>
-                {p.portal_only && (
+                {p.role !== "admin" && (
                   <>
                     <button
                       onClick={() => openInNewTab(`/staff-portal?user=${p.id}`, `${p.full_name.split(" ")[0]} — preview`)}
@@ -503,17 +477,6 @@ function TeamPageInner() {
                   ? "Bypasses every restriction below."
                   : "An HR label — what they can open comes from their job role, set in Settings → Company roles."}
               </p>
-            </div>
-            <div>
-              <Label>Sees</Label>
-              <Dropdown
-                value={adding.portal_only ? "portal" : "app"}
-                options={[
-                  { value: "app", label: "Full app — limited by their job role" },
-                  { value: "portal", label: "Staff portal — own tasks and schedule only" },
-                ]}
-                onChange={(v) => setAdding({ ...adding, portal_only: v === "portal" })}
-              />
             </div>
             <div>
               <Label>Team (optional)</Label>

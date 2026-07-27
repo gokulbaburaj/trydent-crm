@@ -41,7 +41,7 @@ export type PageKey =
   | "portal"
   | "staff-portal";
 
-/** Every page an admin can reach, in nav order. Drives the Settings picker. */
+/** Every page an admin can reach, in nav order. */
 export const ALL_STAFF_PAGES: PageKey[] = [
   "my-work",
   "dashboard",
@@ -57,6 +57,24 @@ export const ALL_STAFF_PAGES: PageKey[] = [
   "team",
   "settings",
 ];
+
+/**
+ * What the Settings picker offers.
+ *
+ * The staff portal is a page like any other. It used to be a separate
+ * per-person toggle, which meant two dials that could contradict — someone
+ * marked portal-only had their role's grants silently ignored. Now a
+ * "Freelancer" role granted nothing but `staff-portal` produces exactly that
+ * behaviour, through the same mechanism as everything else.
+ */
+export const GRANTABLE_PAGES: PageKey[] = [...ALL_STAFF_PAGES, "staff-portal"];
+
+/**
+ * Granting this means the person lives on the cut-down portal. It's listed
+ * apart in the picker because it's a different kind of choice — not "one more
+ * page" but "instead of the app".
+ */
+export const PORTAL_PAGE: PageKey = "staff-portal";
 
 /** Human labels for the Settings picker. */
 export const PAGE_LABELS: Record<PageKey, string> = {
@@ -114,18 +132,24 @@ export interface AccessContext {
   grants?: string[] | null;
   /** roles.is_admin — admin rights without the admin account type. */
   roleIsAdmin?: boolean | null;
-  /** profiles.portal_only — send them to the cut-down staff portal instead. */
-  portalOnly?: boolean | null;
 }
 
 export function isAdmin(ctx: AccessContext): boolean {
   return ctx.role === "admin" || ctx.roleIsAdmin === true;
 }
 
-/** True when this person lives on the cut-down staff portal, not the full app. */
+/**
+ * True when this person lives on the cut-down staff portal.
+ *
+ * Derived, not stored: it's what "granted the portal and no real staff pages"
+ * means. So there's nothing to keep in sync and nothing that can disagree.
+ */
 export function isPortalOnly(ctx: AccessContext): boolean {
-  if (isAdmin(ctx)) return false;
-  return ctx.portalOnly === true;
+  if (isAdmin(ctx) || ctx.role === "client") return false;
+  const grants = ctx.grants ?? [];
+  if (!grants.includes(PORTAL_PAGE)) return false;
+  // Settings is on everyone and doesn't count as a reason to leave the portal.
+  return !grants.some((g) => g !== PORTAL_PAGE && g !== "settings");
 }
 
 export function canAccess(ctx: AccessContext, page: PageKey): boolean {
@@ -134,20 +158,25 @@ export function canAccess(ctx: AccessContext, page: PageKey): boolean {
   // negotiable by a role's page list — that's the point of the floor.
   if (isAdmin(ctx)) return true;
   if (ctx.role === "client") return page === "portal";
-  // Portal-only people have one screen, whatever their role grants. Flipping
-  // the toggle in Team is what moves them into the full app.
-  if (isPortalOnly(ctx)) return page === "staff-portal";
+
+  const grants = ctx.grants ?? [];
+  // Someone parked on the portal doesn't also get My Work — that floor exists
+  // so a person isn't stranded, and the portal already does that job.
+  if (isPortalOnly(ctx)) return page === PORTAL_PAGE || page === "settings";
 
   if (ACCOUNT_FLOOR[ctx.role]?.includes(page)) return true;
-  return (ctx.grants ?? []).includes(page);
+  return grants.includes(page);
 }
 
 /** The pages to actually render in the sidebar, in nav order. */
 export function visiblePages(ctx: AccessContext): PageKey[] {
   if (!ctx.role) return [];
   if (ctx.role === "client") return ["portal"];
-  if (isPortalOnly(ctx)) return ["staff-portal"];
-  return ALL_STAFF_PAGES.filter((p) => canAccess(ctx, p));
+  if (isPortalOnly(ctx)) return [PORTAL_PAGE];
+  const pages = ALL_STAFF_PAGES.filter((p) => canAccess(ctx, p));
+  // Someone can hold the portal alongside real pages — show it last.
+  if ((ctx.grants ?? []).includes(PORTAL_PAGE)) pages.push(PORTAL_PAGE);
+  return pages;
 }
 
 /** Where to send someone who's just signed in. */
