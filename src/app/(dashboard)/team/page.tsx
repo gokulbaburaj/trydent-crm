@@ -24,19 +24,16 @@ import { useCurrency } from "@/lib/currency";
 import { useTabs } from "@/lib/tabs";
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/format";
+import { STAFF_TYPES, USER_ROLE_LABELS } from "@/lib/types";
 import type { Profile, StaffPayment, Team, UserRole } from "@/lib/types";
 
 const roleTone: Record<UserRole, "green" | "blue" | "gray"> = {
   admin: "green",
-  rep: "blue",
+  full_time: "blue",
+  part_time: "blue",
+  contract: "gray",
+  intern: "gray",
   client: "gray",
-  contractor: "gray",
-};
-
-const roleLabel: Record<string, string> = {
-  admin: "Admin",
-  rep: "Rep",
-  contractor: "Contractor",
 };
 
 type View = "members" | "org";
@@ -45,7 +42,8 @@ interface MemberForm {
   full_name: string;
   email: string;
   password: string;
-  role: "admin" | "rep" | "contractor";
+  role: Exclude<UserRole, "client">;
+  portal_only: boolean;
   team: string;
   reports_to: string;
 }
@@ -64,7 +62,8 @@ const emptyMember: MemberForm = {
   full_name: "",
   email: "",
   password: "",
-  role: "rep",
+  role: "full_time",
+  portal_only: false,
   team: "",
   reports_to: "",
 };
@@ -286,17 +285,40 @@ function TeamPageInner() {
             <Dropdown
               value={p.role}
               options={[
-                { value: "admin", label: "Admin" },
-                { value: "rep", label: "Rep" },
-                { value: "contractor", label: "Contractor" },
+                { value: "admin", label: USER_ROLE_LABELS.admin },
+                ...STAFF_TYPES.map((t) => ({ value: t, label: USER_ROLE_LABELS[t] })),
               ]}
               onChange={(v) => patchProfile(p.id, { role: v as UserRole })}
             />
           </div>
         ) : (
-          <Badge tone={roleTone[p.role]}>{roleLabel[p.role] ?? p.role}</Badge>
+          <Badge tone={roleTone[p.role]}>{USER_ROLE_LABELS[p.role] ?? p.role}</Badge>
         ),
       sortKey: (p) => p.role,
+    },
+    {
+      header: "Sees",
+      className: "w-36",
+      // Which surface, not which employment type. An embedded contractor can
+      // have the full app; a part-timer can be portal-only.
+      render: (p: Profile) =>
+        isAdmin && p.role !== "admin" ? (
+          <div className="w-32" onClick={(e) => e.stopPropagation()}>
+            <Dropdown
+              value={p.portal_only ? "portal" : "app"}
+              options={[
+                { value: "app", label: "Full app" },
+                { value: "portal", label: "Staff portal" },
+              ]}
+              onChange={(v) => patchProfile(p.id, { portal_only: v === "portal" })}
+            />
+          </div>
+        ) : (
+          <span className="text-xs text-muted-foreground">
+            {p.role === "admin" ? "Full app" : p.portal_only ? "Staff portal" : "Full app"}
+          </span>
+        ),
+      sortKey: (p) => String(p.portal_only),
     },
     {
       header: "Team",
@@ -339,7 +361,7 @@ function TeamPageInner() {
             className: "w-20 text-right",
             render: (p: Profile) => (
               <div className="flex items-center justify-end gap-0.5" onClick={(e) => e.stopPropagation()}>
-                {p.role === "contractor" && (
+                {p.portal_only && (
                   <>
                     <button
                       onClick={() => openInNewTab(`/staff-portal?user=${p.id}`, `${p.full_name.split(" ")[0]} — preview`)}
@@ -467,21 +489,31 @@ function TeamPageInner() {
               />
             </div>
             <div>
-              <Label>Role</Label>
+              <Label>Employment type</Label>
               <Dropdown
                 value={adding.role}
                 options={[
-                  { value: "rep", label: "Rep — full app access" },
-                  { value: "admin", label: "Admin — full app + manage team" },
-                  { value: "contractor", label: "Contractor — restricted staff portal" },
+                  { value: "admin", label: "Admin — everything, including pay and roles" },
+                  ...STAFF_TYPES.map((t) => ({ value: t, label: USER_ROLE_LABELS[t] })),
                 ]}
                 onChange={(v) => setAdding({ ...adding, role: v as MemberForm["role"] })}
               />
-              {adding.role === "contractor" && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Sees only their own tasks, schedule, and payment plan — not clients, pipeline, or revenue.
-                </p>
-              )}
+              <p className="mt-1 text-xs text-muted-foreground">
+                {adding.role === "admin"
+                  ? "Bypasses every restriction below."
+                  : "An HR label — what they can open comes from their job role, set in Settings → Company roles."}
+              </p>
+            </div>
+            <div>
+              <Label>Sees</Label>
+              <Dropdown
+                value={adding.portal_only ? "portal" : "app"}
+                options={[
+                  { value: "app", label: "Full app — limited by their job role" },
+                  { value: "portal", label: "Staff portal — own tasks and schedule only" },
+                ]}
+                onChange={(v) => setAdding({ ...adding, portal_only: v === "portal" })}
+              />
             </div>
             <div>
               <Label>Team (optional)</Label>

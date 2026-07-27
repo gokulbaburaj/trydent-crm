@@ -22,9 +22,11 @@ import type { Profile, UserRole } from "@/lib/types";
 
 const roleTone: Record<UserRole, "green" | "blue" | "gray"> = {
   admin: "green",
-  rep: "blue",
+  full_time: "blue",
+  part_time: "blue",
+  contract: "gray",
+  intern: "gray",
   client: "gray",
-  contractor: "gray",
 };
 
 const NODE_W = 230;

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 
-const ALLOWED_ROLES = ["admin", "rep", "contractor"] as const;
+const ALLOWED_ROLES = ["admin", "full_time", "part_time", "contract", "intern"] as const;
 
 /** Confirm the caller is a signed-in admin; returns their user id or an error response. */
 async function requireAdmin() {
@@ -83,13 +83,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "That email is already in use." }, { status: 400 });
     }
     // The signup trigger casts the role to the user_role enum. If the
-    // contractor migration hasn't run, that cast fails with a generic
-    // "database error" — point at the real fix instead.
-    if (role === "contractor" && (lower.includes("database") || lower.includes("unexpected"))) {
+    // employment-types migration hasn't run, that cast fails with a generic
+    // "database error" — point at the real fix instead of leaving them
+    // guessing.
+    const NEW_TYPES = ["full_time", "part_time", "contract", "intern"];
+    if (
+      NEW_TYPES.includes(role) &&
+      (lower.includes("database") || lower.includes("unexpected"))
+    ) {
       return NextResponse.json(
         {
           error:
-            "The 'contractor' role doesn't exist in the database yet. Run supabase/migrations/2026-07-22b_contractor_role.sql (on its own), then 2026-07-22c_staff_portal.sql, and try again.",
+            `The '${role}' account type doesn't exist in the database yet. Run ` +
+            "supabase/migrations/2026-07-27n_employment_types.sql, then try again.",
         },
         { status: 400 }
       );

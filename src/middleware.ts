@@ -50,9 +50,16 @@ export async function middleware(request: NextRequest) {
   // Portal users get sent to their own home before any app route renders. Read
   // from the JWT metadata so this costs no database round-trip; the dashboard
   // layout still enforces it authoritatively if the metadata is stale/missing.
-  const metaRole = (user?.user_metadata as { role?: string } | undefined)?.role;
+  // `portal_only` is the authoritative flag, but it lives in the database and
+  // this runs on every request — so we read the mirrored hint from JWT metadata
+  // and let the dashboard layout correct a stale one. Both legacy 'contractor'
+  // and current 'contract' are accepted so sessions minted before the rename
+  // still route correctly.
+  const meta = user?.user_metadata as { role?: string; portal_only?: boolean } | undefined;
+  const wantsStaffPortal =
+    meta?.portal_only === true || meta?.role === "contractor" || meta?.role === "contract";
   const portalHome =
-    metaRole === "client" ? "/portal" : metaRole === "contractor" ? "/staff-portal" : null;
+    meta?.role === "client" ? "/portal" : wantsStaffPortal ? "/staff-portal" : null;
 
   // Signed in → skip the login page, landing on the right home for the role.
   if (user && path.startsWith("/login")) {

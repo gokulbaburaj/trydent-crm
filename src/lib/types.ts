@@ -1,4 +1,34 @@
-export type UserRole = "admin" | "rep" | "client" | "contractor";
+/**
+ * Account type — how someone relates to the company, not what they can do.
+ *
+ * What they can *reach* comes from their job role's grants (see
+ * lib/permissions.ts). Employment type is an HR fact: an intern and a
+ * full-timer can both be video editors with identical access, and a part-time
+ * project manager may need more than either.
+ *
+ * Two of these are genuine account kinds rather than employment terms:
+ *   admin  — keys to everything, bypasses grants
+ *   client — external, portal only, never a staff page
+ */
+export type UserRole =
+  | "admin"
+  | "full_time"
+  | "part_time"
+  | "contract"
+  | "intern"
+  | "client";
+
+/** Employment types, i.e. everyone on the inside who isn't the owner. */
+export const STAFF_TYPES: UserRole[] = ["full_time", "part_time", "contract", "intern"];
+
+export const USER_ROLE_LABELS: Record<UserRole, string> = {
+  admin: "Admin",
+  full_time: "Full-time",
+  part_time: "Part-time",
+  contract: "Contract",
+  intern: "Intern",
+  client: "Client",
+};
 /** Kept here (not in lib/currency) so lib/types stays dependency-free. */
 export type CurrencyCode = "USD" | "INR" | "EUR" | "CAD" | "AUD" | "AED";
 export type ClientStatus =
@@ -122,6 +152,15 @@ export interface Profile {
   reports_to: string | null;
   /** The company role they hold — drives their team and onboarding checklist. */
   role_id: string | null;
+  /**
+   * Send them to the cut-down staff portal instead of the full app.
+   *
+   * Separate from employment type on purpose: some contractors are embedded in
+   * the team and want the real project board, others touch one job and are
+   * better served by a single screen. That's a per-person call, not something
+   * to infer from a contract term.
+   */
+  portal_only: boolean;
   /** Free-text override when the role name isn't the whole story. */
   title: string | null;
   start_date: string | null;

@@ -59,7 +59,9 @@ export default function DashboardLayout({
     if (profile.role === "client" && pathname !== "/portal") {
       router.replace("/portal");
     }
-    if (profile.role === "contractor" && pathname !== "/staff-portal") {
+    // Which surface someone lands on is now a per-person toggle, not their
+    // employment type — an embedded contractor can have the full app.
+    if (profile.portal_only && profile.role !== "admin" && pathname !== "/staff-portal") {
       router.replace("/staff-portal");
     }
   }, [loading, profile, isSupabaseConfigured, router, pathname]);
@@ -69,7 +71,7 @@ export default function DashboardLayout({
   const redirectPending =
     !!profile &&
     ((profile.role === "client" && pathname !== "/portal") ||
-      (profile.role === "contractor" && pathname !== "/staff-portal"));
+      (profile.portal_only && profile.role !== "admin" && pathname !== "/staff-portal"));
 
   // While checking the session — or when signed out and about to redirect —
   // never render the dashboard shell (prevents the dashboard-then-login flash).
@@ -81,7 +83,7 @@ export default function DashboardLayout({
     );
   }
 
-  if (profile?.role === "client" || profile?.role === "contractor") {
+  if (profile?.role === "client" || (profile?.portal_only && profile.role !== "admin")) {
     // client + contractor users get their own minimal shell rendered by their portal
     return <>{children}</>;
   }

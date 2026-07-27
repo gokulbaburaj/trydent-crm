@@ -90,11 +90,20 @@ export const ENFORCED_PAGES: PageKey[] = ["accounts", "recruiting", "onboarding"
  */
 export const ALWAYS_GRANTED: PageKey[] = ["my-work", "settings"];
 
-/** What an account type may reach before its job role adds anything. */
+/**
+ * What an account type may reach before its job role adds anything.
+ *
+ * Every employment type gets the same floor. Full-time versus intern is an HR
+ * fact, not a permission — what they can reach is their job role's business.
+ * Only admin and client differ, because those are account kinds rather than
+ * contract terms.
+ */
 const ACCOUNT_FLOOR: Record<UserRole, PageKey[]> = {
   admin: [...ALL_STAFF_PAGES, "portal", "staff-portal"],
-  rep: [...ALWAYS_GRANTED],
-  contractor: ["staff-portal", ...ALWAYS_GRANTED],
+  full_time: [...ALWAYS_GRANTED],
+  part_time: [...ALWAYS_GRANTED],
+  contract: [...ALWAYS_GRANTED],
+  intern: [...ALWAYS_GRANTED],
   client: ["portal"],
 };
 
@@ -105,10 +114,18 @@ export interface AccessContext {
   grants?: string[] | null;
   /** roles.is_admin — admin rights without the admin account type. */
   roleIsAdmin?: boolean | null;
+  /** profiles.portal_only — send them to the cut-down staff portal instead. */
+  portalOnly?: boolean | null;
 }
 
 export function isAdmin(ctx: AccessContext): boolean {
   return ctx.role === "admin" || ctx.roleIsAdmin === true;
+}
+
+/** True when this person lives on the cut-down staff portal, not the full app. */
+export function isPortalOnly(ctx: AccessContext): boolean {
+  if (isAdmin(ctx)) return false;
+  return ctx.portalOnly === true;
 }
 
 export function canAccess(ctx: AccessContext, page: PageKey): boolean {
@@ -117,21 +134,28 @@ export function canAccess(ctx: AccessContext, page: PageKey): boolean {
   // negotiable by a role's page list — that's the point of the floor.
   if (isAdmin(ctx)) return true;
   if (ctx.role === "client") return page === "portal";
+  // Portal-only people have one screen, whatever their role grants. Flipping
+  // the toggle in Team is what moves them into the full app.
+  if (isPortalOnly(ctx)) return page === "staff-portal";
 
   if (ACCOUNT_FLOOR[ctx.role]?.includes(page)) return true;
   return (ctx.grants ?? []).includes(page);
 }
 
-/**
- * The pages to actually render in the sidebar, in nav order.
- * Contractors keep their portal; everyone else gets the staff pages they hold.
- */
+/** The pages to actually render in the sidebar, in nav order. */
 export function visiblePages(ctx: AccessContext): PageKey[] {
   if (!ctx.role) return [];
   if (ctx.role === "client") return ["portal"];
-  const candidates: PageKey[] =
-    ctx.role === "contractor" ? ["staff-portal", ...ALL_STAFF_PAGES] : ALL_STAFF_PAGES;
-  return candidates.filter((p) => canAccess(ctx, p));
+  if (isPortalOnly(ctx)) return ["staff-portal"];
+  return ALL_STAFF_PAGES.filter((p) => canAccess(ctx, p));
+}
+
+/** Where to send someone who's just signed in. */
+export function homePathFor(ctx: AccessContext): string {
+  if (!ctx.role) return "/login";
+  if (ctx.role === "client") return "/portal";
+  if (isPortalOnly(ctx)) return "/staff-portal";
+  return "/my-work";
 }
 
 /** Route → page key. Longest-prefix wins so /clients/<id> resolves to clients. */

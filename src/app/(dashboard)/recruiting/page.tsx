@@ -35,7 +35,13 @@ import type {
   OnboardingTemplateItem,
   Role,
 } from "@/lib/types";
-import { APPLICANT_STAGES, APPLICANT_STAGE_LABELS, ONBOARDING_SECTIONS } from "@/lib/types";
+import {
+  APPLICANT_STAGES,
+  APPLICANT_STAGE_LABELS,
+  ONBOARDING_SECTIONS,
+  STAFF_TYPES,
+  USER_ROLE_LABELS,
+} from "@/lib/types";
 
 /** Steps in template order, bucketed by phase, phases in canonical order. */
 function groupBySection<T extends { section: string }>(rows: T[]): [string, T[]][] {
@@ -154,7 +160,7 @@ function HireForm({
   const [fullName, setFullName] = useState(applicant.full_name);
   const [email, setEmail] = useState(applicant.email ?? "");
   const [password, setPassword] = useState("");
-  const [accessLevel, setAccessLevel] = useState("contractor");
+  const [accessLevel, setAccessLevel] = useState<string>("full_time");
   const [roleId, setRoleId] = useState(applicant.role_id ?? "");
   const [startChecklist, setStartChecklist] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -271,16 +277,18 @@ function HireForm({
           </div>
         </div>
         <div>
-          <Label>Access level</Label>
+          <Label>Employment type</Label>
           <Dropdown
             value={accessLevel}
             options={[
-              { value: "contractor", label: "Contractor" },
-              { value: "rep", label: "Rep" },
-              { value: "admin", label: "Admin" },
+              ...STAFF_TYPES.map((t) => ({ value: t, label: USER_ROLE_LABELS[t] })),
+              { value: "admin", label: USER_ROLE_LABELS.admin },
             ]}
             onChange={setAccessLevel}
           />
+          <p className="mt-1 text-[11px] text-muted-2">
+            What they can open comes from the {chosenRole?.name ?? "role"} above.
+          </p>
         </div>
       </div>
 

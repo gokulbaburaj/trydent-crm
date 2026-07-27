@@ -47,9 +47,9 @@ function StaffPortalInner() {
   const { format: formatCurrency } = useCurrency();
   const searchParams = useSearchParams();
 
-  // Staff (admin/rep) can preview a contractor's portal via ?user=<profileId>.
-  const previewUserId =
-    profile && profile.role !== "contractor" ? searchParams.get("user") : null;
+  // Anyone with the full app can preview someone's portal via ?user=<profileId>.
+  // A portal-only person can't — they'd be able to read a colleague's work.
+  const previewUserId = profile && !profile.portal_only ? searchParams.get("user") : null;
   const isPreview = !!previewUserId;
   const targetId = previewUserId ?? profile?.id ?? null;
 
