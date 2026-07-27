@@ -24,6 +24,7 @@ import { useStaffProfiles } from "@/lib/useStaffProfiles";
 import { createClient } from "@/lib/supabase/client";
 import { CURRENCIES, formatMoney, useCurrency } from "@/lib/currency";
 import { cn } from "@/lib/utils";
+import { staggerDelay, useCountUp } from "@/lib/motion";
 import type { Client, CurrencyCode, Deal, Project, ProjectAllocation } from "@/lib/types";
 
 /**
@@ -229,12 +230,13 @@ function AccountsInner() {
 
       {/* Totals */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Summary label="Allotted" value={formatCurrency(totals.budget)} />
-        <Summary label="Committed to team" value={formatCurrency(totals.committed)} />
-        <Summary label="Paid out" value={formatCurrency(totals.paidOut)} tone="success" />
+        <Summary label="Allotted" value={totals.budget} format={formatCurrency} />
+        <Summary label="Committed to team" value={totals.committed} format={formatCurrency} />
+        <Summary label="Paid out" value={totals.paidOut} format={formatCurrency} tone="success" />
         <Summary
           label={totals.remaining < 0 ? "Over budget" : "Unallocated"}
-          value={formatCurrency(Math.abs(totals.remaining))}
+          value={Math.abs(totals.remaining)}
+          format={formatCurrency}
           tone={totals.remaining < 0 ? "danger" : "warning"}
         />
       </div>
@@ -248,11 +250,15 @@ function AccountsInner() {
       )}
 
       <div className="flex flex-col gap-2">
-        {rows.map(({ project, lines, budget, committed, paidOut, remaining, pct }) => {
+        {rows.map(({ project, lines, budget, committed, paidOut, remaining, pct }, rowIndex) => {
           const isOpen = open === project.id;
           const over = remaining < 0;
           return (
-            <Card key={project.id} className="rounded-xl shadow-sm">
+            <Card
+            key={project.id}
+            className="animate-row rounded-xl shadow-sm"
+            style={staggerDelay(rowIndex)}
+          >
               <div className="flex flex-wrap items-center gap-3">
                 <button
                   type="button"
@@ -588,15 +594,19 @@ function totalPercent(lines: ProjectAllocation[]) {
   );
 }
 
+/** Takes the raw number, not a formatted string, so the value can be tweened. */
 function Summary({
   label,
   value,
+  format,
   tone,
 }: {
   label: string;
-  value: string;
+  value: number;
+  format: (n: number) => string;
   tone?: "success" | "warning" | "danger";
 }) {
+  const ref = useCountUp(value, format);
   return (
     <Card className="rounded-xl shadow-sm">
       <p className="text-[11px] text-muted-foreground">{label}</p>
@@ -608,7 +618,9 @@ function Summary({
           tone === "danger" && "text-danger"
         )}
       >
-        {value}
+        {/* Server render and the pre-hydration frame need a real value here,
+            otherwise the tile flashes empty before the count starts. */}
+        <span ref={ref}>{format(value)}</span>
       </p>
     </Card>
   );

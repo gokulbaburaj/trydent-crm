@@ -16,6 +16,7 @@ import { useStaffProfiles } from "@/lib/useStaffProfiles";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/format";
+import { staggerDelay } from "@/lib/motion";
 import type { Project, ProjectTask, Client } from "@/lib/types";
 import { PROJECT_STATUSES } from "@/lib/types";
 import { useTabs } from "@/lib/tabs";
@@ -151,10 +152,14 @@ function ProjectsPageInner() {
       )}
 
       <div className="flex flex-col gap-3">
-        {grouped.map(({ clientId, client, items }) => {
+        {grouped.map(({ clientId, client, items }, groupIndex) => {
           const isCollapsed = collapsed[clientId];
           return (
-            <div key={clientId} className="rounded-md border border-border bg-surface">
+            <div
+              key={clientId}
+              className="animate-row rounded-md border border-border bg-surface"
+              style={staggerDelay(groupIndex)}
+            >
               <div
                 onClick={() => toggle(clientId)}
                 className="flex cursor-pointer items-center justify-between gap-2 px-3 py-3 sm:gap-3 sm:px-4"
@@ -201,13 +206,14 @@ function ProjectsPageInner() {
 
               {!isCollapsed && (
                 <div className="grid grid-cols-1 gap-2.5 border-t border-border p-3 sm:grid-cols-2 sm:p-4 lg:grid-cols-3">
-                  {items.map((p) => {
+                  {items.map((p, cardIndex) => {
                     const pct = completionOf(p.id);
                     return (
                       <button
                         key={p.id}
                         onClick={() => openInNewTab(`/projects/${p.id}`, p.name)}
-                        className="rounded border border-border bg-white/[0.02] p-3 text-left transition-[border-color,background-color,box-shadow,translate] duration-150 hover:-translate-y-px hover:border-white/15 hover:bg-white/5 hover:shadow-lg hover:shadow-black/20"
+                        style={staggerDelay(cardIndex, 22, 200)}
+                        className="animate-row rounded border border-border bg-white/[0.02] p-3 text-left transition-[border-color,background-color,box-shadow,translate] duration-150 hover:-translate-y-px hover:border-white/15 hover:bg-white/5 hover:shadow-lg hover:shadow-black/20"
                       >
                         <div className="flex items-center justify-between gap-2">
                           <span className="truncate text-sm font-medium">{p.name}</span>
