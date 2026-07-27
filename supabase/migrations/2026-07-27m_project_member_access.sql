@@ -70,6 +70,26 @@ grant execute on function public.is_project_member(uuid) to authenticated;
 -- budget. Expressed inline rather than via the helper because a policy on
 -- `projects` that queried `projects` would be circular.
 
+-- The task fallback goes through a definer function, NOT an inline subquery.
+-- An inline `select ... from project_tasks` here runs under RLS, and
+-- project_tasks_client_select_own reads back from projects — projects →
+-- project_tasks → projects, which Postgres aborts as infinite recursion.
+create or replace function public.has_task_in_project(p_project_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $fn$
+  select exists (
+    select 1 from public.project_tasks t
+    where t.project_id = p_project_id
+      and t.assigned_to = auth.uid()
+  );
+$fn$;
+
+grant execute on function public.has_task_in_project(uuid) to authenticated;
+
 drop policy if exists "projects_member_select" on public.projects;
 create policy "projects_member_select" on public.projects for select
   using (
@@ -77,11 +97,7 @@ create policy "projects_member_select" on public.projects for select
     and (
       (select auth.uid()) = any(coalesce(member_ids, '{}'::uuid[]))
       or owner = (select auth.uid())
-      or exists (
-        select 1 from public.project_tasks t
-        where t.project_id = projects.id
-          and t.assigned_to = (select auth.uid())
-      )
+      or public.has_task_in_project(id)
     )
   );
 
