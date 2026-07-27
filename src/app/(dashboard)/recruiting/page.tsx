@@ -230,7 +230,7 @@ function HireForm({
       <div className="rounded-lg border border-success/30 bg-success/10 p-3">
         <p className="text-[13px] font-medium text-success">{applicant.full_name}</p>
         <p className="mt-0.5 text-[11px] text-foreground-secondary">
-          {applicant.role_title ?? "No role recorded"}
+          {roles.find((r) => r.id === applicant.role_id)?.name ?? "No role recorded"}
           {applicant.location ? ` · ${applicant.location}` : ""}
         </p>
       </div>
@@ -345,6 +345,10 @@ function Applicants({ onHired }: { onHired: (a: Applicant) => void }) {
     ascending: false,
   });
 
+  /** Role names are looked up, never stored on the applicant — rename a role in
+   *  Settings and every board card follows. */
+  const roleName = (a: Applicant) => roles.find((r) => r.id === a.role_id)?.name ?? null;
+
   const [formOpen, setFormOpen] = useState(false);
   const [name, setName] = useState("");
   const [roleId, setRoleId] = useState("");
@@ -386,7 +390,6 @@ function Applicants({ onHired }: { onHired: (a: Applicant) => void }) {
       .insert({
         full_name,
         role_id: roleId || null,
-        role_title: roles.find((r) => r.id === roleId)?.name ?? null,
         location: location.trim() || null,
         email: email.trim() || null,
         source: source.trim() || null,
@@ -567,8 +570,8 @@ function Applicants({ onHired }: { onHired: (a: Applicant) => void }) {
                 <Avatar name={a.full_name} size="xs" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[13px] font-medium">{a.full_name}</p>
-                  {a.role_title && (
-                    <p className="truncate text-[11px] text-muted-foreground">{a.role_title}</p>
+                  {roleName(a) && (
+                    <p className="truncate text-[11px] text-muted-foreground">{roleName(a)}</p>
                   )}
                 </div>
               </div>
@@ -591,6 +594,7 @@ function Applicants({ onHired }: { onHired: (a: Applicant) => void }) {
           <ApplicantDetail
             key={openApplicant.id}
             applicant={openApplicant}
+            roles={roles}
             onChange={(patch) => updateApplicant(openApplicant.id, patch)}
             onDelete={() => {
               deleteApplicant(openApplicant.id);
@@ -607,10 +611,12 @@ function Applicants({ onHired }: { onHired: (a: Applicant) => void }) {
  *  there's no Save button to forget. */
 function ApplicantDetail({
   applicant,
+  roles,
   onChange,
   onDelete,
 }: {
   applicant: Applicant;
+  roles: Role[];
   onChange: (patch: Partial<Applicant>) => void;
   onDelete: () => void;
 }) {
@@ -663,7 +669,25 @@ function ApplicantDetail({
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {field("full_name", "Name")}
-        {field("role_title", "Role", "Video editor")}
+        {/* A picker, not free text. Typing "Video Editor" here while the add
+            form recorded the "Video editing" role gave two answers to the same
+            question — and the role is what selects their onboarding
+            checklist, so the disagreement had consequences. */}
+        <div>
+          <Label>Role</Label>
+          <Dropdown
+            value={draft.role_id ?? ""}
+            placeholder={roles.length ? "Choose a role" : "Add roles in Settings"}
+            options={[
+              { value: "", label: "No role yet" },
+              ...roles.map((r) => ({ value: r.id, label: r.name })),
+            ]}
+            onChange={(v) => {
+              setDraft((d) => ({ ...d, role_id: v || null }));
+              onChange({ role_id: v || null });
+            }}
+          />
+        </div>
         {field("location", "Location", "Remote")}
         {field("source", "Source", "Referral")}
         {field("email", "Email")}

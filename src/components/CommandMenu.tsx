@@ -61,7 +61,7 @@ const PAGES: { href: string; label: string; icon: LucideIcon; page: PageKey }[] 
 export function CommandMenu() {
   const router = useRouter();
   const { openInNewTab } = useTabs();
-  const { profile } = useAuth();
+  const { access } = useAuth();
   const [open, setOpen] = useState(false);
 
   const { rows: clients } = useSupabaseTable<Client>("clients");
@@ -101,7 +101,7 @@ export function CommandMenu() {
         <CommandEmpty>No results found.</CommandEmpty>
 
         <CommandGroup heading="Pages">
-          {PAGES.filter((p) => canAccess(profile?.role, p.page)).map((p) => (
+          {PAGES.filter((p) => canAccess(access, p.page)).map((p) => (
             <CommandItem key={p.href} value={`page ${p.label}`} onSelect={() => go(p.href)}>
               <p.icon />
               {p.label}

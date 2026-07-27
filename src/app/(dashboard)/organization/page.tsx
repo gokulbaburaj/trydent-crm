@@ -62,7 +62,7 @@ interface HubCard {
 }
 
 export default function OrganizationPage() {
-  const { profile } = useAuth();
+  const { access } = useAuth();
   const { openInNewTab } = useTabs();
   const { toBase, base } = useCurrency();
 
@@ -157,7 +157,7 @@ export default function OrganizationPage() {
     ];
   }, [goals, keyResults, applicants, onboarding, profiles, src]);
 
-  const visible = cards.filter((c) => canAccess(profile?.role, c.page));
+  const visible = cards.filter((c) => canAccess(access, c.page));
 
   /** Hiring funnel. Rejected is excluded — it's an outcome, not a stage, and
    *  including it makes the funnel read like a chart of failure. */
@@ -215,10 +215,10 @@ export default function OrganizationPage() {
     />
   );
 
-  const showGoals = canAccess(profile?.role, "goals");
-  const showRecruiting = canAccess(profile?.role, "recruiting");
-  const showTeam = canAccess(profile?.role, "team");
-  const showOnboarding = canAccess(profile?.role, "onboarding");
+  const showGoals = canAccess(access, "goals");
+  const showRecruiting = canAccess(access, "recruiting");
+  const showTeam = canAccess(access, "team");
+  const showOnboarding = canAccess(access, "onboarding");
 
   if (loading) return <TableSkeleton rows={4} />;
 

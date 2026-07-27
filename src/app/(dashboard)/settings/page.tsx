@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Check, Plus, Trash2 } from "lucide-react";
+import { Check, ChevronRight, Plus, ShieldCheck, Trash2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "@/components/Toaster";
 import { Card } from "@/components/ui/Card";
@@ -10,6 +10,14 @@ import { Badge } from "@/components/ui/Badge";
 import { Input, Label } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Dropdown } from "@/components/ui/Dropdown";
+import { Checkbox } from "@/components/ui/Checkbox";
+import {
+  ALL_STAFF_PAGES,
+  ALWAYS_GRANTED,
+  ENFORCED_PAGES,
+  PAGE_LABELS,
+  isAdmin as hasAdminRights,
+} from "@/lib/permissions";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { useStaffProfiles } from "@/lib/useStaffProfiles";
 import type { OnboardingTemplate, Role } from "@/lib/types";
@@ -281,7 +289,7 @@ export default function SettingsPage() {
  * hire in that role should get.
  */
 function RolesCard() {
-  const { profile } = useAuth();
+  const { access } = useAuth();
   const { rows: roles, setRows: setRoles } = useSupabaseTable<Role>("roles", {
     column: "sort_order",
     ascending: true,
@@ -292,8 +300,11 @@ function RolesCard() {
   const [name, setName] = useState("");
   const [team, setTeam] = useState("");
   const [busy, setBusy] = useState(false);
+  const [openAccess, setOpenAccess] = useState<string | null>(null);
 
-  const isAdmin = profile?.role === "admin";
+  // Admin by account type OR by a role carrying the flag — matches
+  // current_is_admin() in the database, which is what actually gates the write.
+  const isAdmin = hasAdminRights(access);
 
   const teams = useMemo(
     () =>
@@ -319,7 +330,14 @@ function RolesCard() {
     }
     const { data, error } = await supabase
       .from("roles")
-      .insert({ name: n, team: team.trim() || null, sort_order: roles.length })
+      // A new role starts with the baseline rather than nothing — an empty
+      // grant list means whoever gets it signs in to an app with no sidebar.
+      .insert({
+        name: n,
+        team: team.trim() || null,
+        pages: [...ALWAYS_GRANTED, "projects", "schedule"],
+        sort_order: roles.length,
+      })
       .select()
       .single();
     setBusy(false);
@@ -423,17 +441,111 @@ function RolesCard() {
                 onChange={(v) => updateRole(r.id, { template_id: v || null })}
               />
             </div>
-            <span className="whitespace-nowrap text-right text-[11px] text-muted-2">
-              {headcount(r.id)} {headcount(r.id) === 1 ? "person" : "people"}
-            </span>
             <button
               type="button"
-              aria-label={`Delete ${r.name}`}
-              onClick={() => deleteRole(r.id)}
-              className="rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:text-danger group-hover:opacity-100"
+              onClick={() => setOpenAccess(openAccess === r.id ? null : r.id)}
+              className={cn(
+                "flex items-center gap-1.5 whitespace-nowrap rounded-md border px-2 py-1 text-[11px] transition-colors",
+                r.is_admin
+                  ? "border-warning/40 bg-warning/10 text-warning"
+                  : "border-border text-muted-foreground hover:bg-white/5 hover:text-foreground"
+              )}
             >
-              <Trash2 className="h-3 w-3" />
+              <ShieldCheck className="h-3 w-3" />
+              {r.is_admin
+                ? "Full admin"
+                : `${(r.pages ?? []).length} page${(r.pages ?? []).length === 1 ? "" : "s"}`}
+              <ChevronRight
+                className={cn(
+                  "h-3 w-3 transition-transform duration-200",
+                  openAccess === r.id && "rotate-90"
+                )}
+              />
             </button>
+            <div className="flex items-center justify-end gap-2">
+              <span className="whitespace-nowrap text-[11px] text-muted-2">
+                {headcount(r.id)} {headcount(r.id) === 1 ? "person" : "people"}
+              </span>
+              <button
+                type="button"
+                aria-label={`Delete ${r.name}`}
+                onClick={() => deleteRole(r.id)}
+                className="rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:text-danger group-hover:opacity-100"
+              >
+                <Trash2 className="h-3 w-3" />
+              </button>
+            </div>
+
+            {openAccess === r.id && (
+              <div className="animate-row col-span-full mt-1 rounded-md border border-border-subtle bg-white/[0.02] p-3">
+                <p className="text-[11px] text-muted-foreground">
+                  What someone in this role sees in the sidebar. Pages marked{" "}
+                  <span className="text-warning">enforced</span> are also locked in the
+                  database — granting one hands over the data, not just the menu item.
+                </p>
+
+                <div className="mt-2.5 grid grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-3">
+                  {ALL_STAFF_PAGES.map((page) => {
+                    const locked = ALWAYS_GRANTED.includes(page);
+                    const on = locked || (r.pages ?? []).includes(page);
+                    return (
+                      <Checkbox
+                        key={page}
+                        checked={on}
+                        // Everyone keeps My Work and Settings — without them a
+                        // person signs in to a dead app and can't even change
+                        // their own password.
+                        disabled={locked || r.is_admin}
+                        onChange={(next) =>
+                          updateRole(r.id, {
+                            pages: next
+                              ? [...new Set([...(r.pages ?? []), page])]
+                              : (r.pages ?? []).filter((p) => p !== page),
+                          })
+                        }
+                        label={
+                          <span className="flex items-center gap-1 text-[12px]">
+                            {PAGE_LABELS[page]}
+                            {ENFORCED_PAGES.includes(page) && (
+                              <span className="text-[9px] uppercase tracking-wide text-warning">
+                                enforced
+                              </span>
+                            )}
+                          </span>
+                        }
+                      />
+                    );
+                  })}
+                </div>
+
+                <div className="mt-3 border-t border-border-subtle pt-2.5">
+                  <Checkbox
+                    checked={r.is_admin}
+                    onChange={(next) => {
+                      if (
+                        next &&
+                        !confirm(
+                          `Give everyone with the "${r.name}" role full admin rights? ` +
+                            `They'll see what people are paid, and be able to change roles ` +
+                            `and access — including yours.`
+                        )
+                      ) {
+                        return;
+                      }
+                      updateRole(r.id, { is_admin: next });
+                    }}
+                    label={
+                      <span className="text-[12px]">
+                        Full admin rights
+                        <span className="ml-1.5 text-[11px] text-muted-2">
+                          every page, plus pay, roles and logins
+                        </span>
+                      </span>
+                    }
+                  />
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>

@@ -21,12 +21,12 @@ export function RequireAccess({
   page: PageKey;
   children: React.ReactNode;
 }) {
-  const { profile, loading } = useAuth();
+  const { profile, access, loading } = useAuth();
 
   // Don't flash the locked state while the profile is still resolving.
   if (loading || !profile) return <TableSkeleton rows={5} />;
 
-  if (!canAccess(profile.role, page)) {
+  if (!canAccess(access, page)) {
     return (
       <EmptyState
         icon={Lock}

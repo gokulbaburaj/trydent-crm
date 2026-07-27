@@ -85,10 +85,10 @@ export function Sidebar({
   const activeTeam = searchParams.get("team");
   const { state, toggleSection, toggleTeam, setOrder } = useNavState();
 
-  const { profile: me } = useAuth();
+  const { profile: me, access } = useAuth();
   const isAdmin = me?.role === "admin";
   /** UI shaping only — RLS is what actually protects the data. */
-  const allowed = (items: NavItem[]) => items.filter((i) => canAccess(me?.role, i.page));
+  const allowed = (items: NavItem[]) => items.filter((i) => canAccess(access, i.page));
   const { rows: profiles } = useSupabaseTable<Profile>("profiles");
   const { rows: teamRows, setRows: setTeamRows } = useSupabaseTable<Team>("teams", {
     column: "name",

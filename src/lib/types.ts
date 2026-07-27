@@ -102,6 +102,11 @@ export interface Role {
   name: string;
   team: string | null;
   template_id: string | null;
+  /** Page keys this role may open. Mirrors PageKey in lib/permissions.ts, and
+   *  is enforced in the database by current_can() for the sensitive tables. */
+  pages: string[];
+  /** Admin rights without the admin account type — pay, roles, logins. */
+  is_admin: boolean;
   sort_order: number;
   created_at: string;
 }
@@ -449,7 +454,6 @@ export interface Applicant {
   full_name: string;
   email: string | null;
   phone: string | null;
-  role_title: string | null;
   location: string | null;
   /** The role they're being considered for. */
   role_id: string | null;

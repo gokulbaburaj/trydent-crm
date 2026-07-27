@@ -78,7 +78,7 @@ export default function TeamPage() {
 }
 
 function TeamPageInner() {
-  const { profile: me } = useAuth();
+  const { profile: me, access } = useAuth();
   const searchParams = useSearchParams();
   const teamFilter = searchParams.get("team");
   const { rows: profiles, setRows } = useSupabaseTable<Profile>(
@@ -349,7 +349,7 @@ function TeamPageInner() {
                       <Eye className="h-3.5 w-3.5" />
                     </button>
                     {/* What a contractor is paid is admin-only. */}
-                    {canSeeContractorPay(me?.role) && (
+                    {canSeeContractorPay(access) && (
                       <button
                         onClick={() => setPayFor(p)}
                         title="Payment plan"
