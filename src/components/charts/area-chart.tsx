@@ -33,7 +33,8 @@ export interface AreaChartProps {
   xDataKey?: string;
   /** Chart margins */
   margin?: Partial<Margin>;
-  /** Animation duration in milliseconds. Default: 1100 */
+  /** Animation duration in milliseconds. Default: 450 (bklit ships 1100 — too
+   *  slow for dashboards where several charts draw at once). */
   animationDuration?: number;
   /** CSS easing for clip-reveal. Default: cubic-bezier(0.85, 0, 0.15, 1) */
   animationEasing?: string;
@@ -187,7 +188,7 @@ export function AreaChart({
   data,
   xDataKey = "date",
   margin: marginProp,
-  animationDuration = 1100,
+  animationDuration = 450,
   animationEasing,
   enterTransition,
   revealSignature,

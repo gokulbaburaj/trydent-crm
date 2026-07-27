@@ -50,7 +50,7 @@ export interface RingChartProps {
   ringGap?: number;
   /** Inner radius of the innermost ring. Default: 60 */
   baseInnerRadius?: number;
-  /** Animation duration in milliseconds. Default: 1100 */
+  /** Accepted for API parity with the other charts; this one doesn't read it. */
   animationDuration?: number;
   /** Additional class name for the container */
   className?: string;

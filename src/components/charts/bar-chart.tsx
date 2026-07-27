@@ -63,7 +63,8 @@ export interface BarChartProps {
   xDataKey?: string;
   /** Chart margins */
   margin?: Partial<Margin>;
-  /** Animation duration in milliseconds. Default: 1100 */
+  /** Animation duration in milliseconds. Default: 450 (bklit ships 1100 — too
+   *  slow for dashboards where several charts draw at once). */
   animationDuration?: number;
   /** CSS easing for bar grow transitions. */
   animationEasing?: string;
@@ -673,7 +674,7 @@ export function BarChart({
   data,
   xDataKey = "name",
   margin: marginProp,
-  animationDuration = 1100,
+  animationDuration = 450,
   animationEasing = DEFAULT_ANIMATION_EASING,
   enterTransition,
   revealSignature,

@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import {
   Archive,
   ArchiveRestore,
-  ChevronDown,
   ChevronRight,
   Plus,
   Trash2,
@@ -260,11 +259,14 @@ function AccountsInner() {
                   onClick={() => setOpen(isOpen ? null : project.id)}
                   className="flex min-w-0 flex-1 items-center gap-2 text-left"
                 >
-                  {isOpen ? (
-                    <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                  ) : (
-                    <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                  )}
+                  {/* One rotating chevron instead of swapping two icons — a
+                      swap can't animate, which is why it snapped. */}
+                  <ChevronRight
+                    className={cn(
+                      "h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform duration-200",
+                      isOpen && "rotate-90"
+                    )}
+                  />
                   <span className="min-w-0 truncate text-sm font-medium">{project.name}</span>
                   <span className="shrink-0 text-xs text-muted-foreground">
                     {clientName(project.client_id)}
@@ -316,8 +318,12 @@ function AccountsInner() {
 
               <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
                 <div
+                  // transition-all animates every property that changes,
+                  // including the ones layout moves during an expand — the bar
+                  // ends up sliding when only its container reflowed. Only the
+                  // width is meaningful here.
                   className={cn(
-                    "h-full rounded-full transition-all",
+                    "h-full rounded-full transition-[width] duration-300 ease-out",
                     over ? "bg-danger" : "bg-primary"
                   )}
                   style={{ width: `${Math.min(100, pct)}%` }}
@@ -325,7 +331,7 @@ function AccountsInner() {
               </div>
 
               {isOpen && (
-                <div className="mt-3.5 flex flex-col gap-2 border-t border-border-subtle pt-3">
+                <div className="animate-row mt-3.5 flex flex-col gap-2 border-t border-border-subtle pt-3">
                   {/* Where the money comes from */}
                   <div className="flex flex-wrap items-end gap-2 pb-1">
                     <div className="min-w-[13rem] flex-1">
