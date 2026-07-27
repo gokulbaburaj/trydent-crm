@@ -19,6 +19,9 @@ import {
   Search,
   SquarePen,
   Plus,
+  Target,
+  UserPlus,
+  ClipboardCheck,
 } from "lucide-react";
 import {
   DndContext,
@@ -65,12 +68,32 @@ const WORKSPACE: NavItem[] = [
   { href: "/schedule", label: "Schedule", icon: Calendar, page: "schedule" },
 ];
 
-/** Goals, Recruiting and Team moved onto the /organization hub — one entry
- *  instead of four keeps the sidebar readable as the app grows. */
 const ORGANIZATION: NavItem[] = [
   { href: "/organization", label: "Organisation", icon: Building2, page: "organization" },
   { href: "/accounts", label: "Accounts", icon: Wallet, page: "accounts" },
   { href: "/settings", label: "Settings", icon: Settings, page: "settings" },
+];
+
+/**
+ * Pages that live behind the /organization hub.
+ *
+ * They were taken out of the sidebar when the hub was built — one entry
+ * instead of five, which kept an admin's nav readable. That reasoning only
+ * held while everyone with access was an admin.
+ *
+ * It breaks the moment access is granted per role: give an HR role nothing but
+ * `recruiting` and they sign in to a sidebar with no Recruiting link and no way
+ * to reach the one page they exist to use.
+ *
+ * So: anyone holding the hub still gets the tidy single entry. Anyone granted
+ * these pages *without* the hub gets direct links, because otherwise the grant
+ * is unusable.
+ */
+const ORG_DETAIL: NavItem[] = [
+  { href: "/goals", label: "Goals", icon: Target, page: "goals" },
+  { href: "/recruiting", label: "Recruiting", icon: UserPlus, page: "recruiting" },
+  { href: "/onboarding", label: "Onboarding", icon: ClipboardCheck, page: "onboarding" },
+  { href: "/team", label: "Team", icon: UsersRound, page: "team" },
 ];
 
 export function Sidebar({
@@ -89,6 +112,14 @@ export function Sidebar({
   const isAdmin = me?.role === "admin";
   /** UI shaping only — RLS is what actually protects the data. */
   const allowed = (items: NavItem[]) => items.filter((i) => canAccess(access, i.page));
+
+  // The hub covers Goals, Recruiting, Onboarding and Team for anyone who holds
+  // it. Anyone who doesn't needs the direct links, or a role granted just
+  // `recruiting` has nowhere to click.
+  const orgItems = [
+    ...allowed(ORGANIZATION),
+    ...(canAccess(access, "organization") ? [] : allowed(ORG_DETAIL)),
+  ];
   const { rows: profiles } = useSupabaseTable<Profile>("profiles");
   const { rows: teamRows, setRows: setTeamRows } = useSupabaseTable<Team>("teams", {
     column: "name",
@@ -249,7 +280,7 @@ export function Sidebar({
         <Section
           id="organization"
           label="Organization"
-          items={allowed(ORGANIZATION)}
+          items={orgItems}
           state={state}
           onToggle={toggleSection}
           onReorder={setOrder}
