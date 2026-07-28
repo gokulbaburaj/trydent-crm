@@ -4,11 +4,12 @@ import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { X } from "lucide-react";
-import { Building2, CreditCard, Eye, Network, Plus, Trash2, User, UserPlus, Users } from "lucide-react";
+import { Briefcase, Building2, CreditCard, Eye, Network, Plus, Trash2, User, UserPlus, Users } from "lucide-react";
 import { toast } from "@/components/Toaster";
 import { DataTable, Column } from "@/components/DataTable";
 import { OrgChartFlow } from "@/components/OrgChartFlow";
 import { PersonCell } from "@/components/ui/Avatar";
+import { CategoryChip } from "@/components/ui/CategoryChip";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Drawer } from "@/components/ui/Drawer";
@@ -285,11 +286,13 @@ function TeamPageInner() {
   const columns: Column<Profile>[] = [
     {
       header: "Name",
+      icon: User,
       render: (p) => <PersonCell name={p.full_name} subtitle={emailOf(p.id) ?? undefined} url={p.avatar_url} />,
       sortKey: (p) => p.full_name.toLowerCase(),
     },
     {
-      header: "Role",
+      header: "Employment",
+      icon: Briefcase,
       render: (p) =>
         isAdmin ? (
           <div className="w-32" onClick={(e) => e.stopPropagation()}>
@@ -309,6 +312,7 @@ function TeamPageInner() {
     },
     {
       header: "Team",
+      icon: Building2,
       render: (p) =>
         isAdmin ? (
           <TeamPicker
@@ -319,15 +323,14 @@ function TeamPageInner() {
               patchProfile(p.id, { team });
             }}
           />
-        ) : p.team ? (
-          <Badge tone="gray">{p.team}</Badge>
         ) : (
-          <span className="text-xs text-muted-foreground">—</span>
+          <CategoryChip value={p.team} />
         ),
       sortKey: (p) => p.team?.toLowerCase() ?? "~",
     },
     {
       header: "Reports to",
+      icon: Network,
       render: (p) =>
         isAdmin ? (
           <ManagerPicker
@@ -430,7 +433,15 @@ function TeamPageInner() {
 
       <div key={view} className="animate-fade">
         {view === "members" ? (
-          <DataTable columns={columns} rows={staff} rowKey={(p) => p.id} emptyMessage="No team members yet." />
+          <DataTable
+            columns={columns}
+            rows={staff}
+            rowKey={(p) => p.id}
+            emptyMessage="No team members yet."
+            // Anyone parked on the staff portal isn't working in the app —
+            // fade them so the live team reads first.
+            isDimmed={(p) => p.role === "contract" && !p.role_id}
+          />
         ) : (
           <OrgChartFlow
             staff={staff}

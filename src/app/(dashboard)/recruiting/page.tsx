@@ -5,10 +5,18 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowUpRight,
+  Briefcase,
+  CalendarDays,
   ExternalLink,
+  FileText,
+  GitBranch,
+  LayoutGrid,
+  List,
   ListChecks,
+  MapPin,
   Plus,
   Trash2,
+  User,
   UserPlus,
 } from "lucide-react";
 import { toast } from "@/components/Toaster";
@@ -23,6 +31,8 @@ import { Dropdown } from "@/components/ui/Dropdown";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { TableSkeleton } from "@/components/ui/Skeletons";
 import { KanbanBoard, type KanbanColumn } from "@/components/KanbanBoard";
+import { DataTable } from "@/components/DataTable";
+import { CategoryChip } from "@/components/ui/CategoryChip";
 import { RequireAccess } from "@/components/RequireAccess";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { createClient } from "@/lib/supabase/client";
@@ -64,6 +74,16 @@ const COLUMNS: KanbanColumn[] = APPLICANT_STAGES.map((s) => ({
   id: s,
   label: APPLICANT_STAGE_LABELS[s],
 }));
+
+/** Stage is a status, not a category — it gets meaning, not a hashed hue. */
+const STAGE_TONE: Record<ApplicantStage, "gray" | "blue" | "yellow" | "green" | "red"> = {
+  applied: "gray",
+  screening: "blue",
+  interview: "yellow",
+  offer: "blue",
+  hired: "green",
+  rejected: "red",
+};
 
 export default function RecruitingPage() {
   return (
@@ -367,6 +387,13 @@ function Applicants({ onHired }: { onHired: (a: Applicant) => void }) {
   const [saving, setSaving] = useState(false);
   const [locationFilter, setLocationFilter] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
+  /**
+   * A board is the right shape for moving people along, and the wrong shape
+   * for reading a list. Past ~20 applicants the columns scroll independently
+   * and you can no longer answer "who applied this month" without dragging.
+   * The table is the same data, sortable.
+   */
+  const [view, setView] = useState<"board" | "list">("board");
 
   const openApplicant = applicants.find((a) => a.id === openId) ?? null;
 
@@ -484,9 +511,30 @@ function Applicants({ onHired }: { onHired: (a: Applicant) => void }) {
             />
           </div>
         )}
-        <Button size="sm" className="ml-auto" onClick={() => setFormOpen((o) => !o)}>
-          <Plus className="h-3.5 w-3.5" /> Add applicant
-        </Button>
+        <div className="ml-auto flex items-center gap-2">
+          <div className="flex items-center gap-0.5 rounded-md border border-border bg-surface p-1">
+            {([
+              ["board", "Board", LayoutGrid],
+              ["list", "List", List],
+            ] as const).map(([id, label, Icon]) => (
+              <button
+                key={id}
+                onClick={() => setView(id)}
+                className={cn(
+                  "flex items-center gap-1.5 rounded px-2.5 py-1 text-[12px] font-medium transition-colors",
+                  view === id
+                    ? "bg-white/10 text-foreground"
+                    : "text-muted-foreground hover:text-foreground-secondary"
+                )}
+              >
+                <Icon className="h-3.5 w-3.5" /> {label}
+              </button>
+            ))}
+          </div>
+          <Button size="sm" onClick={() => setFormOpen((o) => !o)}>
+            <Plus className="h-3.5 w-3.5" /> Add applicant
+          </Button>
+        </div>
       </div>
 
       {formOpen && (
@@ -562,6 +610,91 @@ function Applicants({ onHired }: { onHired: (a: Applicant) => void }) {
           icon={UserPlus}
           title="No applicants yet"
           description="Add someone, then drag them across the board as they move through your process."
+        />
+      ) : view === "list" ? (
+        <DataTable
+          rows={visible}
+          rowKey={(a) => a.id}
+          onRowClick={(a) => setOpenId(a.id)}
+          emptyMessage="Nobody matches that filter."
+          // Rejected applicants stay in the list — you want the history — but
+          // they shouldn't compete for attention with people still in play.
+          isDimmed={(a) => a.stage === "rejected"}
+          columns={[
+            {
+              header: "Applicant",
+              icon: User,
+              sortKey: (a) => a.full_name.toLowerCase(),
+              render: (a) => (
+                <div className="flex min-w-0 items-center gap-2">
+                  <Avatar name={a.full_name} size="xs" />
+                  <span className="truncate font-medium">{a.full_name}</span>
+                </div>
+              ),
+            },
+            {
+              header: "Role",
+              icon: Briefcase,
+              sortKey: (a) => roleName(a)?.toLowerCase() ?? "~",
+              render: (a) => <CategoryChip value={roleName(a)} />,
+            },
+            {
+              header: "Stage",
+              icon: GitBranch,
+              sortKey: (a) => APPLICANT_STAGES.indexOf(a.stage),
+              render: (a) => (
+                <Badge tone={STAGE_TONE[a.stage]} dot>
+                  {APPLICANT_STAGE_LABELS[a.stage]}
+                </Badge>
+              ),
+            },
+            {
+              header: "Location",
+              icon: MapPin,
+              sortKey: (a) => a.location?.toLowerCase() ?? "~",
+              render: (a) => (
+                <span className="text-muted-foreground">{a.location || "—"}</span>
+              ),
+            },
+            {
+              header: "Source",
+              icon: ArrowUpRight,
+              sortKey: (a) => a.source?.toLowerCase() ?? "~",
+              render: (a) => (
+                <span className="text-muted-foreground">{a.source || "—"}</span>
+              ),
+            },
+            {
+              header: "Applied",
+              icon: CalendarDays,
+              sortKey: (a) => a.created_at,
+              render: (a) => (
+                <span className="whitespace-nowrap text-muted-foreground">
+                  {formatDate(a.created_at)}
+                </span>
+              ),
+            },
+            {
+              header: "CV",
+              icon: FileText,
+              className: "w-14 text-center",
+              render: (a) =>
+                a.resume_url ? (
+                  <a
+                    href={a.resume_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    aria-label={`Open ${a.full_name}'s CV`}
+                    className="inline-flex rounded p-1 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                ) : (
+                  <span className="text-muted-2">—</span>
+                ),
+            },
+          ]}
         />
       ) : (
         <KanbanBoard

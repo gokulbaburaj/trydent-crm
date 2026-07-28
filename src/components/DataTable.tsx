@@ -2,6 +2,7 @@
 
 import { ReactNode, useMemo, useState } from "react";
 import { Check, ChevronDown, ChevronUp, ChevronsUpDown } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface Column<T> {
@@ -10,6 +11,13 @@ export interface Column<T> {
   className?: string;
   /** Provide a sort value to make this column's header click-to-sort. */
   sortKey?: (row: T) => string | number | null | undefined;
+  /**
+   * Small glyph in the header saying what kind of data this column holds —
+   * person, email, date, number, status. Lifted from the reference table: it
+   * costs one icon and tells you what a column contains before you've read a
+   * single row, which matters most on the columns you scroll past.
+   */
+  icon?: LucideIcon;
 }
 
 export interface TableSelection {
@@ -27,6 +35,7 @@ export function DataTable<T>({
   rowKey,
   emptyMessage = "No records yet.",
   selection,
+  isDimmed,
 }: {
   columns: Column<T>[];
   rows: T[];
@@ -34,6 +43,13 @@ export function DataTable<T>({
   rowKey: (row: T) => string;
   emptyMessage?: ReactNode;
   selection?: TableSelection;
+  /**
+   * Fade a row that's no longer live — inactive staff, rejected applicants.
+   * The reference dims the entire row rather than relying on a status pill,
+   * and it's the cheapest signal in that whole screen: you stop reading those
+   * rows without having to check a column.
+   */
+  isDimmed?: (row: T) => boolean;
 }) {
   const [sort, setSort] = useState<{ index: number; dir: 1 | -1 } | null>(null);
 
@@ -93,6 +109,7 @@ export function DataTable<T>({
                       sort?.index === i && "text-foreground"
                     )}
                   >
+                    {col.icon && <col.icon className="h-3 w-3 text-muted-2" />}
                     {col.header}
                     {sort?.index === i ? (
                       sort.dir === 1 ? (
@@ -105,7 +122,10 @@ export function DataTable<T>({
                     )}
                   </button>
                 ) : (
-                  col.header
+                  <span className="inline-flex items-center gap-1.5">
+                    {col.icon && <col.icon className="h-3 w-3 text-muted-2" />}
+                    {col.header}
+                  </span>
                 )}
               </th>
             ))}
@@ -125,6 +145,7 @@ export function DataTable<T>({
           {sorted.map((row, idx) => {
             const id = rowKey(row);
             const isSelected = !!selection?.selected.has(id);
+            const dimmed = !!isDimmed?.(row);
             return (
               <tr
                 key={id}
@@ -133,7 +154,10 @@ export function DataTable<T>({
                 className={cn(
                   "group animate-row border-b border-border-subtle last:border-0 transition-colors",
                   onRowClick && "cursor-pointer hover:bg-white/5",
-                  isSelected && "bg-primary/5"
+                  isSelected && "bg-primary/5",
+                  // Opacity, not a grey text colour — it fades the badges and
+                  // avatars too, which is the point.
+                  dimmed && "opacity-45 hover:opacity-80"
                 )}
               >
                 {selection && (
