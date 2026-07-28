@@ -47,19 +47,19 @@ export async function middleware(request: NextRequest) {
     return go("/login");
   }
 
-  // Portal users get sent to their own home before any app route renders. Read
-  // from the JWT metadata so this costs no database round-trip; the dashboard
-  // layout still enforces it authoritatively if the metadata is stale/missing.
-  // `portal_only` is the authoritative flag, but it lives in the database and
-  // this runs on every request — so we read the mirrored hint from JWT metadata
-  // and let the dashboard layout correct a stale one. Both legacy 'contractor'
-  // and current 'contract' are accepted so sessions minted before the rename
-  // still route correctly.
-  const meta = user?.user_metadata as { role?: string; portal_only?: boolean } | undefined;
-  const wantsStaffPortal =
-    meta?.portal_only === true || meta?.role === "contractor" || meta?.role === "contract";
-  const portalHome =
-    meta?.role === "client" ? "/portal" : wantsStaffPortal ? "/staff-portal" : null;
+  // Client portal users get routed here, before any app route renders, using
+  // JWT metadata so it costs no database round-trip.
+  //
+  // Staff are deliberately NOT routed here any more. Which surface a staff
+  // member sees now falls out of their role's page grants, and those live in
+  // the database — middleware can't read them without a query on every single
+  // request. The dashboard layout does it instead, and its `redirectPending`
+  // guard shows a loading state rather than painting a page they'll be moved
+  // off. Inferring it from employment type (the old `role === 'contract'`
+  // check) was wrong: it stranded a contractor who'd been granted the full app
+  // on the cut-down portal.
+  const meta = user?.user_metadata as { role?: string } | undefined;
+  const portalHome = meta?.role === "client" ? "/portal" : null;
 
   // Signed in → skip the login page, landing on the right home for the role.
   if (user && path.startsWith("/login")) {
