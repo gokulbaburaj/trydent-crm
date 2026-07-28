@@ -12,13 +12,16 @@ type Mode = "signin" | "forgot";
 /**
  * Split-screen sign-in.
  *
- * The right panel is deliberately light while the rest of the app is dark.
- * That's not an inconsistency — it's the one page shown to people who aren't
- * "in" the product yet (clients opening a portal link, a new hire on day one),
- * and a bright card reads as a front door rather than a wall. It also means the
- * form can't reuse the app's dark Input/Button components, so the fields here
- * are styled locally. That's the cost of the choice, and it's contained to this
- * file.
+ * Layout borrowed from the reference; visual language is ours. The first pass
+ * imported the reference's look wholesale — white panel, pill fields, gradient
+ * button — and none of that exists anywhere else in this app. A login screen
+ * that doesn't look like the product it opens is a worse first impression than
+ * a plain one.
+ *
+ * So: dark panels, `--radius` corners like every other surface, the flat
+ * `bg-primary` button used on every form, and the TL mark from the sidebar.
+ * The only thing that stays oversized is field height — 52px reads as a front
+ * door rather than a table filter, and it's the one place that's warranted.
  */
 export default function LoginPage() {
   const router = useRouter();
@@ -131,18 +134,18 @@ export default function LoginPage() {
           </div>
 
           <p className="relative text-sm text-foreground-secondary">
-            Clients, projects and money — in one place.
+            Trydent Labs
           </p>
 
           <div className="relative">
             <h2 className="text-[52px] font-semibold leading-[0.95] tracking-tight text-foreground">
-              Run the
+              Trydent Labs
               <br />
-              whole studio
+              <span className="text-muted-foreground">CRM</span>
             </h2>
             <p className="mt-5 max-w-sm text-sm leading-relaxed text-muted-foreground">
-              Pipeline, delivery, invoicing and the people doing the work. Trydent
-              Labs keeps every part of the business talking to the others.
+              Clients, pipeline, projects, invoicing and the people doing the
+              work — one place, so none of it drifts apart.
             </p>
           </div>
 
@@ -152,13 +155,12 @@ export default function LoginPage() {
         </div>
 
         {/* ---------------- Right: the form ---------------- */}
-        <div className="animate-page flex flex-col rounded-2xl bg-white p-8 text-neutral-900 sm:p-12 lg:rounded-l-none">
+        <div className="animate-page flex flex-col rounded-2xl border-l border-border bg-panel p-8 text-foreground sm:p-12 lg:rounded-l-none">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <span
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-[11px] font-semibold text-white"
-                style={{ background: "var(--primary)" }}
-              >
+              {/* Same mark as the sidebar and both portals — one brand, one
+                  square, driven by the accent you set in Settings. */}
+              <span className="flex h-8 w-8 items-center justify-center rounded bg-primary text-[11px] font-medium text-primary-foreground">
                 TL
               </span>
               <span className="text-[17px] font-semibold tracking-tight">Trydent Labs</span>
@@ -166,7 +168,7 @@ export default function LoginPage() {
             {/* The reference has "Sign Up" here. We don't have self-service
                 signup — accounts are issued by an admin — so promising one
                 would be a dead end. */}
-            <span className="hidden text-xs text-neutral-500 sm:block">
+            <span className="hidden text-xs text-muted-foreground sm:block">
               Access is issued by your admin
             </span>
           </div>
@@ -176,14 +178,14 @@ export default function LoginPage() {
               <h1 className="text-[40px] font-semibold leading-none tracking-tight">
                 {mode === "signin" ? "Sign In" : "Reset"}
               </h1>
-              <p className="mt-3 text-sm text-neutral-500">
+              <p className="mt-3 text-sm text-muted-foreground">
                 {mode === "signin"
                   ? "Use your work email, or the portal username we sent you."
                   : "We'll email you a link to set a new password."}
               </p>
 
               {!isSupabaseConfigured && (
-                <div className="mt-6 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+                <div className="mt-6 rounded-md border border-warning/30 bg-warning/10 px-4 py-3 text-xs text-warning">
                   Supabase credentials aren&apos;t set. Add NEXT_PUBLIC_SUPABASE_URL and
                   NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local.
                 </div>
@@ -204,7 +206,7 @@ export default function LoginPage() {
                     className={FIELD}
                   />
                   {isPortalUsername && mode === "signin" && (
-                    <p className="mt-1.5 pl-1 text-[11px] text-neutral-500">
+                    <p className="mt-1.5 pl-1 text-[11px] text-muted-2">
                       Signing in as a client portal user.
                     </p>
                   )}
@@ -225,7 +227,7 @@ export default function LoginPage() {
                       type="button"
                       onClick={() => setShowPassword((v) => !v)}
                       aria-label={showPassword ? "Hide password" : "Show password"}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 transition-colors hover:text-neutral-700"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
@@ -245,12 +247,12 @@ export default function LoginPage() {
                 </button>
 
                 {error && (
-                  <p className="rounded-xl bg-red-50 px-4 py-2.5 text-[13px] text-red-700">
+                  <p className="rounded-md border border-danger/25 bg-danger/10 px-4 py-2.5 text-[13px] text-danger">
                     {error}
                   </p>
                 )}
                 {notice && (
-                  <p className="rounded-xl bg-emerald-50 px-4 py-2.5 text-[13px] text-emerald-800">
+                  <p className="rounded-md border border-success/25 bg-success/10 px-4 py-2.5 text-[13px] text-success">
                     {notice}
                   </p>
                 )}
@@ -258,11 +260,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="mt-2 flex h-14 w-full items-center justify-center gap-2.5 rounded-full text-[15px] font-medium text-white transition-[filter,transform] duration-150 hover:brightness-110 active:scale-[0.99] disabled:opacity-60"
-                  style={{
-                    background:
-                      "linear-gradient(100deg, var(--primary), color-mix(in oklab, var(--primary) 65%, #ff5a3d))",
-                  }}
+                  className="mt-2 flex h-[52px] w-full items-center justify-center gap-2 rounded-lg bg-primary text-[15px] font-medium text-primary-foreground transition-[filter,transform] duration-150 hover:brightness-110 active:scale-[0.97] disabled:opacity-60"
                 >
                   {loading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -281,9 +279,9 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between text-xs text-neutral-400">
+          <div className="flex items-center justify-between text-xs text-muted-2">
             <span>© {new Date().getFullYear()} Trydent Labs</span>
-            <a href="mailto:hello@trydentlabs.com" className="hover:text-neutral-700">
+            <a href="mailto:hello@trydentlabs.com" className="hover:text-foreground">
               Contact us
             </a>
           </div>
@@ -293,8 +291,8 @@ export default function LoginPage() {
   );
 }
 
-/** Shared field styling. Light-panel only — see the note at the top of the file. */
+/** Login-page fields: app radius and tokens, just taller than usual. */
 const FIELD =
-  "h-14 w-full rounded-full border border-neutral-200 bg-white px-5 text-[15px] text-neutral-900 " +
-  "placeholder:text-neutral-400 transition-colors focus:border-neutral-400 focus:outline-none " +
-  "focus:ring-4 focus:ring-neutral-900/5";
+  "h-[52px] w-full rounded-lg border border-border bg-surface px-5 text-[15px] text-foreground " +
+  "placeholder:text-muted-2 transition-colors focus:border-primary/60 focus:outline-none " +
+  "focus:ring-2 focus:ring-ring/30";
