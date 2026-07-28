@@ -202,17 +202,22 @@ export function OrgChartFlow({
               </span>
               {canManage && (
                 <>
+                  {/* Faint rather than invisible. opacity-0 meant there was no
+                      hint these controls existed until you happened to hover
+                      the right chip. */}
                   <button
                     onClick={() => onRenameTeam(t)}
-                    title="Rename team"
-                    className="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
+                    title={`Rename ${t}`}
+                    aria-label={`Rename ${t}`}
+                    className="rounded p-0.5 text-muted-2 opacity-60 transition-opacity hover:text-foreground group-hover:opacity-100"
                   >
                     <Pencil className="h-3 w-3" />
                   </button>
                   <button
                     onClick={() => onDeleteTeam(t)}
-                    title="Delete team"
-                    className="rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-danger group-hover:opacity-100"
+                    title={`Delete ${t}`}
+                    aria-label={`Delete ${t}`}
+                    className="rounded p-0.5 text-muted-2 opacity-60 transition-opacity hover:text-danger group-hover:opacity-100"
                   >
                     <Trash2 className="h-3 w-3" />
                   </button>
@@ -242,14 +247,32 @@ export function OrgChartFlow({
             className="[&_.react-flow\\_\\_edge-path]:!stroke-[1.5]"
           >
             <Background variant={BackgroundVariant.Dots} gap={22} size={1} color="rgba(255,255,255,0.10)" />
+            {/* nodeColor was 25% white on a dark panel — effectively invisible,
+                so the minimap read as an empty grey box. */}
             <MiniMap
               pannable
               zoomable
-              maskColor="rgba(0,0,0,0.6)"
-              nodeColor="rgba(255,255,255,0.25)"
+              maskColor="rgba(0,0,0,0.55)"
+              nodeColor="rgba(255,255,255,0.75)"
+              nodeStrokeColor="var(--primary)"
+              nodeStrokeWidth={3}
+              nodeBorderRadius={4}
               className="!rounded-lg !border !border-border !bg-surface"
             />
-            <Controls showInteractive={false} className="!rounded-lg !border !border-border !bg-surface" />
+            {/* The className styles the container; React Flow's own stylesheet
+                paints each BUTTON `#fefefe`. That's the white vertical bar in
+                the bottom-left — three stacked default-light buttons. */}
+            <Controls
+              showInteractive={false}
+              className={
+                "!rounded-lg !border !border-border !bg-surface !shadow-lg !shadow-black/30 " +
+                "[&_.react-flow\\_\\_controls-button]:!border-border " +
+                "[&_.react-flow\\_\\_controls-button]:!bg-surface " +
+                "[&_.react-flow\\_\\_controls-button]:!fill-foreground-secondary " +
+                "[&_.react-flow\\_\\_controls-button:hover]:!bg-white/10 " +
+                "[&_.react-flow\\_\\_controls-button:hover]:!fill-foreground"
+              }
+            />
           </ReactFlow>
         )}
       </div>

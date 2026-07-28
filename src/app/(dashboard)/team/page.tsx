@@ -186,7 +186,12 @@ function TeamPageInner() {
       toast.error(`Couldn't rename: ${error.message}`);
       return;
     }
+    // A team name lives in three places since the roles table landed:
+    // teams.name, profiles.team and roles.team. Renaming only the first two
+    // left every role still pointing at the old name, so the chip list showed
+    // both and new hires landed on a team that no longer existed.
     await supabase.from("profiles").update({ team: name }).eq("team", oldName);
+    await supabase.from("roles").update({ team: name }).eq("team", oldName);
     setTeamRows((prev) => prev.map((t) => (t.name === oldName ? { ...t, name } : t)));
     setRows((prev) => prev.map((p) => (p.team === oldName ? { ...p, team: name } : p)));
     toast.success(`Renamed to "${name}"`);
@@ -206,6 +211,9 @@ function TeamPageInner() {
     if (!supabase) return;
     await supabase.from("teams").delete().eq("name", name);
     await supabase.from("profiles").update({ team: null }).eq("team", name);
+    // Same three-places problem as rename — a role left pointing at a deleted
+    // team keeps it alive in every chip list that derives names from roles.
+    await supabase.from("roles").update({ team: null }).eq("team", name);
     setTeamRows((prev) => prev.filter((t) => t.name !== name));
     setRows((prev) => prev.map((p) => (p.team === name ? { ...p, team: null } : p)));
     toast.success(`Team "${name}" deleted`);
