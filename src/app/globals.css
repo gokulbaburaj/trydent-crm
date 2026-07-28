@@ -13,12 +13,27 @@
 :root {
   --radius: 0.625rem;
 
-  --background: #0a0a0a;
+  /*
+    Elevation ramp — four distinct steps, read off the reference dashboard.
+    Previously this was effectively two (#0a0a0a page, #171717 for both card
+    and popover) with --panel wedged between, so a card sitting on the panel
+    relied almost entirely on its border to be visible. The reference separates
+    by VALUE and lets the border almost disappear; that's what makes it read as
+    layered rather than outlined.
+
+      background  page / sidebar        the darkest thing on screen
+      panel       the main canvas       one step up
+      card        content surfaces      the step you actually read on
+      elevated    popovers, menus,      sits above a card without a heavy
+                  toasts, dialogs       shadow doing the work
+  */
+  --background: #08080a;
   --foreground: #fafafa;
-  --card: #171717;
+  --card: #141416;
   --card-foreground: #fafafa;
-  --popover: #171717;
+  --popover: #1c1c1f;
   --popover-foreground: #fafafa;
+  --elevated: #1c1c1f;
   --primary: #5e6ad2;
   --primary-foreground: #ffffff;
   --secondary: #262626;
@@ -29,8 +44,14 @@
   --accent-foreground: #fafafa;
   --destructive: #eb5757;
   --destructive-foreground: #ffffff;
-  --border: rgba(255, 255, 255, 0.1);
-  --input: rgba(255, 255, 255, 0.15);
+  /*
+    Hairlines, not lines. With the ramp above doing the separating, a 10%
+    border reads as a drawn box around everything. The reference's borders are
+    barely perceptible — they catch an edge rather than outline a shape.
+    Inputs keep a slightly stronger edge because a field has to look editable.
+  */
+  --border: rgba(255, 255, 255, 0.055);
+  --input: rgba(255, 255, 255, 0.1);
   --ring: var(--primary);
 
   --chart-1: var(--primary);
@@ -39,18 +60,18 @@
   --chart-4: #d9a53f;
   --chart-5: #d95c8a;
 
-  --sidebar: #0a0a0a;
+  --sidebar: var(--background);
   --sidebar-foreground: #fafafa;
   --sidebar-primary: var(--primary);
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: rgba(255, 255, 255, 0.06);
+  --sidebar-accent: rgba(255, 255, 255, 0.055);
   --sidebar-accent-foreground: #fafafa;
-  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-border: rgba(255, 255, 255, 0.05);
   --sidebar-ring: var(--ring);
 
   /* ---- Trydent extras (kept alongside the shadcn set) ---- */
-  --panel: #101010;                          /* main canvas between sidebar and cards */
-  --border-subtle: rgba(255, 255, 255, 0.06);
+  --panel: #0e0e10;                          /* main canvas between sidebar and cards */
+  --border-subtle: rgba(255, 255, 255, 0.035);
   --foreground-secondary: #d4d4d4;
   --muted-2: #737373;
   --success: #4cb782;
@@ -140,6 +161,8 @@
   /* Trydent aliases so existing markup keeps working */
   --color-panel: var(--panel);
   --color-surface: var(--card);
+  /* `bg-elevated` for anything floating above a card — menus, toasts, dialogs. */
+  --color-elevated: var(--elevated);
   --color-border-subtle: var(--border-subtle);
   --color-foreground-secondary: var(--foreground-secondary);
   --color-muted-2: var(--muted-2);

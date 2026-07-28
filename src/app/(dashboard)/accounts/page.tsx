@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/components/Toaster";
 import { Card } from "@/components/ui/Card";
+import { BarRow } from "@/components/ui/BarRow";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/ui/Avatar";
@@ -398,6 +399,36 @@ function AccountsInner() {
                     <p className="text-xs text-muted-foreground">
                       Nobody allocated yet. Add the people working on this project below.
                     </p>
+                  )}
+
+                  {/* Read-only summary above the editors. The rows below are
+                      full of inputs and toggles, which is right for changing a
+                      split but hopeless for seeing one — you can't compare two
+                      numbers that live in text fields. Bars sort themselves. */}
+                  {lines.length > 1 && (
+                    <div className="mb-1 flex flex-col gap-1 rounded-lg border border-border-subtle bg-white/[0.015] p-2.5">
+                      <p className="px-2 pb-0.5 text-[11px] font-medium text-muted-2">
+                        Split of {formatMoney(budget, ccy(project))}
+                      </p>
+                      {[...lines]
+                        .sort((a, b) => payoutOf(b, budget) - payoutOf(a, budget))
+                        .map((a) => {
+                          const p = person(a.profile_id);
+                          const paid = payoutOf(a, budget);
+                          return (
+                            <BarRow
+                              key={`bar-${a.id}`}
+                              leading={
+                                <Avatar name={p?.full_name ?? "Unknown"} url={p?.avatar_url} size="xs" />
+                              }
+                              label={p?.full_name ?? "Removed member"}
+                              value={formatMoney(paid, ccy(project))}
+                              pct={budget > 0 ? (paid / budget) * 100 : 0}
+                              tone={over ? "danger" : "primary"}
+                            />
+                          );
+                        })}
+                    </div>
                   )}
                   {lines.map((a) => {
                     const p = person(a.profile_id);

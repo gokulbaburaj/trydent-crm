@@ -6,7 +6,10 @@ import { cn } from "@/lib/utils";
 export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <ShadCard
-      className={cn("block gap-0 p-4 transition-colors duration-200", className)}
+      // p-3.5 not p-4: the reference runs noticeably tighter, and with the
+      // deeper surface ramp the card no longer needs padding to separate
+      // itself from what's behind it.
+      className={cn("block gap-0 p-3.5 transition-colors duration-200", className)}
       {...props}
     />
   );

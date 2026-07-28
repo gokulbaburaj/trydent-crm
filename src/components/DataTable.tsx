@@ -71,7 +71,7 @@ export function DataTable<T>({
         <thead>
           <tr className="group border-b border-border-subtle text-left text-xs text-muted-foreground">
             {selection && (
-              <th className="w-9 pl-3 pr-0 py-2.5">
+              <th className="w-9 pl-3 pr-0 py-2">
                 {selection.onToggleAll && (
                   <SelectBox
                     checked={allSelected}
@@ -83,7 +83,7 @@ export function DataTable<T>({
               </th>
             )}
             {columns.map((col, i) => (
-              <th key={i} className={cn("px-4 py-2.5 font-medium", col.className)}>
+              <th key={i} className={cn("px-4 py-2 font-medium", col.className)}>
                 {col.sortKey ? (
                   <button
                     onClick={() => cycleSort(i)}
@@ -138,7 +138,7 @@ export function DataTable<T>({
               >
                 {selection && (
                   <td
-                    className="w-9 py-2.5 pl-3 pr-0 align-middle"
+                    className="w-9 py-2 pl-3 pr-0 align-middle"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <SelectBox
@@ -150,7 +150,7 @@ export function DataTable<T>({
                   </td>
                 )}
                 {columns.map((col, i) => (
-                  <td key={i} className={cn("px-4 py-2.5 align-middle", col.className)}>
+                  <td key={i} className={cn("px-4 py-2 align-middle", col.className)}>
                     {col.render(row)}
                   </td>
                 ))}
