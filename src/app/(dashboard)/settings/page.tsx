@@ -19,6 +19,11 @@ import {
   PORTAL_PAGE,
   isAdmin as hasAdminRights,
 } from "@/lib/permissions";
+import {
+  VIEW_PREFERENCES,
+  readViewPreference,
+  writeViewPreference,
+} from "@/lib/useViewPreference";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { useStaffProfiles } from "@/lib/useStaffProfiles";
 import type { OnboardingTemplate, Role } from "@/lib/types";
@@ -275,6 +280,7 @@ export default function SettingsPage() {
 
       {/* Roles is a table of rows, so it always wants the full width. */}
       <div className="xl:col-span-2">
+        <DefaultViewsCard />
         <RolesCard />
       </div>
     </div>
@@ -289,6 +295,60 @@ export default function SettingsPage() {
  * says which team it sits in, and points at the onboarding checklist a new
  * hire in that role should get.
  */
+/**
+ * Which view each page opens in.
+ *
+ * Every toggle in the app used to hardcode its starting view, so anyone who
+ * lives in one of them re-clicked it on every visit. Saved per person, because
+ * a recruiter working from the list and a designer working from the board are
+ * both right.
+ */
+function DefaultViewsCard() {
+  // Local mirror so the dropdowns re-render; localStorage isn't reactive.
+  const [prefs, setPrefs] = useState<Record<string, string>>(() =>
+    Object.fromEntries(
+      VIEW_PREFERENCES.map((p) => [p.key, readViewPreference(p.key, p.fallback)])
+    )
+  );
+
+  return (
+    <Card>
+      <h3 className="text-sm font-semibold">Default views</h3>
+      <p className="mt-0.5 text-xs text-muted-foreground">
+        Which layout each page opens in. Switching view while you work is
+        temporary — this is the one that sticks.
+      </p>
+
+      <div className="mt-3.5 flex flex-col gap-2">
+        {VIEW_PREFERENCES.map((pref) => (
+          <div
+            key={pref.key}
+            className="grid grid-cols-1 items-center gap-2 rounded-md border border-border-subtle px-2.5 py-2 sm:grid-cols-[1fr_11rem]"
+          >
+            <span className="text-[13px] font-medium">{pref.label}</span>
+            <Dropdown
+              value={prefs[pref.key]}
+              options={pref.options.map((o) => ({ value: o.id, label: o.label }))}
+              onChange={(v) => {
+                writeViewPreference(pref.key, v);
+                setPrefs((prev) => ({ ...prev, [pref.key]: v }));
+                toast.success(`${pref.label} opens in ${
+                  pref.options.find((o) => o.id === v)?.label ?? v
+                }`);
+              }}
+            />
+          </div>
+        ))}
+      </div>
+
+      <p className="mt-3 text-[11px] text-muted-2">
+        Saved on this device. Preferences like this stay out of the database so
+        a page never waits on the network to know what to draw.
+      </p>
+    </Card>
+  );
+}
+
 function RolesCard() {
   const { access } = useAuth();
   const { rows: roles, setRows: setRoles } = useSupabaseTable<Role>("roles", {

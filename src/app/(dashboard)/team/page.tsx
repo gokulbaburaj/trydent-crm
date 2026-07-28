@@ -28,6 +28,7 @@ import { formatDate } from "@/lib/format";
 import { generatePassword } from "@/lib/password";
 import { STAFF_TYPES, USER_ROLE_LABELS } from "@/lib/types";
 import type { Profile, ProfileEmail, StaffPayment, Team, UserRole } from "@/lib/types";
+import { useViewPreference } from "@/lib/useViewPreference";
 
 const roleTone: Record<UserRole, "green" | "blue" | "gray"> = {
   admin: "green",
@@ -94,7 +95,7 @@ function TeamPageInner() {
     ascending: true,
   });
   const { openInNewTab } = useTabs();
-  const [view, setView] = useState<View>("members");
+  const [view, setView] = useViewPreference<View>("team", "members");
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [adding, setAdding] = useState<MemberForm | null>(null);
   const [savingMember, setSavingMember] = useState(false);

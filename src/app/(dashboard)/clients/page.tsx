@@ -26,6 +26,7 @@ import { createClient } from "@/lib/supabase/client";
 import { formatDate } from "@/lib/format";
 import type { Client, ClientPortal } from "@/lib/types";
 import { CLIENT_STATUSES, LEAD_SOURCES } from "@/lib/types";
+import { useViewPreference } from "@/lib/useViewPreference";
 
 type View = "table" | "kanban";
 
@@ -49,7 +50,7 @@ export default function ClientsPage() {
   const { rows: profiles } = useStaffProfiles();
   const { openInNewTab } = useTabs();
 
-  const [view, setView] = useState<View>("table");
+  const [view, setView] = useViewPreference<View>("clients", "table");
   const [editing, setEditing] = useState<Partial<Client> | null>(null);
   const [saving, setSaving] = useState(false);
 

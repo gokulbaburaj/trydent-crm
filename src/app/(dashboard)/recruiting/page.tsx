@@ -38,6 +38,7 @@ import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/format";
+import { useViewPreference } from "@/lib/useViewPreference";
 import type {
   Applicant,
   ApplicantStage,
@@ -393,7 +394,7 @@ function Applicants({ onHired }: { onHired: (a: Applicant) => void }) {
    * and you can no longer answer "who applied this month" without dragging.
    * The table is the same data, sortable.
    */
-  const [view, setView] = useState<"board" | "list">("board");
+  const [view, setView] = useViewPreference<"board" | "list">("recruiting", "board");
 
   const openApplicant = applicants.find((a) => a.id === openId) ?? null;
 

@@ -69,6 +69,7 @@ import { formatDate, initials } from "@/lib/format";
 import { useTabs } from "@/lib/tabs";
 import type { Activity, Client, Project, ProjectTask, TaskItem, TaskPriority, TaskStatus } from "@/lib/types";
 import { PRIORITY_ORDER, PROJECT_STATUSES, TASK_STATUSES } from "@/lib/types";
+import { useViewPreference } from "@/lib/useViewPreference";
 import { PriorityFlag } from "@/components/ui/PriorityPicker";
 import { RecurrenceIndicator } from "@/components/ui/RecurrencePicker";
 
@@ -93,7 +94,7 @@ export default function ProjectDetailPage() {
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [description, setDescription] = useState("");
-  const [tab, setTab] = useState<PageTab>("overview");
+  const [tab, setTab] = useViewPreference<PageTab>("project", "overview");
   const [newTask, setNewTask] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
   const [detailTaskId, setDetailTaskId] = useState<string | null>(null);
