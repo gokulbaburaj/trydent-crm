@@ -9,11 +9,14 @@ import type { Profile } from "@/lib/types";
 
 export function Topbar({
   profile,
+  email,
   onSignOut,
   title,
   onMenuClick,
 }: {
   profile: Profile | null;
+  /** From the auth session — profiles no longer carries an email column. */
+  email: string | null;
   onSignOut: () => void;
   title?: string;
   onMenuClick?: () => void;
@@ -70,7 +73,7 @@ export function Topbar({
                     <p className="truncate text-[13px] font-medium text-foreground">
                       {profile.full_name}
                     </p>
-                    <p className="truncate text-xs text-muted-foreground">{profile.email}</p>
+                    <p className="truncate text-xs text-muted-foreground">{email}</p>
                   </div>
                 </div>
                 <div className="px-2 pb-1.5">

@@ -34,6 +34,7 @@ import type {
   OnboardingTask,
   OnboardingTemplate,
   OnboardingTemplateItem,
+  ProfileEmail,
   Role,
 } from "@/lib/types";
 import { ONBOARDING_SECTIONS } from "@/lib/types";
@@ -80,6 +81,11 @@ function OnboardingInner() {
     { column: "sort_order", ascending: true }
   );
   const { rows: staff, setRows: setStaff } = useStaffProfiles();
+  // Emails moved to their own staff-only table so profiles could stay readable
+  // by the client portal without carrying an address.
+  const { rows: emailRows } = useSupabaseTable<ProfileEmail>("profile_emails");
+  const emailOf = (id: string | undefined) =>
+    id ? emailRows.find((e) => e.profile_id === id)?.email ?? null : null;
   const { rows: roles } = useSupabaseTable<Role>("roles", {
     column: "sort_order",
     ascending: true,
@@ -384,7 +390,7 @@ function OnboardingInner() {
                   <p className="text-lg font-semibold tracking-tight">
                     {profile?.full_name ?? "Unknown member"}
                   </p>
-                  <p className="text-[11px] text-muted-2">{profile?.email}</p>
+                  <p className="text-[11px] text-muted-2">{emailOf(profile?.id)}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-lg font-semibold tabular-nums">{pct}%</p>

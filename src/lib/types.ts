@@ -141,10 +141,17 @@ export interface Role {
   created_at: string;
 }
 
+/** A staff email address. Split out of `profiles` so RLS can hide it from
+ *  clients — see supabase/migrations/2026-07-27u_email_split.sql. */
+export interface ProfileEmail {
+  profile_id: string;
+  email: string;
+  updated_at: string;
+}
+
 export interface Profile {
   id: string;
   full_name: string;
-  email: string;
   role: UserRole;
   avatar_url: string | null;
   client_id: string | null;

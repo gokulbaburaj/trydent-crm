@@ -12,6 +12,9 @@ type RoleGrants = { pages: string[] | null; is_admin: boolean | null };
 export function useAuth() {
   const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
+  /** Your own address, read from the session rather than a profiles column —
+   *  auth.users is where it actually lives. */
+  const [email, setEmail] = useState<string | null>(null);
   const [grants, setGrants] = useState<RoleGrants | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -37,6 +40,7 @@ export function useAuth() {
         if (active) {
           setProfile(null);
           setGrants(null);
+          setEmail(null);
           setLoading(false);
         }
         return;
@@ -55,6 +59,7 @@ export function useAuth() {
         const row = profileData as (Profile & { job_role: RoleGrants | null }) | null;
         setProfile(row ?? null);
         setGrants(row?.job_role ?? null);
+        setEmail(session.user.email ?? null);
         setLoading(false);
       }
     }
@@ -86,5 +91,5 @@ export function useAuth() {
     roleIsAdmin: grants?.is_admin ?? null,
   };
 
-  return { profile, access, loading, signOut, isSupabaseConfigured };
+  return { profile, email, access, loading, signOut, isSupabaseConfigured };
 }

@@ -29,7 +29,7 @@ import { cn } from "@/lib/utils";
 import { ACCENT_PRESETS, accentIsRisky, useAccent } from "@/lib/theme";
 
 export default function SettingsPage() {
-  const { profile, isSupabaseConfigured } = useAuth();
+  const { profile, email, isSupabaseConfigured } = useAuth();
   const { primary, setAccent } = useAccent();
   const { currency, base, converted, ratesFetchedAt } = useCurrency();
   const [customHex, setCustomHex] = useState("");
@@ -105,7 +105,7 @@ export default function SettingsPage() {
             <div className="flex items-center gap-4">
               <Avatar name={fullName || profile.full_name} url={avatarUrl || profile.avatar_url} size="lg" />
               <div className="min-w-0">
-                <p className="truncate text-sm text-muted-foreground">{profile.email}</p>
+                <p className="truncate text-sm text-muted-foreground">{email}</p>
                 <Badge tone="green" className="mt-1">{profile.role}</Badge>
               </div>
             </div>
@@ -149,7 +149,7 @@ export default function SettingsPage() {
         <Card>
           <h3 className="mb-1 text-sm font-semibold text-muted-foreground">Password</h3>
           <p className="mb-4 text-xs text-muted-foreground">
-            Set a new password for {profile.email}. You&apos;ll stay signed in.
+            Set a new password for {email}. You&apos;ll stay signed in.
           </p>
           <form onSubmit={changePassword} className="flex items-center gap-2">
             <Input

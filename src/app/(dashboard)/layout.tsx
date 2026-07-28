@@ -44,7 +44,7 @@ export default function DashboardLayout({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { profile, access, loading, signOut, isSupabaseConfigured } = useAuth();
+  const { profile, email, access, loading, signOut, isSupabaseConfigured } = useAuth();
   const portalOnly = isPortalOnly(access);
   const [mobileNav, setMobileNav] = useState(false);
 
@@ -119,6 +119,7 @@ export default function DashboardLayout({
             <div className="flex h-full min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-panel">
               <Topbar
                 profile={profile}
+                email={email}
                 onSignOut={signOut}
                 title={pageTitleFor(pathname)}
                 onMenuClick={() => setMobileNav(true)}

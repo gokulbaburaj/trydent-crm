@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/format";
 import { generatePassword } from "@/lib/password";
 import { STAFF_TYPES, USER_ROLE_LABELS } from "@/lib/types";
-import type { Profile, StaffPayment, Team, UserRole } from "@/lib/types";
+import type { Profile, ProfileEmail, StaffPayment, Team, UserRole } from "@/lib/types";
 
 const roleTone: Record<UserRole, "green" | "blue" | "gray"> = {
   admin: "green",
@@ -84,6 +84,10 @@ function TeamPageInner() {
     { column: "full_name", ascending: true }
   );
   const { rows: payments, setRows: setPayments } = useSupabaseTable<StaffPayment>("staff_payments");
+  // Emails live in their own staff-only table now — profiles is readable by
+  // clients (for the portal's team list), so it can't carry an address.
+  const { rows: emailRows } = useSupabaseTable<ProfileEmail>("profile_emails");
+  const emailOf = (id: string) => emailRows.find((e) => e.profile_id === id)?.email ?? null;
   const { rows: teamRows, setRows: setTeamRows } = useSupabaseTable<Team>("teams", {
     column: "name",
     ascending: true,
@@ -281,7 +285,7 @@ function TeamPageInner() {
   const columns: Column<Profile>[] = [
     {
       header: "Name",
-      render: (p) => <PersonCell name={p.full_name} subtitle={p.email} url={p.avatar_url} />,
+      render: (p) => <PersonCell name={p.full_name} subtitle={emailOf(p.id) ?? undefined} url={p.avatar_url} />,
       sortKey: (p) => p.full_name.toLowerCase(),
     },
     {
