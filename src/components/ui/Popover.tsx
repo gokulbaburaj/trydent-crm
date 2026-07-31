@@ -8,6 +8,7 @@ import {
   PopoverTrigger,
 } from "@/components/shadcn/popover";
 import { cn } from "@/lib/utils";
+import { releaseBodyPointerEvents } from "@/lib/radixBodyLock";
 
 /**
  * Radix-powered popover (via shadcn/ui) with our legacy render-prop API.
@@ -30,7 +31,15 @@ export function Popover({
   const [open, setOpen] = useState(false);
 
   return (
-    <ShadPopover open={open} onOpenChange={setOpen}>
+    <ShadPopover
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        // Radix leaves <body> inert for a beat after close, which eats the
+        // next click. See lib/radixBodyLock.
+        if (!next) releaseBodyPointerEvents();
+      }}
+    >
       <PopoverTrigger asChild>
         <div
           onClick={(e) => e.stopPropagation()}

@@ -7,6 +7,7 @@ import {
   Check,
   Copy,
   ExternalLink,
+  Paperclip,
   Eye,
   FolderOpen,
   KeyRound,
@@ -32,6 +33,13 @@ import { useAuth } from "@/lib/useAuth";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/format";
+import {
+  MAX_FILE_BYTES,
+  formatBytes,
+  openStoredFile,
+  removeStoredFile,
+  uploadClientFile,
+} from "@/lib/storage";
 import { generatePassword } from "@/lib/password";
 import type {
   Client,
@@ -96,6 +104,7 @@ export function ClientPortalPanel({
   const [docOpen, setDocOpen] = useState(false);
   const [docName, setDocName] = useState("");
   const [docUrl, setDocUrl] = useState("");
+  const [docFile, setDocFile] = useState<File | null>(null);
   const [docCategory, setDocCategory] = useState<DocumentCategory>("proposal");
   const [docBusy, setDocBusy] = useState(false);
   const baseCurrency = useBaseCurrency();
@@ -107,6 +116,7 @@ export function ClientPortalPanel({
   const [invIssue, setInvIssue] = useState<string | null>(null);
   const [invDue, setInvDue] = useState<string | null>(null);
   const [invUrl, setInvUrl] = useState("");
+  const [invFile, setInvFile] = useState<File | null>(null);
   const [invBusy, setInvBusy] = useState(false);
   const [requests, setRequests] = useState<MeetingRequest[]>([]);
 
@@ -290,23 +300,50 @@ export function ClientPortalPanel({
     setMessages((prev) => [...prev, data as PortalMessage]);
   }
 
+  /**
+   * Adds a document, either as an uploaded file or a link.
+   *
+   * A link is still allowed — sometimes the thing genuinely lives in a shared
+   * Drive and copying it here would just make a second stale version. But
+   * upload is now the default, because a link is only as durable as somebody
+   * else's sharing settings.
+   */
   async function addDocument() {
-    const name = docName.trim();
-    let url = docUrl.trim();
-    if (!name || !url || !profile) return;
-    if (!/^https?:\/\//i.test(url)) url = `https://${url}`;
+    const name = docName.trim() || docFile?.name.trim() || "";
+    if (!name || !profile) return;
+    if (!docFile && !docUrl.trim()) return;
+
     setDocBusy(true);
     const supabase = createClient();
     if (!supabase) {
       setDocBusy(false);
       return;
     }
+
+    let storage_path: string | null = null;
+    let url: string | null = null;
+
+    if (docFile) {
+      try {
+        const up = await uploadClientFile(client.id, docFile);
+        storage_path = up.path;
+      } catch (err) {
+        setDocBusy(false);
+        toast.error(err instanceof Error ? err.message : "Upload failed.");
+        return;
+      }
+    } else {
+      url = docUrl.trim();
+      if (!/^https?:\/\//i.test(url)) url = `https://${url}`;
+    }
+
     const { data, error } = await supabase
       .from("client_documents")
       .insert({
         client_id: client.id,
         name,
         url,
+        storage_path,
         category: docCategory,
         added_by: profile.id,
       })
@@ -314,17 +351,31 @@ export function ClientPortalPanel({
       .single();
     setDocBusy(false);
     if (error) {
+      // The row failed but the object landed — clean up rather than leave a
+      // file nothing points at.
+      await removeStoredFile(storage_path);
       toast.error(`Couldn't add: ${error.message}`);
       return;
     }
     setDocuments((prev) => [data as ClientDocument, ...prev]);
     setDocName("");
     setDocUrl("");
+    setDocFile(null);
     setDocOpen(false);
     toast.success("Document added to the client portal");
   }
 
+  async function openDocument(d: ClientDocument) {
+    if (d.storage_path) {
+      const ok = await openStoredFile(d.storage_path);
+      if (!ok) toast.error("Couldn't open that file. It may have been removed.");
+      return;
+    }
+    if (d.url) window.open(d.url, "_blank", "noopener,noreferrer");
+  }
+
   async function deleteDocument(id: string) {
+    const doc = documents.find((d) => d.id === id) ?? null;
     const before = documents;
     setDocuments((prev) => prev.filter((d) => d.id !== id));
     const supabase = createClient();
@@ -333,7 +384,18 @@ export function ClientPortalPanel({
     if (error) {
       setDocuments(before);
       toast.error(`Couldn't delete: ${error.message}`);
+      return;
     }
+    await removeStoredFile(doc?.storage_path);
+  }
+
+  async function openInvoice(inv: Invoice) {
+    if (inv.storage_path) {
+      const ok = await openStoredFile(inv.storage_path);
+      if (!ok) toast.error("Couldn't open that file. It may have been removed.");
+      return;
+    }
+    if (inv.document_url) window.open(inv.document_url, "_blank", "noopener,noreferrer");
   }
 
   async function addInvoice() {
@@ -348,6 +410,19 @@ export function ClientPortalPanel({
       setInvBusy(false);
       return;
     }
+
+    let storage_path: string | null = null;
+    if (invFile) {
+      try {
+        const up = await uploadClientFile(client.id, invFile);
+        storage_path = up.path;
+      } catch (err) {
+        setInvBusy(false);
+        toast.error(err instanceof Error ? err.message : "Upload failed.");
+        return;
+      }
+    }
+
     const { data, error } = await supabase
       .from("invoices")
       .insert({
@@ -359,18 +434,21 @@ export function ClientPortalPanel({
         issue_date: invIssue,
         due_date: invDue,
         document_url: url || null,
+        storage_path,
         created_by: profile.id,
       })
       .select()
       .single();
     setInvBusy(false);
     if (error) {
+      await removeStoredFile(storage_path);
       toast.error(`Couldn't add: ${error.message}`);
       return;
     }
     setInvoices((prev) => [data as Invoice, ...prev]);
     setInvNumber("");
     setInvAmount("");
+    setInvFile(null);
     setInvIssue(null);
     setInvDue(null);
     setInvUrl("");
@@ -391,6 +469,7 @@ export function ClientPortalPanel({
   }
 
   async function deleteInvoice(id: string) {
+    const inv = invoices.find((i) => i.id === id) ?? null;
     const before = invoices;
     setInvoices((prev) => prev.filter((i) => i.id !== id));
     const supabase = createClient();
@@ -399,7 +478,9 @@ export function ClientPortalPanel({
     if (error) {
       setInvoices(before);
       toast.error(`Couldn't delete: ${error.message}`);
+      return;
     }
+    await removeStoredFile(inv?.storage_path);
   }
 
   /** Resolving a request only clears it from the queue — scheduling the actual
@@ -761,23 +842,64 @@ export function ClientPortalPanel({
               </div>
             </div>
             <div>
-              <Label>Link</Label>
-              <Input
-                placeholder="drive.google.com/..."
-                value={docUrl}
-                onChange={(e) => setDocUrl(e.target.value)}
+              <Label>File</Label>
+              <input
+                type="file"
+                onChange={(e) => {
+                  const f = e.target.files?.[0] ?? null;
+                  setDocFile(f);
+                  // Save the typing — the file already has a name, and you can
+                  // still overwrite it above.
+                  if (f && !docName.trim()) setDocName(f.name.replace(/\.[^.]+$/, ""));
+                }}
+                className="block w-full cursor-pointer rounded-md border border-border bg-transparent px-2.5 py-1.5 text-[12.5px] text-muted-foreground file:mr-2.5 file:rounded file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-[12px] file:text-foreground hover:file:bg-white/15"
               />
+              {docFile && (
+                <p className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-2">
+                  {docFile.name} · {formatBytes(docFile.size)}
+                  <button
+                    type="button"
+                    onClick={() => setDocFile(null)}
+                    className="text-muted-foreground underline hover:text-foreground"
+                  >
+                    clear
+                  </button>
+                </p>
+              )}
               <p className="mt-1 text-[11px] text-muted-2">
-                Make sure the link is shared with your client before posting it.
+                Stored privately — the client sees it through a link that expires,
+                not a public URL. Up to {formatBytes(MAX_FILE_BYTES)}.
               </p>
             </div>
+
+            {/* A link is still allowed. Sometimes the thing genuinely lives in a
+                shared Drive and copying it here would only create a second,
+                staler version. */}
+            {!docFile && (
+              <div>
+                <Label>Or a link instead</Label>
+                <Input
+                  placeholder="drive.google.com/..."
+                  value={docUrl}
+                  onChange={(e) => setDocUrl(e.target.value)}
+                />
+                <p className="mt-1 text-[11px] text-muted-2">
+                  Check it&apos;s shared with your client before posting it.
+                </p>
+              </div>
+            )}
+
             <Button
               type="submit"
               size="sm"
               variant="secondary"
-              disabled={docBusy || !docName.trim() || !docUrl.trim()}
+              disabled={
+                docBusy ||
+                !(docName.trim() || docFile) ||
+                !(docFile || docUrl.trim())
+              }
             >
-              {docBusy ? "Adding..." : "Add document"}
+              {docBusy ? (docFile ? "Uploading..." : "Adding...") : "Add document"}
             </Button>
           </form>
         )}
@@ -798,15 +920,18 @@ export function ClientPortalPanel({
                 key={d.id}
                 className="group flex items-center gap-2 rounded-md border border-border-subtle px-2.5 py-1.5"
               >
-                <a
-                  href={d.url ?? "#"}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex min-w-0 flex-1 items-center gap-1.5 text-[13px] hover:underline"
+                <button
+                  type="button"
+                  onClick={() => openDocument(d)}
+                  className="flex min-w-0 flex-1 items-center gap-1.5 text-left text-[13px] hover:underline"
                 >
                   <span className="min-w-0 truncate">{d.name}</span>
-                  <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" />
-                </a>
+                  {d.storage_path ? (
+                    <Paperclip className="h-3 w-3 shrink-0 text-muted-foreground" />
+                  ) : (
+                    <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" />
+                  )}
+                </button>
                 <span className="shrink-0 text-[11px] text-muted-2">
                   {formatDate(d.created_at)}
                 </span>
@@ -889,13 +1014,35 @@ export function ClientPortalPanel({
               </div>
             </div>
             <div>
-              <Label>Invoice link (optional)</Label>
-              <Input
-                placeholder="drive.google.com/..."
-                value={invUrl}
-                onChange={(e) => setInvUrl(e.target.value)}
+              <Label>Invoice PDF (optional)</Label>
+              <input
+                type="file"
+                accept="application/pdf,image/*"
+                onChange={(e) => setInvFile(e.target.files?.[0] ?? null)}
+                className="block w-full cursor-pointer rounded-md border border-border bg-transparent px-2.5 py-1.5 text-[12.5px] text-muted-foreground file:mr-2.5 file:rounded file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-[12px] file:text-foreground hover:file:bg-white/15"
               />
+              {invFile && (
+                <p className="mt-1 text-[11px] text-muted-2">
+                  {invFile.name} · {formatBytes(invFile.size)}
+                </p>
+              )}
+              {/* Drafts stay invisible to the client, and so does their PDF —
+                  the storage policy checks the invoice's status, not just the
+                  folder it sits in. */}
+              <p className="mt-1 text-[11px] text-muted-2">
+                Only reaches the client once you mark the invoice Sent.
+              </p>
             </div>
+            {!invFile && (
+              <div>
+                <Label>Or a link instead</Label>
+                <Input
+                  placeholder="drive.google.com/..."
+                  value={invUrl}
+                  onChange={(e) => setInvUrl(e.target.value)}
+                />
+              </div>
+            )}
             <Button
               type="submit"
               size="sm"
@@ -923,16 +1070,19 @@ export function ClientPortalPanel({
               <div className="min-w-0 flex-1">
                 <p className="flex items-center gap-1.5 text-[13px] font-medium">
                   <span className="min-w-0 truncate">{inv.number}</span>
-                  {inv.document_url && (
-                    <a
-                      href={inv.document_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                  {(inv.storage_path || inv.document_url) && (
+                    <button
+                      type="button"
                       aria-label={`Open ${inv.number}`}
+                      onClick={() => openInvoice(inv)}
                       className="shrink-0 text-muted-foreground hover:text-foreground"
                     >
-                      <ExternalLink className="h-3 w-3" />
-                    </a>
+                      {inv.storage_path ? (
+                        <Paperclip className="h-3 w-3" />
+                      ) : (
+                        <ExternalLink className="h-3 w-3" />
+                      )}
+                    </button>
                   )}
                 </p>
                 <p className="text-[11px] text-muted-2">

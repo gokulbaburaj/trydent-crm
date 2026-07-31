@@ -46,6 +46,8 @@ import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/format";
 import { useCurrency } from "@/lib/currency";
+import { openStoredFile } from "@/lib/storage";
+import { toast } from "@/components/Toaster";
 import type {
   Activity,
   Client,
@@ -118,6 +120,35 @@ function PortalInner() {
   const [messages, setMessages] = useState<PortalMessage[]>([]);
   const [msgDraft, setMsgDraft] = useState("");
   const [documents, setDocuments] = useState<ClientDocument[]>([]);
+
+  /**
+   * Opens a document or invoice.
+   *
+   * An uploaded file has no permanent URL by design — the bucket is private,
+   * so the link is signed on demand and expires in minutes. Rows that only
+   * carry a pasted link still open the old way, so nothing added before this
+   * existed breaks.
+   */
+  async function openDocument(d: ClientDocument) {
+    if (d.storage_path) {
+      if (!(await openStoredFile(d.storage_path))) {
+        toast.error("That file couldn't be opened. Ask your account manager to re-share it.");
+      }
+      return;
+    }
+    if (d.url) window.open(d.url, "_blank", "noopener,noreferrer");
+  }
+
+  async function openInvoice(inv: Invoice) {
+    if (inv.storage_path) {
+      if (!(await openStoredFile(inv.storage_path))) {
+        toast.error("That file couldn't be opened. Ask your account manager to re-share it.");
+      }
+      return;
+    }
+    if (inv.document_url) window.open(inv.document_url, "_blank", "noopener,noreferrer");
+  }
+
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [team, setTeam] = useState<TeamMember[]>([]);
   const [meetings, setMeetings] = useState<Activity[]>([]);
@@ -974,12 +1005,14 @@ function PortalInner() {
                       </p>
                       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                         {items.map((d) => (
-                          <a
+                          // A stored file has no permanent URL — the link is
+                          // minted on click and expires, so this is a button
+                          // wearing a card rather than an anchor.
+                          <button
                             key={d.id}
-                            href={d.url ?? "#"}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="group flex items-center gap-3 rounded-xl border border-border bg-surface p-3.5 lift shadow-sm hover:border-primary/30 hover:bg-white/[0.04]"
+                            type="button"
+                            onClick={() => openDocument(d)}
+                            className="group flex items-center gap-3 rounded-xl border border-border bg-surface p-3.5 text-left lift shadow-sm hover:border-primary/30 hover:bg-white/[0.04]"
                           >
                             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/15 text-primary">
                               <FileText className="h-4 w-4" />
@@ -991,7 +1024,7 @@ function PortalInner() {
                               </p>
                             </div>
                             <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary" />
-                          </a>
+                          </button>
                         ))}
                       </div>
                     </div>
@@ -1058,21 +1091,20 @@ function PortalInner() {
                           <span className="font-medium tabular-nums">
                             {formatCurrency(Number(inv.amount), inv.currency)}
                           </span>
-                          {inv.document_url && (
+                          {(inv.storage_path || inv.document_url) && (
                             <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary" />
                           )}
                         </>
                       );
-                      return inv.document_url ? (
-                        <a
+                      return inv.storage_path || inv.document_url ? (
+                        <button
                           key={inv.id}
-                          href={inv.document_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="group flex flex-wrap items-center gap-x-4 gap-y-1 py-2.5 text-sm transition-colors hover:text-primary"
+                          type="button"
+                          onClick={() => openInvoice(inv)}
+                          className="group flex flex-wrap items-center gap-x-4 gap-y-1 py-2.5 text-left text-sm transition-colors hover:text-primary"
                         >
                           {row}
-                        </a>
+                        </button>
                       ) : (
                         <div
                           key={inv.id}

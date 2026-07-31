@@ -299,8 +299,15 @@ export interface PortalMessage {
   created_at: string;
 }
 
-/** Client-visible document. `url` = external link (Drive etc.);
- *  `storage_path` is reserved for Supabase Storage uploads (Phase 2). */
+/** Client-visible document.
+ *
+ *  Exactly one of these two is set, enforced by a CHECK constraint:
+ *    `url`          — a link somebody pasted (Drive etc.)
+ *    `storage_path` — a file we hold, in the private `client-files` bucket
+ *
+ *  Stored files have no permanent URL; lib/storage signs one on demand. Both
+ *  forms exist because sometimes the document genuinely lives elsewhere and
+ *  copying it here would only create a second, staler version. */
 export type DocumentCategory =
   | "proposal"
   | "contract"
