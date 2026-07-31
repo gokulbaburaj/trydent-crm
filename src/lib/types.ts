@@ -495,6 +495,9 @@ export interface Applicant {
   /** The role they're being considered for. */
   role_id: string | null;
   stage: ApplicantStage;
+  /** Your opinion, deliberately separate from `stage`, which tracks process.
+   *  You can rate someone highly at Applied and be lukewarm at Interview. */
+  shortlisted: boolean;
   source: string | null;
   resume_url: string | null;
   notes: string | null;

@@ -5,18 +5,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowUpRight,
-  Briefcase,
-  CalendarDays,
   ExternalLink,
   FileText,
-  GitBranch,
   LayoutGrid,
   List,
   ListChecks,
-  MapPin,
+  Mail,
   Plus,
+  Star,
   Trash2,
-  User,
   UserPlus,
 } from "lucide-react";
 import { toast } from "@/components/Toaster";
@@ -31,13 +28,12 @@ import { Dropdown } from "@/components/ui/Dropdown";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { TableSkeleton } from "@/components/ui/Skeletons";
 import { KanbanBoard, type KanbanColumn } from "@/components/KanbanBoard";
-import { DataTable } from "@/components/DataTable";
-import { CategoryChip } from "@/components/ui/CategoryChip";
 import { RequireAccess } from "@/components/RequireAccess";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/format";
+import { staggerDelay } from "@/lib/motion";
 import { useViewPreference } from "@/lib/useViewPreference";
 import type {
   Applicant,
@@ -395,6 +391,7 @@ function Applicants({ onHired }: { onHired: (a: Applicant) => void }) {
    * The table is the same data, sortable.
    */
   const [view, setView] = useViewPreference<"board" | "list">("recruiting", "board");
+  const [sort, setSort] = useState<"recent" | "name" | "stage" | "shortlisted">("recent");
 
   const openApplicant = applicants.find((a) => a.id === openId) ?? null;
 
@@ -409,6 +406,24 @@ function Applicants({ onHired }: { onHired: (a: Applicant) => void }) {
     () => (locationFilter ? applicants.filter((a) => a.location === locationFilter) : applicants),
     [applicants, locationFilter]
   );
+
+  /** The table gave sorting for free; the card list has to do it explicitly. */
+  const sortedList = useMemo(() => {
+    const rows = [...visible];
+    switch (sort) {
+      case "name":
+        return rows.sort((a, b) => a.full_name.localeCompare(b.full_name));
+      case "stage":
+        return rows.sort(
+          (a, b) => APPLICANT_STAGES.indexOf(a.stage) - APPLICANT_STAGES.indexOf(b.stage)
+        );
+      case "shortlisted":
+        return rows.sort((a, b) => Number(b.shortlisted) - Number(a.shortlisted));
+      default:
+        return rows.sort((a, b) => b.created_at.localeCompare(a.created_at));
+    }
+  }, [visible, sort]);
+
 
   async function addApplicant() {
     const full_name = name.trim();
@@ -509,6 +524,20 @@ function Applicants({ onHired }: { onHired: (a: Applicant) => void }) {
                 ...locations.map((l) => ({ value: l, label: l })),
               ]}
               onChange={setLocationFilter}
+            />
+          </div>
+        )}
+        {view === "list" && (
+          <div className="w-40">
+            <Dropdown
+              value={sort}
+              options={[
+                { value: "recent", label: "Most recent" },
+                { value: "shortlisted", label: "Shortlisted first" },
+                { value: "stage", label: "By stage" },
+                { value: "name", label: "By name" },
+              ]}
+              onChange={(v) => setSort(v as typeof sort)}
             />
           </div>
         )}
@@ -613,90 +642,109 @@ function Applicants({ onHired }: { onHired: (a: Applicant) => void }) {
           description="Add someone, then drag them across the board as they move through your process."
         />
       ) : view === "list" ? (
-        <DataTable
-          rows={visible}
-          rowKey={(a) => a.id}
-          onRowClick={(a) => setOpenId(a.id)}
-          emptyMessage="Nobody matches that filter."
-          // Rejected applicants stay in the list — you want the history — but
-          // they shouldn't compete for attention with people still in play.
-          isDimmed={(a) => a.stage === "rejected"}
-          columns={[
-            {
-              header: "Applicant",
-              icon: User,
-              sortKey: (a) => a.full_name.toLowerCase(),
-              render: (a) => (
-                <div className="flex min-w-0 items-center gap-2">
-                  <Avatar name={a.full_name} size="xs" />
-                  <span className="truncate font-medium">{a.full_name}</span>
+        /*
+         * Card rows, not table rows.
+         *
+         * The table I built first was better for sorting forty applicants and
+         * worse for doing anything about them — every action meant opening the
+         * detail modal. The reference puts the two things you actually do
+         * (shortlist, get in touch) directly on the row, always visible rather
+         * than revealed on hover. That turns a triage session from open-decide-
+         * close into a single pass down the list.
+         *
+         * Sorting moved into the toolbar so nothing was lost.
+         */
+        <div className="flex flex-col gap-2">
+          {sortedList.map((a, i) => {
+            const role = roleName(a);
+            return (
+              <div
+                key={a.id}
+                onClick={() => setOpenId(a.id)}
+                style={staggerDelay(i)}
+                className={cn(
+                  "animate-row group flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-2",
+                  "rounded-lg border border-border bg-surface px-4 py-3 transition-colors hover:bg-white/[0.03]",
+                  a.stage === "rejected" && "opacity-45 hover:opacity-90"
+                )}
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="truncate text-[14px] font-semibold text-foreground">
+                      {role ?? a.full_name}
+                    </span>
+                    <Badge tone={STAGE_TONE[a.stage]}>
+                      {APPLICANT_STAGE_LABELS[a.stage].toLowerCase()}
+                    </Badge>
+                    {a.shortlisted && (
+                      <Star className="h-3.5 w-3.5 fill-warning text-warning" />
+                    )}
+                  </div>
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-[12.5px] text-muted-foreground">
+                    {role && <span className="truncate">{a.full_name}</span>}
+                    {a.resume_url && (
+                      <a
+                        href={a.resume_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        title="Open CV"
+                        className="rounded p-0.5 text-primary transition-colors hover:bg-white/5"
+                      >
+                        <FileText className="h-3.5 w-3.5" />
+                      </a>
+                    )}
+                    <span>{formatDate(a.created_at)}</span>
+                    {a.location && <span className="text-muted-2">· {a.location}</span>}
+                  </div>
                 </div>
-              ),
-            },
-            {
-              header: "Role",
-              icon: Briefcase,
-              sortKey: (a) => roleName(a)?.toLowerCase() ?? "~",
-              render: (a) => <CategoryChip value={roleName(a)} />,
-            },
-            {
-              header: "Stage",
-              icon: GitBranch,
-              sortKey: (a) => APPLICANT_STAGES.indexOf(a.stage),
-              render: (a) => (
-                <Badge tone={STAGE_TONE[a.stage]} dot>
-                  {APPLICANT_STAGE_LABELS[a.stage]}
-                </Badge>
-              ),
-            },
-            {
-              header: "Location",
-              icon: MapPin,
-              sortKey: (a) => a.location?.toLowerCase() ?? "~",
-              render: (a) => (
-                <span className="text-muted-foreground">{a.location || "—"}</span>
-              ),
-            },
-            {
-              header: "Source",
-              icon: ArrowUpRight,
-              sortKey: (a) => a.source?.toLowerCase() ?? "~",
-              render: (a) => (
-                <span className="text-muted-foreground">{a.source || "—"}</span>
-              ),
-            },
-            {
-              header: "Applied",
-              icon: CalendarDays,
-              sortKey: (a) => a.created_at,
-              render: (a) => (
-                <span className="whitespace-nowrap text-muted-foreground">
-                  {formatDate(a.created_at)}
-                </span>
-              ),
-            },
-            {
-              header: "CV",
-              icon: FileText,
-              className: "w-14 text-center",
-              render: (a) =>
-                a.resume_url ? (
-                  <a
-                    href={a.resume_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    aria-label={`Open ${a.full_name}'s CV`}
-                    className="inline-flex rounded p-1 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+
+                <div
+                  className="flex shrink-0 items-center gap-2"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button
+                    onClick={() =>
+                      updateApplicant(a.id, { shortlisted: !a.shortlisted })
+                    }
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-[12px] font-medium transition-colors",
+                      a.shortlisted
+                        ? "border-warning/40 bg-warning/10 text-warning"
+                        : "border-border text-foreground-secondary hover:bg-white/5 hover:text-foreground"
+                    )}
                   >
-                    <ExternalLink className="h-3.5 w-3.5" />
+                    <Star className={cn("h-3.5 w-3.5", a.shortlisted && "fill-warning")} />
+                    {a.shortlisted ? "Shortlisted" : "Shortlist"}
+                  </button>
+
+                  {/* mailto rather than a compose modal — you already have a
+                      mail client, and it keeps the thread where you'll look
+                      for it later. Disabled honestly when we have no address. */}
+                  <a
+                    href={
+                      a.email
+                        ? `mailto:${a.email}?subject=${encodeURIComponent(
+                            role ? `Your application — ${role}` : "Your application"
+                          )}`
+                        : undefined
+                    }
+                    aria-disabled={!a.email}
+                    title={a.email ?? "No email on file"}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-[12px] font-medium transition-colors",
+                      a.email
+                        ? "text-foreground-secondary hover:bg-white/5 hover:text-foreground"
+                        : "pointer-events-none opacity-40"
+                    )}
+                  >
+                    <Mail className="h-3.5 w-3.5" /> Outreach
                   </a>
-                ) : (
-                  <span className="text-muted-2">—</span>
-                ),
-            },
-          ]}
-        />
+                </div>
+              </div>
+            );
+          })}
+        </div>
       ) : (
         <KanbanBoard
           columns={COLUMNS}
