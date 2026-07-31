@@ -32,15 +32,9 @@ import type {
   ProjectTask,
 } from "@/lib/types";
 import { APPLICANT_STAGES, APPLICANT_STAGE_LABELS, GOAL_STATUS_LABELS } from "@/lib/types";
+import { seriesFill, seriesSwatch } from "@/lib/chartSeries";
 
-const CHART_COLORS = [
-  "var(--primary)",
-  "#4ea7e0",
-  "#d9a53f",
-  "#d95c8a",
-  "#4cb782",
-  "#eb5757",
-];
+
 
 /**
  * The organisation hub — one sidebar entry standing in for Goals, Recruiting,
@@ -182,7 +176,7 @@ export default function OrganizationPage() {
       .map(([label, value], i) => ({
         label,
         value,
-        color: CHART_COLORS[i % CHART_COLORS.length],
+        color: seriesSwatch(i),
       }));
   }, [profiles]);
 
@@ -334,7 +328,7 @@ export default function OrganizationPage() {
                   margin={{ top: 20, right: 8, bottom: 34, left: 8 }}
                 >
                   <Grid horizontal fadeHorizontal vertical={false} />
-                  <Bar dataKey="count" fill="var(--chart-line-primary)" lineCap="round" />
+                  <Bar dataKey="count" fill={seriesFill(0)} lineCap="round" />
                   <BarXAxis />
                   <ChartTooltip content={funnelTooltip} />
                 </BarChart>

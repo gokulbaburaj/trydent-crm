@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { ChevronDown, Plus } from "lucide-react";
 import { FilterBar } from "@/components/FilterBar";
 import { BarChart } from "@/components/charts/bar-chart";
+import { seriesFill } from "@/lib/chartSeries";
 import { Bar } from "@/components/charts/bar";
 import { Grid } from "@/components/charts/grid";
 import { BarXAxis } from "@/components/charts/bar-x-axis";
@@ -374,7 +375,7 @@ export default function PipelinePage() {
               <Grid horizontal fadeHorizontal vertical={false} />
               <Bar
                 dataKey={stageChart === "value" ? "value" : "deals"}
-                fill="var(--chart-line-primary)" lineCap="round"
+                fill={seriesFill(0)} lineCap="round"
               />
               {/* Five stage names don't fit across a phone. Let the axis thin
                   them out rather than printing them on top of each other. */}

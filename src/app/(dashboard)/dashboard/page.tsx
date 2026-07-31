@@ -7,6 +7,7 @@ import { PieChart } from "@/components/charts/pie-chart";
 import { PieSlice } from "@/components/charts/pie-slice";
 import { PieCenter } from "@/components/charts/pie-center";
 import { BarChart } from "@/components/charts/bar-chart";
+import { seriesFill, seriesSwatch } from "@/lib/chartSeries";
 import { Bar } from "@/components/charts/bar";
 import { AreaChart, Area } from "@/components/charts/area-chart";
 import { LineChart, Line } from "@/components/charts/line-chart";
@@ -304,7 +305,7 @@ export default function DashboardPage() {
                 margin={{ top: 24, right: 16, bottom: 36, left: 16 }}
               >
                 <Grid horizontal fadeHorizontal vertical={false} />
-                <Bar dataKey="revenue" fill="var(--chart-line-primary)" lineCap="round" />
+                <Bar dataKey="revenue" fill={seriesFill(0)} lineCap="round" />
                 <BarXAxis />
                 <ChartTooltip content={revenueTooltip} />
               </BarChart>
@@ -316,7 +317,7 @@ export default function DashboardPage() {
                 margin={{ top: 24, right: 16, bottom: 36, left: 16 }}
               >
                 <Grid horizontal fadeHorizontal vertical={false} />
-                <Line dataKey="revenue" stroke="var(--chart-line-primary)" showMarkers />
+                <Line dataKey="revenue" stroke={seriesSwatch(0)} showMarkers />
                 <XAxis />
                 <ChartTooltip content={revenueTooltip} />
               </LineChart>
@@ -328,7 +329,7 @@ export default function DashboardPage() {
                 margin={{ top: 24, right: 16, bottom: 36, left: 16 }}
               >
                 <Grid horizontal fadeHorizontal vertical={false} />
-                <Area dataKey="revenue" stroke="var(--chart-line-primary)" fill="var(--chart-line-primary)" />
+                <Area dataKey="revenue" stroke={seriesSwatch(0)} fill={seriesFill(0)} />
                 <XAxis />
                 <ChartTooltip content={revenueTooltip} />
               </AreaChart>

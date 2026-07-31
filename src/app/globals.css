@@ -115,11 +115,25 @@
   --chart-marker-border: var(--border);
   --chart-marker-foreground: var(--foreground);
   --chart-label: var(--muted-foreground);
-  /* Sequential ramp (heatmap/choropleth): dark → brand */
+  /*
+    Series ramp — one hue, stepped.
+
+    bklit's charts read calmly because every series is the same colour at a
+    different lightness, with a diagonal hatch standing in for the step that
+    would otherwise need a second hue. We used to hand each series its own
+    colour (indigo, blue, gold, pink, green, red); six unrelated hues on a dark
+    card is decoration, and none of them moved when the accent changed.
+
+    The top three steps are accent-derived and carry the data you're meant to
+    read; 02 and 01 fall back to neutral for long tails and heatmap floors,
+    where hue would imply a distinction that isn't there.
+
+    Consumed via lib/chartSeries.tsx, which also owns the hatch order.
+  */
   --chart-scale-01: oklch(1 0 0 / 0.06);
-  --chart-scale-02: oklch(1 0 0 / 0.12);
-  --chart-scale-03: oklch(1 0 0 / 0.20);
-  --chart-scale-04: color-mix(in oklab, var(--primary) 55%, transparent);
+  --chart-scale-02: oklch(1 0 0 / 0.13);
+  --chart-scale-03: color-mix(in oklab, var(--primary) 30%, transparent);
+  --chart-scale-04: color-mix(in oklab, var(--primary) 58%, transparent);
   --chart-scale-05: var(--primary);
   --chart-scale-pattern-color: oklch(1 0 0 / 0.15);
 }
