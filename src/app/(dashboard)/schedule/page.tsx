@@ -224,6 +224,7 @@ export default function SchedulePage() {
     {
       header: "Client",
       icon: Building2,
+      width: "20%",
       render: (a) => clientName(a.client_id),
       sortKey: (a) =>
         a.client_id ? clientName(a.client_id).toLowerCase() : null,
@@ -231,6 +232,7 @@ export default function SchedulePage() {
     {
       header: "Assigned To",
       icon: User,
+      width: "170px",
       render: (a) => assigneeName(a.assigned_to),
       sortKey: (a) =>
         a.assigned_to ? assigneeName(a.assigned_to).toLowerCase() : null,
@@ -238,12 +240,14 @@ export default function SchedulePage() {
     {
       header: "Date",
       icon: CalendarDays,
+      width: "130px",
       render: (a) => formatDate(a.activity_date),
       sortKey: (a) => a.activity_date,
     },
     {
       header: "Follow-up",
       icon: Bell,
+      width: "130px",
       render: (a) =>
         a.follow_up_required ? (
           <Badge tone="yellow" dot>Required</Badge>

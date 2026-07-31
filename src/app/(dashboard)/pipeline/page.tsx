@@ -124,12 +124,14 @@ export default function PipelinePage() {
       {
         header: "Client",
         icon: Building2,
+        width: "20%",
         sortKey: (d) => clientName(d.client_id),
         render: (d) => <span className="text-muted-foreground">{clientName(d.client_id)}</span>,
       },
       {
         header: "Stage",
         icon: CircleDot,
+        width: "160px",
         sortKey: (d) => DEAL_STAGES.indexOf(d.deal_stage),
         // Editable in place. Opening a drawer to change one enum is the kind
         // of friction that stops people keeping a pipeline current, and a
@@ -148,6 +150,7 @@ export default function PipelinePage() {
       {
         header: "Value",
         icon: IndianRupee,
+        width: "130px",
         className: "text-right tabular-nums",
         // Sorted on the base-converted number, not the raw figure — otherwise a
         // 900 AUD deal sorts below a ₹20,000 one while being worth more.
@@ -157,6 +160,7 @@ export default function PipelinePage() {
       {
         header: "Paid",
         icon: IndianRupee,
+        width: "130px",
         className: "text-right tabular-nums",
         sortKey: (d) => toBase(Number(d.paid), dealCcy(d)),
         render: (d) => {
@@ -173,6 +177,7 @@ export default function PipelinePage() {
       {
         header: "Close date",
         icon: CalendarDays,
+        width: "140px",
         sortKey: (d) => d.close_date ?? "",
         render: (d) => (
           <span className="text-muted-foreground">

@@ -137,6 +137,7 @@ export default function ClientsPage() {
     {
       header: "Status",
       icon: CircleDot,
+      width: "180px",
       render: (c) => (
         <StatusPicker
           value={c.status}
@@ -149,12 +150,14 @@ export default function ClientsPage() {
     {
       header: "Email",
       icon: Mail,
+      width: "20%",
       render: (c) => c.email || "—",
       sortKey: (c) => c.email?.toLowerCase() || null,
     },
     {
       header: "Owner",
       icon: User,
+      width: "150px",
       render: (c) => ownerName(c.account_owner),
       sortKey: (c) =>
         c.account_owner ? ownerName(c.account_owner).toLowerCase() : null,
@@ -162,6 +165,7 @@ export default function ClientsPage() {
     {
       header: "Portal",
       icon: ShieldCheck,
+      width: "170px",
       render: (c) => {
         const p = portals.find((x) => x.client_id === c.id);
         if (!p) return <span className="text-xs text-muted-foreground">—</span>;
@@ -179,6 +183,7 @@ export default function ClientsPage() {
     {
       header: "Last Contact",
       icon: CalendarDays,
+      width: "140px",
       render: (c) => formatDate(c.last_contact),
       sortKey: (c) => c.last_contact,
     },

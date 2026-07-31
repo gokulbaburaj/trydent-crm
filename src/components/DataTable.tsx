@@ -9,6 +9,16 @@ export interface Column<T> {
   header: string;
   render: (row: T) => ReactNode;
   className?: string;
+  /**
+   * Column width, as any CSS length or percentage.
+   *
+   * The table lays out `table-fixed`, so widths come from here and nowhere
+   * else. Leave it off and the column splits whatever space the sized columns
+   * didn't take. Set it on the narrow, predictable ones (status, money, dates)
+   * and let the name column absorb the rest — that's the layout that holds
+   * still while you page through.
+   */
+  width?: string;
   /** Provide a sort value to make this column's header click-to-sort. */
   sortKey?: (row: T) => string | number | null | undefined;
   /**
@@ -52,6 +62,7 @@ export function DataTable<T>({
   emptyMessage = "No records yet.",
   selection,
   isDimmed,
+  minWidth = "980px",
   pageSize,
 }: {
   columns: Column<T>[];
@@ -67,6 +78,12 @@ export function DataTable<T>({
    * rows without having to check a column.
    */
   isDimmed?: (row: T) => boolean;
+  /**
+   * Minimum table width before the wrapper starts scrolling horizontally.
+   * Fixed layout squeezes columns to fit rather than overflowing, so without
+   * a floor the columns get unreadably narrow on a phone.
+   */
+  minWidth?: string;
   /**
    * Rows per page. Omit for no pagination.
    *
@@ -127,7 +144,23 @@ export function DataTable<T>({
 
   return (
     <div className="overflow-x-auto rounded-md border border-border">
-      <table className="w-full min-w-max text-[13px]">
+      {/*
+       * table-fixed, not the browser default.
+       *
+       * With auto layout the browser measures the cells it's rendering and
+       * sizes the columns to fit them — so paging to a set of rows with longer
+       * client names silently moved every column. Fixed layout takes its
+       * widths from the colgroup below and ignores content entirely, which is
+       * what makes the table hold still while you page and makes every table
+       * in the app line up with the others.
+       */}
+      <table className="w-full table-fixed text-[13px]" style={{ minWidth }}>
+        <colgroup>
+          {selection && <col style={{ width: "2.25rem" }} />}
+          {columns.map((col, i) => (
+            <col key={i} style={col.width ? { width: col.width } : undefined} />
+          ))}
+        </colgroup>
         <thead>
           <tr className="group border-b border-border-subtle text-left text-xs text-muted-foreground">
             {selection && (
@@ -143,7 +176,7 @@ export function DataTable<T>({
               </th>
             )}
             {columns.map((col, i) => (
-              <th key={i} className={cn("px-4 py-2 font-medium", col.className)}>
+              <th key={i} className={cn("truncate px-4 py-2 font-medium", col.className)}>
                 {col.sortKey ? (
                   <button
                     onClick={() => cycleSort(i)}
@@ -218,7 +251,14 @@ export function DataTable<T>({
                   </td>
                 )}
                 {columns.map((col, i) => (
-                  <td key={i} className={cn("px-4 py-2 align-middle", col.className)}>
+                  <td
+                    key={i}
+                    /* Fixed layout can't grow a column to fit its content, so
+                       anything too long has to clip rather than wrap — wrapping
+                       would make row heights jump between pages, which is the
+                       same problem in a different direction. */
+                    className={cn("truncate px-4 py-2 align-middle", col.className)}
+                  >
                     {col.render(row)}
                   </td>
                 ))}

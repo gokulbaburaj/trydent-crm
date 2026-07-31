@@ -300,6 +300,7 @@ function TeamPageInner() {
     {
       header: "Employment",
       icon: Briefcase,
+      width: "150px",
       render: (p) =>
         isAdmin ? (
           <div className="w-32" onClick={(e) => e.stopPropagation()}>
@@ -320,6 +321,7 @@ function TeamPageInner() {
     {
       header: "Team",
       icon: Building2,
+      width: "160px",
       render: (p) =>
         isAdmin ? (
           <TeamPicker
@@ -338,6 +340,7 @@ function TeamPageInner() {
     {
       header: "Reports to",
       icon: Network,
+      width: "170px",
       render: (p) =>
         isAdmin ? (
           <ManagerPicker
@@ -353,6 +356,7 @@ function TeamPageInner() {
     {
       header: "Joined",
       icon: CalendarDays,
+      width: "130px",
       render: (p) => formatDate(p.created_at),
       sortKey: (p) => p.created_at,
     },

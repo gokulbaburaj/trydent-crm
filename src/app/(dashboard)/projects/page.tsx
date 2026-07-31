@@ -108,6 +108,7 @@ function ProjectsPageInner() {
       {
         header: "Client",
         icon: Building2,
+        width: "17%",
         sortKey: (p) => clients.find((c) => c.id === p.client_id)?.company ?? "",
         render: (p) => (
           <span className="text-muted-foreground">
@@ -118,6 +119,7 @@ function ProjectsPageInner() {
       {
         header: "Status",
         icon: CircleDot,
+        width: "150px",
         sortKey: (p) => PROJECT_STATUSES.indexOf(p.status),
         // Editable in place — same reasoning as the pipeline stage: a status
         // you have to open a drawer to change is a status that goes stale.
@@ -134,7 +136,7 @@ function ProjectsPageInner() {
       {
         header: "Progress",
         icon: TrendingUp,
-        className: "w-40",
+        width: "160px",
         // Projects with no tasks sort last rather than as 0% — "not started"
         // and "no plan yet" are different things.
         sortKey: (p) => completionOf(p.id) ?? -1,
@@ -156,6 +158,7 @@ function ProjectsPageInner() {
       {
         header: "Value",
         icon: IndianRupee,
+        width: "120px",
         className: "text-right tabular-nums",
         sortKey: (p) => Number(dealFor(p)?.deal_value ?? 0),
         render: (p) => {
@@ -167,6 +170,7 @@ function ProjectsPageInner() {
       {
         header: "Outstanding",
         icon: IndianRupee,
+        width: "140px",
         className: "text-right tabular-nums",
         sortKey: (p) => {
           const d = dealFor(p);
@@ -185,6 +189,7 @@ function ProjectsPageInner() {
       {
         header: "Due",
         icon: CalendarDays,
+        width: "120px",
         // Undated last, not first — an empty date isn't "due at the dawn of time".
         sortKey: (p) => p.due_date ?? "9999-12-31",
         render: (p) => (
@@ -196,6 +201,7 @@ function ProjectsPageInner() {
       {
         header: "Owner",
         icon: User,
+        width: "140px",
         sortKey: (p) => ownerName(p.owner),
         render: (p) => <span className="text-muted-foreground">{ownerName(p.owner)}</span>,
       },
