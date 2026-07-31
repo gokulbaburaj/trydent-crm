@@ -131,6 +131,7 @@ export default function ClientsPage() {
     {
       header: "Company",
       icon: Building2,
+      width: "24%",
       render: (c) => <PersonCell name={c.company} subtitle={c.point_person} />,
       sortKey: (c) => c.company.toLowerCase(),
     },

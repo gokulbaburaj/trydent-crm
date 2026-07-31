@@ -294,6 +294,7 @@ function TeamPageInner() {
     {
       header: "Name",
       icon: User,
+      width: "24%",
       render: (p) => <PersonCell name={p.full_name} subtitle={emailOf(p.id) ?? undefined} url={p.avatar_url} />,
       sortKey: (p) => p.full_name.toLowerCase(),
     },

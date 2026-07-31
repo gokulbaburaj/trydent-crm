@@ -213,9 +213,15 @@ export default function SchedulePage() {
     {
       header: "Description",
       icon: FileText,
+      width: "30%",
       render: (a) => (
+        /* The td's `truncate` can't clip a flex child, so the text needs its
+           own truncate and min-w-0 — otherwise a long description pushes the
+           recurrence icon out of the cell instead of ellipsising. */
         <span className="flex items-center gap-1.5 font-medium">
-          {a.description}
+          <span className="min-w-0 truncate" title={a.description}>
+            {a.description}
+          </span>
           <RecurrenceIndicator recurrence={a.recurrence} />
         </span>
       ),

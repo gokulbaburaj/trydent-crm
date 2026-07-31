@@ -102,8 +102,13 @@ function ProjectsPageInner() {
       {
         header: "Project",
         icon: Box,
+        width: "22%",
         sortKey: (p) => p.name,
-        render: (p) => <span className="font-medium">{p.name}</span>,
+        render: (p) => (
+          <span className="font-medium" title={p.name}>
+            {p.name}
+          </span>
+        ),
       },
       {
         header: "Client",

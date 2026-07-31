@@ -118,20 +118,30 @@ export default function PipelinePage() {
       {
         header: "Deal",
         icon: Handshake,
+        /* Sized, not left to absorb the remainder. Unsized it took every pixel
+           the other columns didn't want, so a table of short deal names sat in
+           a field of white space while the money columns were cramped. A long
+           name clips to an ellipsis instead — the full name is one click away
+           in the drawer, and the columns you scan are worth more width. */
+        width: "24%",
         sortKey: (d) => d.deal_name,
-        render: (d) => <span className="font-medium">{d.deal_name}</span>,
+        render: (d) => (
+          <span className="font-medium" title={d.deal_name}>
+            {d.deal_name}
+          </span>
+        ),
       },
       {
         header: "Client",
         icon: Building2,
-        width: "20%",
+        width: "22%",
         sortKey: (d) => clientName(d.client_id),
         render: (d) => <span className="text-muted-foreground">{clientName(d.client_id)}</span>,
       },
       {
         header: "Stage",
         icon: CircleDot,
-        width: "160px",
+        width: "170px",
         sortKey: (d) => DEAL_STAGES.indexOf(d.deal_stage),
         // Editable in place. Opening a drawer to change one enum is the kind
         // of friction that stops people keeping a pipeline current, and a
@@ -150,7 +160,7 @@ export default function PipelinePage() {
       {
         header: "Value",
         icon: IndianRupee,
-        width: "130px",
+        width: "150px",
         className: "text-right tabular-nums",
         // Sorted on the base-converted number, not the raw figure — otherwise a
         // 900 AUD deal sorts below a ₹20,000 one while being worth more.
@@ -160,7 +170,7 @@ export default function PipelinePage() {
       {
         header: "Paid",
         icon: IndianRupee,
-        width: "130px",
+        width: "150px",
         className: "text-right tabular-nums",
         sortKey: (d) => toBase(Number(d.paid), dealCcy(d)),
         render: (d) => {
@@ -177,7 +187,7 @@ export default function PipelinePage() {
       {
         header: "Close date",
         icon: CalendarDays,
-        width: "140px",
+        width: "150px",
         sortKey: (d) => d.close_date ?? "",
         render: (d) => (
           <span className="text-muted-foreground">
