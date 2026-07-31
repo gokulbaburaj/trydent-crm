@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Check, ChevronRight, Plus, ShieldCheck, Trash2 } from "lucide-react";
+import { Check, ChevronRight, Plus, ShieldCheck, Trash2, Users } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "@/components/Toaster";
 import { Card } from "@/components/ui/Card";
@@ -26,7 +26,7 @@ import {
 } from "@/lib/useViewPreference";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { useStaffProfiles } from "@/lib/useStaffProfiles";
-import type { OnboardingTemplate, Role } from "@/lib/types";
+import type { OnboardingTemplate, Role, Team } from "@/lib/types";
 import { useAuth } from "@/lib/useAuth";
 import { createClient } from "@/lib/supabase/client";
 import { CURRENCIES, setBaseCurrency, useCurrency } from "@/lib/currency";
@@ -281,6 +281,7 @@ export default function SettingsPage() {
       {/* Roles is a table of rows, so it always wants the full width. */}
       <div className="xl:col-span-2">
         <DefaultViewsCard />
+        <TeamsCard />
         <RolesCard />
       </div>
     </div>
@@ -345,6 +346,175 @@ function DefaultViewsCard() {
         Saved on this device. Preferences like this stay out of the database so
         a page never waits on the network to know what to draw.
       </p>
+    </Card>
+  );
+}
+
+/**
+ * Teams.
+ *
+ * These already existed, but the only way to rename or delete one was a
+ * right-click-ish menu inside the org chart on the Team page — a view most
+ * people never open. Nobody looks for "rename team" inside a chart. It belongs
+ * next to Company roles, because a role points at a team and the two are edited
+ * in the same sitting.
+ *
+ * A team name lives in three places: teams.name, profiles.team and roles.team.
+ * Every write here fans out to all three, which is the bug that made renames
+ * look like they half-worked.
+ */
+function TeamsCard() {
+  const { access } = useAuth();
+  const { rows: teams, setRows: setTeams } = useSupabaseTable<Team>("teams", {
+    column: "name",
+    ascending: true,
+  });
+  const { rows: roles, setRows: setRoles } = useSupabaseTable<Role>("roles");
+  const { rows: staff } = useStaffProfiles();
+  const [name, setName] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const isAdmin = hasAdminRights(access);
+  const headcount = (team: string) => staff.filter((p) => p.team === team).length;
+  const roleCount = (team: string) => roles.filter((r) => r.team === team).length;
+
+  async function addTeam(e: React.FormEvent) {
+    e.preventDefault();
+    const n = name.trim();
+    if (!n) return;
+    if (teams.some((t) => t.name.toLowerCase() === n.toLowerCase())) {
+      toast.error(`"${n}" already exists.`);
+      return;
+    }
+    setBusy(true);
+    const supabase = createClient();
+    if (!supabase) return setBusy(false);
+    const { data, error } = await supabase.from("teams").insert({ name: n }).select().single();
+    setBusy(false);
+    if (error || !data) {
+      toast.error(`Couldn't add: ${error?.message ?? "unknown error"}`);
+      return;
+    }
+    setTeams((prev) => [...prev, data as Team]);
+    setName("");
+  }
+
+  async function renameTeam(team: Team, next: string) {
+    const n = next.trim();
+    if (!n || n === team.name) return;
+    if (teams.some((t) => t.id !== team.id && t.name.toLowerCase() === n.toLowerCase())) {
+      toast.error(`"${n}" already exists.`);
+      setTeams((prev) => prev.map((t) => (t.id === team.id ? { ...t, name: team.name } : t)));
+      return;
+    }
+    const supabase = createClient();
+    if (!supabase) return;
+    const { error } = await supabase.from("teams").update({ name: n }).eq("id", team.id);
+    if (error) {
+      setTeams((prev) => prev.map((t) => (t.id === team.id ? { ...t, name: team.name } : t)));
+      toast.error(`Couldn't rename: ${error.message}`);
+      return;
+    }
+    // Carry everyone and every role across, or they end up pointing at a team
+    // name that no longer exists.
+    await supabase.from("profiles").update({ team: n }).eq("team", team.name);
+    await supabase.from("roles").update({ team: n }).eq("team", team.name);
+    setTeams((prev) => prev.map((t) => (t.id === team.id ? { ...t, name: n } : t)));
+    setRoles((prev) => prev.map((r) => (r.team === team.name ? { ...r, team: n } : r)));
+    toast.success(`Renamed to "${n}"`);
+  }
+
+  async function deleteTeam(team: Team) {
+    const people = headcount(team.name);
+    const jobs = roleCount(team.name);
+    const affected = [
+      people > 0 && `${people} ${people === 1 ? "person" : "people"}`,
+      jobs > 0 && `${jobs} ${jobs === 1 ? "role" : "roles"}`,
+    ].filter(Boolean).join(" and ");
+    if (
+      !confirm(
+        affected
+          ? `Delete "${team.name}"? ${affected} will be left without a team. Nobody is removed and no role is deleted.`
+          : `Delete "${team.name}"?`
+      )
+    )
+      return;
+
+    const before = teams;
+    setTeams((prev) => prev.filter((t) => t.id !== team.id));
+    const supabase = createClient();
+    if (!supabase) return;
+    const { error } = await supabase.from("teams").delete().eq("id", team.id);
+    if (error) {
+      // This used to fail silently, which is how a delete looks like it did
+      // nothing until you reload.
+      setTeams(before);
+      toast.error(`Couldn't delete: ${error.message}`);
+      return;
+    }
+    await supabase.from("profiles").update({ team: null }).eq("team", team.name);
+    await supabase.from("roles").update({ team: null }).eq("team", team.name);
+    setRoles((prev) => prev.map((r) => (r.team === team.name ? { ...r, team: null } : r)));
+    toast.success(`"${team.name}" deleted`);
+  }
+
+  if (!isAdmin) return null;
+
+  return (
+    <Card>
+      <h3 className="text-sm font-semibold">Teams</h3>
+      <p className="mt-0.5 text-xs text-muted-foreground">
+        The groups roles and people belong to. Renaming one moves everybody on it.
+      </p>
+
+      <div className="mt-3.5 flex flex-col gap-1.5">
+        {teams.length === 0 && (
+          <p className="text-xs text-muted-foreground">No teams yet.</p>
+        )}
+        {teams.map((t) => (
+          <div
+            key={t.id}
+            className="group flex items-center gap-2 rounded-md border border-border-subtle px-2.5 py-2"
+          >
+            <Users className="h-3.5 w-3.5 shrink-0 text-muted-2" />
+            <input
+              defaultValue={t.name}
+              onBlur={(e) => renameTeam(t, e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") e.currentTarget.blur();
+                if (e.key === "Escape") {
+                  e.currentTarget.value = t.name;
+                  e.currentTarget.blur();
+                }
+              }}
+              className="min-w-0 flex-1 rounded border border-transparent bg-transparent px-1 py-0.5 text-[13px] font-medium hover:border-border focus:border-primary/60 focus:outline-none"
+            />
+            <span className="whitespace-nowrap text-[11px] text-muted-2">
+              {headcount(t.name)} {headcount(t.name) === 1 ? "person" : "people"}
+              {roleCount(t.name) > 0 && ` · ${roleCount(t.name)} role${roleCount(t.name) === 1 ? "" : "s"}`}
+            </span>
+            <button
+              type="button"
+              aria-label={`Delete ${t.name}`}
+              onClick={() => deleteTeam(t)}
+              className="rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:text-danger focus-visible:opacity-100 group-hover:opacity-100"
+            >
+              <Trash2 className="h-3 w-3" />
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <form onSubmit={addTeam} className="mt-3 flex items-center gap-2">
+        <Input
+          placeholder="New team name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <Button type="submit" size="sm" variant="secondary" disabled={busy || !name.trim()}>
+          <Plus className="h-3.5 w-3.5" /> Add
+        </Button>
+      </form>
     </Card>
   );
 }
@@ -453,167 +623,210 @@ function RolesCard() {
         onboarding checklist they get when hired.
       </p>
 
+      {/*
+        Was: five controls per row, all shouting at once — an unlabelled name
+        field, two full-width dropdowns (one of which read "No checklist" five
+        times), an access chip and a headcount. You couldn't scan the list
+        because nothing in a row was quieter than anything else.
+
+        Now: each role is one readable line, and editing lives behind a click.
+        You open a role when you mean to change it, which is rare, and read the
+        list the rest of the time, which is constant.
+      */}
       <div className="mt-3.5 flex flex-col gap-1.5">
         {roles.length === 0 && (
           <p className="text-xs text-muted-foreground">
             No roles yet. Add the jobs you hire for.
           </p>
         )}
-        {roles.map((r) => (
-          <div
-            key={r.id}
-            // A fixed-width name input next to two fixed-width dropdowns left
-            // the name with almost no room. Grid gives it a real minimum and
-            // wraps the whole row on narrow screens instead of crushing it.
-            className="group grid grid-cols-1 items-center gap-2 rounded-md border border-border-subtle px-2.5 py-2 sm:grid-cols-[minmax(8rem,1fr)_9rem_11rem_auto_auto]"
-          >
-            <input
-              value={r.name}
-              onChange={(e) =>
-                setRoles((prev) =>
-                  prev.map((x) => (x.id === r.id ? { ...x, name: e.target.value } : x))
-                )
-              }
-              onBlur={(e) => {
-                const v = e.target.value.trim();
-                if (v && v !== r.name) updateRole(r.id, { name: v });
-              }}
-              className="min-w-0 flex-1 rounded border border-transparent bg-transparent px-1 py-0.5 text-[13px] font-medium hover:border-border focus:border-primary/60 focus:outline-none"
-            />
-            <div>
-              <Dropdown
-                value={r.team ?? ""}
-                placeholder="No team"
-                options={[
-                  { value: "", label: "No team" },
-                  ...teams.map((t) => ({ value: t, label: t })),
-                ]}
-                onChange={(v) => updateRole(r.id, { team: v || null })}
-              />
-            </div>
-            <div>
-              <Dropdown
-                value={r.template_id ?? ""}
-                placeholder="No checklist"
-                options={[
-                  { value: "", label: "No checklist" },
-                  ...templates.map((t) => ({ value: t.id, label: t.name })),
-                ]}
-                onChange={(v) => updateRole(r.id, { template_id: v || null })}
-              />
-            </div>
-            <button
-              type="button"
-              onClick={() => setOpenAccess(openAccess === r.id ? null : r.id)}
+        {roles.map((r) => {
+          const open = openAccess === r.id;
+          const pageCount = (r.pages ?? []).length;
+          const people = headcount(r.id);
+          const checklist = templates.find((t) => t.id === r.template_id) ?? null;
+          return (
+            <div
+              key={r.id}
               className={cn(
-                "flex items-center gap-1.5 whitespace-nowrap rounded-md border px-2 py-1 text-[11px] transition-colors",
-                r.is_admin
-                  ? "border-warning/40 bg-warning/10 text-warning"
-                  : "border-border text-muted-foreground hover:bg-white/5 hover:text-foreground"
+                "overflow-hidden rounded-lg border transition-colors",
+                open ? "border-border bg-white/[0.02]" : "border-border-subtle"
               )}
             >
-              <ShieldCheck className="h-3 w-3" />
-              {r.is_admin
-                ? "Full admin"
-                : `${(r.pages ?? []).length} page${(r.pages ?? []).length === 1 ? "" : "s"}`}
-              <ChevronRight
-                className={cn(
-                  "h-3 w-3 transition-transform duration-200",
-                  openAccess === r.id && "rotate-90"
-                )}
-              />
-            </button>
-            <div className="flex items-center justify-end gap-2">
-              <span className="whitespace-nowrap text-[11px] text-muted-2">
-                {headcount(r.id)} {headcount(r.id) === 1 ? "person" : "people"}
-              </span>
               <button
                 type="button"
-                aria-label={`Delete ${r.name}`}
-                onClick={() => deleteRole(r.id)}
-                className="rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:text-danger group-hover:opacity-100"
+                onClick={() => setOpenAccess(open ? null : r.id)}
+                className="flex w-full items-center gap-2.5 px-2.5 py-2 text-left transition-colors hover:bg-white/[0.03]"
               >
-                <Trash2 className="h-3 w-3" />
+                <ChevronRight
+                  className={cn(
+                    "h-3.5 w-3.5 shrink-0 text-muted-2 transition-transform duration-200",
+                    open && "rotate-90"
+                  )}
+                />
+                <span className="min-w-0 truncate text-[13px] font-medium">{r.name}</span>
+
+                {r.team ? (
+                  <span className="shrink-0 rounded border border-border-subtle px-1.5 py-0.5 text-[11px] text-muted-foreground">
+                    {r.team}
+                  </span>
+                ) : (
+                  <span className="shrink-0 text-[11px] text-muted-2">No team</span>
+                )}
+
+                {/* Only shown when set — five rows of "No checklist" was noise
+                    pretending to be information. */}
+                {checklist && (
+                  <span className="hidden shrink-0 truncate text-[11px] text-muted-2 sm:inline">
+                    {checklist.name}
+                  </span>
+                )}
+
+                <span className="ml-auto flex shrink-0 items-center gap-2.5">
+                  <span
+                    className={cn(
+                      "flex items-center gap-1 whitespace-nowrap text-[11px]",
+                      r.is_admin ? "text-warning" : "text-muted-foreground"
+                    )}
+                  >
+                    <ShieldCheck className="h-3 w-3" />
+                    {r.is_admin ? "Full admin" : `${pageCount} page${pageCount === 1 ? "" : "s"}`}
+                  </span>
+                  <span className="whitespace-nowrap text-[11px] text-muted-2">
+                    {people} {people === 1 ? "person" : "people"}
+                  </span>
+                </span>
               </button>
-            </div>
 
-            {openAccess === r.id && (
-              <div className="animate-row col-span-full mt-1 rounded-md border border-border-subtle bg-white/[0.02] p-3">
-                <p className="text-[11px] text-muted-foreground">
-                  What someone in this role sees in the sidebar. Pages marked{" "}
-                  <span className="text-warning">enforced</span> are also locked in the
-                  database — granting one hands over the data, not just the menu item.
-                </p>
-
-                <div className="mt-2.5 grid grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-3">
-                  {GRANTABLE_PAGES.map((page) => {
-                    const locked = ALWAYS_GRANTED.includes(page);
-                    const on = locked || (r.pages ?? []).includes(page);
-                    return (
-                      <Checkbox
-                        key={page}
-                        checked={on}
-                        // Everyone keeps My Work and Settings — without them a
-                        // person signs in to a dead app and can't even change
-                        // their own password.
-                        disabled={locked || r.is_admin}
-                        onChange={(next) =>
-                          updateRole(r.id, {
-                            pages: next
-                              ? [...new Set([...(r.pages ?? []), page])]
-                              : (r.pages ?? []).filter((p) => p !== page),
-                          })
+              {open && (
+                <div className="animate-row border-t border-border-subtle px-3 pb-3 pt-2.5">
+                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+                    <div>
+                      <Label>Role name</Label>
+                      <Input
+                        value={r.name}
+                        onChange={(e) =>
+                          setRoles((prev) =>
+                            prev.map((x) => (x.id === r.id ? { ...x, name: e.target.value } : x))
+                          )
                         }
-                        label={
-                          <span className="flex items-center gap-1 text-[12px]">
-                            {PAGE_LABELS[page]}
-                            {ENFORCED_PAGES.includes(page) && (
-                              <span className="text-[9px] uppercase tracking-wide text-warning">
-                                enforced
-                              </span>
-                            )}
-                            {page === PORTAL_PAGE && (
-                              <span className="text-[9px] uppercase tracking-wide text-muted-2">
-                                instead of the app
-                              </span>
-                            )}
-                          </span>
-                        }
+                        onBlur={(e) => {
+                          const v = e.target.value.trim();
+                          if (v && v !== r.name) updateRole(r.id, { name: v });
+                        }}
                       />
-                    );
-                  })}
-                </div>
+                    </div>
+                    <div>
+                      <Label>Team</Label>
+                      <Dropdown
+                        value={r.team ?? ""}
+                        placeholder="No team"
+                        options={[
+                          { value: "", label: "No team" },
+                          ...teams.map((t) => ({ value: t, label: t })),
+                        ]}
+                        onChange={(v) => updateRole(r.id, { team: v || null })}
+                      />
+                    </div>
+                    <div>
+                      <Label>Onboarding checklist</Label>
+                      <Dropdown
+                        value={r.template_id ?? ""}
+                        placeholder="No checklist"
+                        options={[
+                          { value: "", label: "No checklist" },
+                          ...templates.map((t) => ({ value: t.id, label: t.name })),
+                        ]}
+                        onChange={(v) => updateRole(r.id, { template_id: v || null })}
+                      />
+                    </div>
+                  </div>
 
-                <div className="mt-3 border-t border-border-subtle pt-2.5">
-                  <Checkbox
-                    checked={r.is_admin}
-                    onChange={(next) => {
-                      if (
-                        next &&
-                        !confirm(
-                          `Give everyone with the "${r.name}" role full admin rights? ` +
-                            `They'll see what people are paid, and be able to change roles ` +
-                            `and access — including yours.`
-                        )
-                      ) {
-                        return;
-                      }
-                      updateRole(r.id, { is_admin: next });
-                    }}
-                    label={
-                      <span className="text-[12px]">
-                        Full admin rights
-                        <span className="ml-1.5 text-[11px] text-muted-2">
-                          every page, plus pay, roles and logins
+                  <div className="mt-3.5 border-t border-border-subtle pt-2.5">
+                    <Label>Pages</Label>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">
+                      What someone in this role sees in the sidebar. Pages marked{" "}
+                      <span className="text-warning">enforced</span> are also locked in the
+                      database — granting one hands over the data, not just the menu item.
+                    </p>
+
+                    <div className="mt-2.5 grid grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-3">
+                      {GRANTABLE_PAGES.map((page) => {
+                        const locked = ALWAYS_GRANTED.includes(page);
+                        const on = locked || (r.pages ?? []).includes(page);
+                        return (
+                          <Checkbox
+                            key={page}
+                            checked={on}
+                            // Everyone keeps My Work and Settings — without them a
+                            // person signs in to a dead app and can't even change
+                            // their own password.
+                            disabled={locked || r.is_admin}
+                            onChange={(next) =>
+                              updateRole(r.id, {
+                                pages: next
+                                  ? [...new Set([...(r.pages ?? []), page])]
+                                  : (r.pages ?? []).filter((p) => p !== page),
+                              })
+                            }
+                            label={
+                              <span className="flex items-center gap-1 text-[12px]">
+                                {PAGE_LABELS[page]}
+                                {ENFORCED_PAGES.includes(page) && (
+                                  <span className="text-[9px] uppercase tracking-wide text-warning">
+                                    enforced
+                                  </span>
+                                )}
+                                {page === PORTAL_PAGE && (
+                                  <span className="text-[9px] uppercase tracking-wide text-muted-2">
+                                    instead of the app
+                                  </span>
+                                )}
+                              </span>
+                            }
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-border-subtle pt-2.5">
+                    <Checkbox
+                      checked={r.is_admin}
+                      onChange={(next) => {
+                        if (
+                          next &&
+                          !confirm(
+                            `Give everyone with the "${r.name}" role full admin rights? ` +
+                              `They'll see what people are paid, and be able to change roles ` +
+                              `and access — including yours.`
+                          )
+                        ) {
+                          return;
+                        }
+                        updateRole(r.id, { is_admin: next });
+                      }}
+                      label={
+                        <span className="text-[12px]">
+                          Full admin rights
+                          <span className="ml-1.5 text-[11px] text-muted-2">
+                            every page, plus pay, roles and logins
+                          </span>
                         </span>
-                      </span>
-                    }
-                  />
+                      }
+                    />
+                    <button
+                      type="button"
+                      onClick={() => deleteRole(r.id)}
+                      className="ml-auto flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:border-danger/40 hover:text-danger"
+                    >
+                      <Trash2 className="h-3 w-3" /> Delete role
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-        ))}
+              )}
+            </div>
+          );
+        })}
       </div>
 
       <form
@@ -621,25 +834,26 @@ function RolesCard() {
           e.preventDefault();
           addRole();
         }}
-        className="mt-3 flex flex-wrap items-end gap-2 rounded-lg border border-border-subtle bg-white/[0.02] p-2.5"
+        className="mt-3 flex flex-wrap items-center gap-2"
       >
-        <div className="min-w-[10rem] flex-1">
-          <Label>Role name</Label>
-          <Input
-            placeholder="Video Editor"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-        </div>
+        <Input
+          placeholder="New role name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="min-w-[10rem] flex-1"
+        />
         <div className="w-44">
-          <Label>Team</Label>
-          <Input
-            placeholder="Video Editing"
+          <Dropdown
             value={team}
-            onChange={(e) => setTeam(e.target.value)}
+            placeholder="No team"
+            options={[
+              { value: "", label: "No team" },
+              ...teams.map((t) => ({ value: t, label: t })),
+            ]}
+            onChange={setTeam}
           />
         </div>
-        <Button type="submit" size="sm" disabled={busy || !name.trim()}>
+        <Button type="submit" size="sm" variant="secondary" disabled={busy || !name.trim()}>
           <Plus className="h-3.5 w-3.5" /> Add role
         </Button>
       </form>

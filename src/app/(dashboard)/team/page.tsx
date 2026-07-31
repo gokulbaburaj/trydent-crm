@@ -215,7 +215,13 @@ function TeamPageInner() {
       return;
     const supabase = createClient();
     if (!supabase) return;
-    await supabase.from("teams").delete().eq("name", name);
+    // Checked, because a delete that fails silently just looks like a delete
+    // that did nothing until you reload the page.
+    const { error } = await supabase.from("teams").delete().eq("name", name);
+    if (error) {
+      toast.error(`Couldn't delete: ${error.message}`);
+      return;
+    }
     await supabase.from("profiles").update({ team: null }).eq("team", name);
     // Same three-places problem as rename — a role left pointing at a deleted
     // team keeps it alive in every chip list that derives names from roles.
