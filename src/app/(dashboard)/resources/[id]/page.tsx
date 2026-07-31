@@ -190,7 +190,7 @@ function ResourceInner() {
       : resource.visible_to.length;
 
   return (
-    <div className="mx-auto flex w-full max-w-[820px] flex-col pb-24">
+    <div className="mx-auto flex w-full max-w-[820px] flex-col pb-32 pt-1">
       {/* Top bar: back on the left, destructive and pin actions far right and
           quiet. Notion keeps page actions out of the reading column entirely. */}
       <div className="mb-6 flex items-center justify-between">
@@ -255,7 +255,7 @@ function ResourceInner() {
         as plain text until you hover. Full-width bordered selects made three
         optional fields look like the most important thing on the page.
       */}
-      <div className="mt-6 flex flex-col">
+      <div className="mt-7 flex flex-col">
         <PropRow icon={Tag} label="Tags">
           {canEdit ? (
             <TagField key={resource.id} tags={tags} onSave={(t) => commit({ tags: t })} />
@@ -367,7 +367,7 @@ function ResourceInner() {
 
       {/* One hairline between the properties and the writing, standing in for
           the three card borders it replaces. */}
-      <div className="my-5 h-px bg-border-subtle" />
+      <div className="mb-6 mt-7 h-px bg-border-subtle" />
 
       {isNote ? (
         /*

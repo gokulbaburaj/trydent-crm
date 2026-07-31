@@ -417,20 +417,18 @@ button:not(:disabled):active,
 /*
   BlockNote (the note editor) theming.
 
-  Scoped to `.note-editor .bn-root`, NOT `.note-editor`. That distinction is
-  the whole reason the first attempt did nothing: BlockNote declares its full
-  palette on `.bn-root`, which sits *inside* our wrapper, so variables set on
-  the wrapper were being redeclared underneath and thrown away. Custom
-  properties cascade, and the nearest declaration wins.
+  Scoped to `.note-editor .bn-root`, NOT `.note-editor`. BlockNote declares its
+  full palette on `.bn-root`, which sits INSIDE our wrapper — variables set on
+  the wrapper get redeclared underneath and thrown away. Custom properties
+  cascade, and the nearest declaration wins.
 
-  Overriding its variables rather than its class names is deliberate — the
-  `--bn-*` names are the documented surface, `.bn-drag-handle` and friends are
-  internals that move between releases.
+  Overriding its variables rather than its class names is deliberate: `--bn-*`
+  is the documented surface, `.bn-side-menu` and friends are internals that
+  move between releases. The handful of class rules below are the ones with no
+  variable equivalent, and they're the ones to re-check on upgrade.
 */
 .note-editor .bn-root {
   --bn-colors-editor-text: var(--foreground-secondary);
-  /* Transparent, not a colour: the Card behind it already draws the surface,
-     and painting another one is what produced the box-inside-a-box. */
   --bn-colors-editor-background: transparent;
 
   --bn-colors-menu-text: var(--foreground);
@@ -455,74 +453,84 @@ button:not(:disabled):active,
 }
 
 /*
-  Type scale.
+  Belt and braces on the surface.
 
-  `.bn-default-styles` hard-codes 16px and headings derive from it via
-  `--level` at 3em / 2em / 1.3em / 1em. At 16px that makes an H1 48px — which
-  is why the note looked like a landing page. Everything here is sized off the
-  app's 13.5px body text instead, with headings on the same steps the rest of
-  the CRM uses.
-*/
-.note-editor .bn-default-styles {
-  font-size: 13.5px;
-  line-height: 1.65;
-  font-family: inherit;
-}
-
-.note-editor .bn-block-content[data-content-type="heading"] {
-  color: var(--foreground);
-  letter-spacing: -0.01em;
-}
-.note-editor .bn-block-outer[data-prev-depth] { /* keeps nesting specificity sane */ }
-.note-editor [data-level="1"] { --level: 1.5rem; }
-.note-editor [data-level="2"] { --level: 1.125rem; }
-.note-editor [data-level="3"] { --level: 0.95rem; }
-.note-editor [data-level="4"] { --level: 0.875rem; }
-.note-editor [data-level="5"] { --level: 0.825rem; }
-.note-editor [data-level="6"] { --level: 0.8rem; }
-
-/* Breathing room above a heading that follows something, so sections read as
-   sections. The :first-child exemption stops the note starting with a gap. */
-.note-editor .bn-block-outer:not(:first-child) > .bn-block > .bn-block-content[data-content-type="heading"] {
-  margin-top: 0.85rem;
-}
-
-/*
-  Gutter.
-
-  BlockNote's default `padding-inline: 54px` exists to make room for the drag
-  handle and + button. 54px is a lot inside a card that already has its own
-  padding — it made the text look indented rather than aligned. 30px is enough
-  for both controls; below about 26px they start clipping.
+  The variable above should be enough, but `.bn-editor` also carries a
+  `border-radius`, and a transparent fill on a rounded box still reads as a box
+  the moment anything gives it a shadow or a hover tint. Zeroing both here
+  means the writing sits on the page, not in a widget — which was the actual
+  complaint: a grey slab where a document should be.
 */
 .note-editor .bn-editor {
+  background: transparent;
+  border-radius: 0;
+  /*
+    24px is the gutter the drag handle and + button live in. Below ~22px they
+    start clipping; BlockNote ships 54px, which inside a measured column reads
+    as an indent rather than a margin.
+  */
   padding-inline: 24px;
   padding-block: 0;
 }
 
 /*
-  Then pull the block back by the card's own padding, so the TEXT lines up with
-  everything else in the card and the 24px gutter overhangs into the padding
-  where nothing else lives. Without this the note reads as indented relative to
-  the title and fields above it.
+  Then pull the block back by exactly that gutter, so the TEXT shares the
+  title's left edge and the controls overhang into the page margin. The two
+  numbers have to match — mismatch them and the body sits at a different x
+  from everything above it, which is what it was doing.
 */
 .note-editor {
-  margin-inline: -16px;
-}
-@media (min-width: 640px) {
-  .note-editor {
-    margin-inline: -20px;
-  }
+  margin-inline-start: -24px;
+  /* Room to write into. An empty note that's 40px tall looks broken; a page
+     you can click anywhere in to start typing does not. */
+  min-height: 340px;
 }
 
-/* Placeholder should read as a hint, not as content. */
-.note-editor .bn-inline-content:has(> .ProseMirror-trailingBreak):before,
-.note-editor [data-is-empty-and-focused] .bn-inline-content:before {
+/*
+  Reading size.
+
+  13.5px is right for a dense table and wrong for prose — a page of SOP at that
+  size is a wall. Notion sits near 16px/1.6; 15px/1.7 reads the same without
+  looking oversized beside the rest of the CRM.
+*/
+.note-editor .bn-default-styles {
+  font-size: 15px;
+  line-height: 1.7;
+  font-family: inherit;
+}
+
+/* Headings on the app's steps, not BlockNote's 3em/2em/1.3em — which at a 16px
+   base made an H1 48px and turned a note into a landing page. */
+.note-editor .bn-block-content[data-content-type="heading"] {
+  color: var(--foreground);
+  letter-spacing: -0.01em;
+}
+.note-editor [data-level="1"] { --level: 1.65rem; }
+.note-editor [data-level="2"] { --level: 1.3rem; }
+.note-editor [data-level="3"] { --level: 1.075rem; }
+.note-editor [data-level="4"] { --level: 0.95rem; }
+.note-editor [data-level="5"] { --level: 0.9rem; }
+.note-editor [data-level="6"] { --level: 0.875rem; }
+
+/* Space between blocks, and more above a heading that follows something so
+   sections read as sections. :first-child is exempt or the note opens on a gap. */
+.note-editor .bn-block-outer:not(:first-child) > .bn-block > .bn-block-content {
+  margin-top: 0.3rem;
+}
+.note-editor .bn-block-outer:not(:first-child) > .bn-block > .bn-block-content[data-content-type="heading"] {
+  margin-top: 1.15rem;
+}
+
+/* Placeholder is a hint, not content: same size as the text it stands in for,
+   upright, and dim enough to disappear the moment you start typing. */
+.note-editor .bn-block-content[data-is-empty-and-focused] .bn-inline-content:before,
+.note-editor .bn-inline-content:before {
   color: var(--muted-2);
-  font-size: 13.5px;
+  font-style: normal;
+  font-size: inherit;
 }
 
-/* Code blocks and tables inherit the app's surfaces rather than BlockNote's. */
+/* Code and tables inherit the app's surfaces rather than BlockNote's. */
 .note-editor .bn-block-content[data-content-type="codeBlock"] {
   background: oklch(1 0 0 / 0.03);
   border: 1px solid var(--border-subtle);
@@ -540,28 +548,12 @@ button:not(:disabled):active,
 }
 
 /*
-  Reading size.
-
-  13.5px is right for a dense table and wrong for prose — a page of SOP at
-  that size is a wall. Notion sits around 16px with a 1.6 leading; 15px/1.7
-  here reads the same without looking oversized next to the rest of the CRM.
-*/
-.note-editor .bn-default-styles {
-  font-size: 15px;
-  line-height: 1.7;
-}
-.note-editor [data-level="1"] { --level: 1.65rem; }
-.note-editor [data-level="2"] { --level: 1.3rem; }
-.note-editor [data-level="3"] { --level: 1.075rem; }
-.note-editor [data-level="4"] { --level: 0.95rem; }
-
-/*
   A select that reads as text until you reach for it.
 
   The property rows are metadata, not a form — bordered full-width selects made
-  three optional fields shout louder than the writing. The border and surface
-  only appear on hover or focus, which is the Notion behaviour and the reason
-  their page reads as a document.
+  three optional fields shout louder than the writing. Border and surface
+  appear on hover or focus only, which is why a Notion page reads as a document
+  and a settings screen doesn't.
 */
 .ghost-select [data-slot="select-trigger"] {
   border-color: transparent;
