@@ -7,7 +7,7 @@ import { PieChart } from "@/components/charts/pie-chart";
 import { PieSlice } from "@/components/charts/pie-slice";
 import { PieCenter } from "@/components/charts/pie-center";
 import { BarChart } from "@/components/charts/bar-chart";
-import { seriesFill, seriesSwatch } from "@/lib/chartSeries";
+import { SERIES_SWATCHES, seriesFill, seriesSwatch } from "@/lib/chartSeries";
 import { Bar } from "@/components/charts/bar";
 import { AreaChart, Area } from "@/components/charts/area-chart";
 import { LineChart, Line } from "@/components/charts/line-chart";
@@ -27,15 +27,12 @@ import { DashboardSkeleton } from "@/components/ui/Skeletons";
 import type { CurrencyCode, Deal, Client, Activity } from "@/lib/types";
 import { DEAL_STAGES } from "@/lib/types";
 
-/* First slice follows the user's chosen primary; the rest stay fixed. */
-const COLORS = [
-  "var(--primary)",
-  "#4ea7e0",
-  "#d9a53f",
-  "#d95c8a",
-  "#4cb782",
-  "#eb5757",
-];
+/*
+  Deal stages are ordinal — Lead runs through to Closed Won — so a stepped ramp
+  of one hue encodes the ordering that six unrelated colours threw away. See
+  lib/chartSeries.
+*/
+const COLORS = SERIES_SWATCHES;
 
 /** Chart shapes that actually suit a monthly revenue series. */
 type RevenueChart = "bar" | "line" | "area";
@@ -302,6 +299,11 @@ export default function DashboardPage() {
                 xDataKey="month"
                 aspectRatio="5 / 2"
                 barGap={0.28}
+                // Fixed, not auto. Bandwidth is the card width divided by the
+                // number of months, so four months rendered four slabs. bklit's
+                // bars are narrow at every data count — the bar is a mark, not a
+                // container, and the gaps are what make a series readable.
+                barWidth={30}
                 margin={{ top: 24, right: 16, bottom: 36, left: 16 }}
               >
                 <Grid horizontal fadeHorizontal vertical={false} />

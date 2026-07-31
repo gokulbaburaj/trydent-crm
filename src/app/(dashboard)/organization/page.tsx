@@ -325,6 +325,8 @@ export default function OrganizationPage() {
                   xDataKey="stage"
                   aspectRatio="5 / 3"
                   barGap={0.3}
+                  // Fixed, not auto — see the note on the dashboard chart.
+                  barWidth={26}
                   margin={{ top: 20, right: 8, bottom: 34, left: 8 }}
                 >
                   <Grid horizontal fadeHorizontal vertical={false} />

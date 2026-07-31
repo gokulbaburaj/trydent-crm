@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { ChevronDown, Plus } from "lucide-react";
 import { FilterBar } from "@/components/FilterBar";
 import { BarChart } from "@/components/charts/bar-chart";
-import { seriesFill } from "@/lib/chartSeries";
+import { SERIES_SWATCHES, seriesFill } from "@/lib/chartSeries";
 import { Bar } from "@/components/charts/bar";
 import { Grid } from "@/components/charts/grid";
 import { BarXAxis } from "@/components/charts/bar-x-axis";
@@ -36,14 +36,8 @@ import { CURRENCIES, useCurrency } from "@/lib/currency";
 import type { CurrencyCode, Deal, Client, Project } from "@/lib/types";
 import { DEAL_STAGES } from "@/lib/types";
 
-/** Stage colours — first follows the user's accent, rest are fixed. */
-const STAGE_COLORS = [
-  "var(--chart-1)",
-  "var(--chart-2)",
-  "var(--chart-3)",
-  "var(--chart-4)",
-  "var(--chart-5)",
-];
+/** Stage colours — one hue stepped down, because stages are a progression. */
+const STAGE_COLORS = SERIES_SWATCHES;
 
 /*
   No funnel option on purpose. FunnelChart scales every segment against the
@@ -369,7 +363,7 @@ export default function PipelinePage() {
               data={stageBars}
               xDataKey="stage"
               aspectRatio={isPhone ? "4 / 3" : "6 / 1"}
-              barWidth={isPhone ? 28 : 56}
+              barWidth={isPhone ? 22 : 30}
               margin={{ top: 24, right: 16, bottom: 36, left: 16 }}
             >
               <Grid horizontal fadeHorizontal vertical={false} />
