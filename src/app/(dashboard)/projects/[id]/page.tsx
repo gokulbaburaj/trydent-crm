@@ -552,7 +552,18 @@ export default function ProjectDetailPage() {
         {/* Phones get a two-column grid rather than a wrapping flex row: with
             flex-wrap the fields land at whatever x-offset the previous one
             happened to end at, which is the ragged look in the screenshots. */}
-        <div className="mt-4 grid grid-cols-2 items-end gap-x-3 gap-y-3 sm:flex sm:flex-wrap sm:gap-x-5">
+        {/*
+          Two parts, not one wrapping row.
+
+          The fields were a single `flex-wrap` list and the deal was the last
+          item in it, pushed right with `ml-auto`. An auto margin doesn't stop
+          an item wrapping — it only right-aligns it on whatever line it ends up
+          on — so the deal dropped to a second row and sat there looking
+          stranded. Splitting it out means the fields can reflow all they like
+          and the money stays pinned to the top-right where it belongs.
+        */}
+        <div className="mt-4 flex items-end justify-between gap-5">
+          <div className="grid min-w-0 flex-1 grid-cols-2 items-end gap-x-3 gap-y-3 sm:flex sm:flex-wrap sm:gap-x-5">
           <div className="min-w-0">
             <Label>Status</Label>
             <div className="flex h-9 items-center">
@@ -745,26 +756,22 @@ export default function ProjectDetailPage() {
             </Popover>
           </div>
 
+          </div>
+
           {/*
-           * The deal, pushed to the far right of the header.
-           *
-           * It sits inside the header rather than beside it because everything
-           * here is a fact about the project and the money is the most
-           * consequential one — floating it outside would leave it with no
-           * visual home and nowhere to go on a narrow window. The divider and
-           * the larger figure are what stop it reading as one more chip.
-           *
-           * `ml-auto` rather than a grid position: the fields before it wrap,
-           * and a fixed column would strand the money mid-row at some widths.
-           */}
+            Inside the header card, hard right, behind a divider. Everything
+            here is a fact about the project and the money is the most
+            consequential one, so it earns a bigger figure and a rule rather
+            than being one more chip in the list.
+          */}
           {projectDeal && (
-            <div className="ml-auto flex min-w-0 items-stretch gap-4 sm:pl-4">
-              <div className="hidden w-px shrink-0 bg-border sm:block" />
-              <div className="min-w-0">
+            <div className="hidden shrink-0 items-stretch gap-4 pl-1 sm:flex">
+              <div className="w-px shrink-0 bg-border" />
+              <div className="text-right">
                 <Label>Deal</Label>
                 <Link
                   href="/pipeline"
-                  className="group flex h-9 items-center gap-2 rounded-md px-1 hover:bg-white/5"
+                  className="group flex h-9 items-center justify-end gap-2 rounded-md px-1 hover:bg-white/5"
                 >
                   <span className="text-lg font-semibold leading-none tabular-nums">
                     {formatCurrency(Number(projectDeal.deal_value), projectDeal.currency)}
