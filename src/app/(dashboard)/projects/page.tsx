@@ -7,17 +7,20 @@ import { ChevronRight, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Badge, statusTone } from "@/components/ui/Badge";
+import { useCurrency } from "@/lib/currency";
 import { Drawer } from "@/components/ui/Drawer";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { Dropdown } from "@/components/ui/Dropdown";
+import { FilterBar } from "@/components/FilterBar";
+import { applyFilters, useStoredFilters } from "@/lib/filters";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { useStaffProfiles } from "@/lib/useStaffProfiles";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/format";
 import { staggerDelay } from "@/lib/motion";
-import type { Project, ProjectTask, Client } from "@/lib/types";
+import type { Deal, Project, ProjectTask, Client } from "@/lib/types";
 import { PROJECT_STATUSES } from "@/lib/types";
 import { useTabs } from "@/lib/tabs";
 
@@ -50,6 +53,19 @@ function ProjectsPageInner() {
   const { rows: clients } = useSupabaseTable<Client>("clients");
   const { rows: profiles } = useStaffProfiles();
   const { rows: tasks } = useSupabaseTable<ProjectTask>("project_tasks");
+  const { rows: deals } = useSupabaseTable<Deal>("deals");
+  const { format: formatCurrency } = useCurrency();
+
+  /** The deal a project came out of, when it was created from one. */
+  const dealFor = (p: Project) => deals.find((d) => d.id === p.deal_id) ?? null;
+
+  const { filters, views, setFilters, setViews } = useStoredFilters("projects");
+  /**
+   * Sort applies WITHIN each client group, not across them.
+   * The page is grouped by client and that grouping is the point — a flat list
+   * sorted by due date would scatter one client's work across the page.
+   */
+  const [sort, setSort] = useState<"recent" | "due" | "name" | "progress" | "value">("recent");
 
   const [editing, setEditing] = useState<Partial<Project> | null>(null);
   const [saving, setSaving] = useState(false);
@@ -67,9 +83,44 @@ function ProjectsPageInner() {
     return live.filter((p) => p.owner && memberIds.has(p.owner));
   }, [allProjects, profiles, teamFilter]);
 
+  /** Search, status and owner, using the same FilterBar as everywhere else. */
+  const filtered = useMemo(
+    () =>
+      applyFilters(projects, filters, {
+        text: (p) => [p.name, clients.find((c) => c.id === p.client_id)?.company],
+        status: (p) => p.status,
+        assignee: (p) => p.owner,
+        due: (p) => p.due_date,
+      }),
+    [projects, filters, clients]
+  );
+
   const grouped = useMemo(() => {
+    const completionFor = (id: string) => {
+      const t = tasks.filter((x) => x.project_id === id);
+      if (t.length === 0) return -1; // no tasks sorts last, not as 0%
+      return (t.filter((x) => x.status === "Done").length / t.length) * 100;
+    };
+    const valueFor = (p: Project) => Number(deals.find((d) => d.id === p.deal_id)?.deal_value ?? 0);
+    const bySort = (a: Project, b: Project) => {
+      switch (sort) {
+        case "name":
+          return a.name.localeCompare(b.name);
+        // Undated projects go last rather than first — an empty date isn't
+        // "due at the beginning of time".
+        case "due":
+          return (a.due_date ?? "9999").localeCompare(b.due_date ?? "9999");
+        case "progress":
+          return completionFor(b.id) - completionFor(a.id);
+        case "value":
+          return valueFor(b) - valueFor(a);
+        default:
+          return (b.created_at ?? "").localeCompare(a.created_at ?? "");
+      }
+    };
+
     const map = new Map<string, Project[]>();
-    for (const p of projects) {
+    for (const p of filtered) {
       const arr = map.get(p.client_id) ?? [];
       arr.push(p);
       map.set(p.client_id, arr);
@@ -78,10 +129,10 @@ function ProjectsPageInner() {
       .map(([clientId, items]) => ({
         clientId,
         client: clients.find((c) => c.id === clientId) ?? null,
-        items,
+        items: [...items].sort(bySort),
       }))
       .sort((a, b) => (a.client?.company ?? "").localeCompare(b.client?.company ?? ""));
-  }, [projects, clients]);
+  }, [filtered, clients, tasks, deals, sort]);
 
   function toggle(clientId: string) {
     setCollapsed((prev) => ({ ...prev, [clientId]: !prev[clientId] }));
@@ -123,8 +174,14 @@ function ProjectsPageInner() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
           <h2 className="truncate text-sm text-muted-foreground">
-            {projects.length} project{projects.length !== 1 ? "s" : ""} across{" "}
+            {/* Counts the filtered set, and says so when it differs — a header
+                claiming 11 projects above a list showing 3 is worse than no
+                header at all. */}
+            {filtered.length} project{filtered.length !== 1 ? "s" : ""} across{" "}
             {grouped.length} client{grouped.length !== 1 ? "s" : ""}
+            {filtered.length !== projects.length && (
+              <span className="text-muted-2"> · {projects.length} total</span>
+            )}
           </h2>
           {teamFilter && (
             <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-primary/40 bg-primary/10 py-0.5 pl-2.5 pr-1 text-[11px] font-medium text-primary">
@@ -141,6 +198,36 @@ function ProjectsPageInner() {
         >
           <Plus className="h-4 w-4" /> New Project
         </Button>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="min-w-0 flex-1">
+          <FilterBar
+            filters={filters}
+            onChange={setFilters}
+            views={views}
+            onViewsChange={setViews}
+            statuses={PROJECT_STATUSES}
+            statusLabel="Status"
+            assignees={profiles.map((p) => ({ value: p.id, label: p.full_name }))}
+            showDue
+            dueLabel="Due date"
+            placeholder="Filter projects…"
+          />
+        </div>
+        <div className="w-44 shrink-0">
+          <Dropdown
+            value={sort}
+            options={[
+              { value: "recent", label: "Newest first" },
+              { value: "due", label: "Due soonest" },
+              { value: "progress", label: "Most complete" },
+              { value: "value", label: "Highest value" },
+              { value: "name", label: "By name" },
+            ]}
+            onChange={(v) => setSort(v as typeof sort)}
+          />
+        </div>
       </div>
 
       {grouped.length === 0 && (
@@ -238,6 +325,30 @@ function ProjectsPageInner() {
                           <p className="mt-2 text-xs text-muted-foreground">Due {formatDate(p.due_date)}</p>
                         )}
                         <p className="mt-1 text-xs text-muted-foreground">Owner: {ownerName(p.owner)}</p>
+                        {/* What the job is worth and what's actually landed.
+                            Only on projects that came from a deal — the rest
+                            have no figure to show and a blank line reads as a
+                            bug rather than an absence. */}
+                        {(() => {
+                          const deal = dealFor(p);
+                          if (!deal) return null;
+                          const value = Number(deal.deal_value);
+                          const owed = Math.max(0, value - Number(deal.paid));
+                          return (
+                            <p className="mt-1 flex items-center gap-1.5 text-xs">
+                              <span className="tabular-nums text-foreground-secondary">
+                                {formatCurrency(value, deal.currency)}
+                              </span>
+                              {owed > 0 ? (
+                                <span className="text-warning">
+                                  · {formatCurrency(owed, deal.currency)} due
+                                </span>
+                              ) : (
+                                <span className="text-success">· paid</span>
+                              )}
+                            </p>
+                          );
+                        })()}
                       </button>
                     );
                   })}

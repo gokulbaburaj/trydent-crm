@@ -1,7 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronDown, Plus } from "lucide-react";
+import {
+  Building2,
+  CalendarDays,
+  ChevronDown,
+  CircleDot,
+  IndianRupee,
+  LayoutGrid,
+  List,
+  Plus,
+} from "lucide-react";
 import { FilterBar } from "@/components/FilterBar";
 import { BarChart } from "@/components/charts/bar-chart";
 import { SERIES_SWATCHES, seriesFill } from "@/lib/chartSeries";
@@ -16,6 +25,8 @@ import { PieCenter } from "@/components/charts/pie-center";
 import { Card } from "@/components/ui/Card";
 import { cn } from "@/lib/utils";
 import { KanbanBoard } from "@/components/KanbanBoard";
+import { DataTable, type Column } from "@/components/DataTable";
+import { useViewPreference } from "@/lib/useViewPreference";
 import { Button } from "@/components/ui/Button";
 import { Badge, statusTone } from "@/components/ui/Badge";
 import { Drawer } from "@/components/ui/Drawer";
@@ -99,41 +110,99 @@ export default function PipelinePage() {
   const ownerName = (id: string | null) => profiles.find((p) => p.id === id)?.full_name ?? "Unassigned";
 
   const { filters, views, setFilters, setViews } = useStoredFilters("pipeline");
+  /** Table columns. Ordered by what you scan for: what, who, how much, when. */
+  const dealColumns: Column<Deal>[] = useMemo(
+    () => [
+      {
+        header: "Deal",
+        sortKey: (d) => d.deal_name,
+        render: (d) => <span className="font-medium">{d.deal_name}</span>,
+      },
+      {
+        header: "Client",
+        icon: Building2,
+        sortKey: (d) => clientName(d.client_id),
+        render: (d) => <span className="text-muted-foreground">{clientName(d.client_id)}</span>,
+      },
+      {
+        header: "Stage",
+        icon: CircleDot,
+        sortKey: (d) => DEAL_STAGES.indexOf(d.deal_stage),
+        render: (d) => (
+          <Badge tone={statusTone(d.deal_stage)} dot>
+            {d.deal_stage}
+          </Badge>
+        ),
+      },
+      {
+        header: "Value",
+        icon: IndianRupee,
+        className: "text-right tabular-nums",
+        // Sorted on the base-converted number, not the raw figure — otherwise a
+        // 900 AUD deal sorts below a ₹20,000 one while being worth more.
+        sortKey: (d) => toBase(Number(d.deal_value), dealCcy(d)),
+        render: (d) => formatCurrency(Number(d.deal_value), dealCcy(d)),
+      },
+      {
+        header: "Paid",
+        icon: IndianRupee,
+        className: "text-right tabular-nums",
+        sortKey: (d) => toBase(Number(d.paid), dealCcy(d)),
+        render: (d) => {
+          const paid = Number(d.paid);
+          if (paid === 0) return <span className="text-muted-2">—</span>;
+          const settled = paid >= Number(d.deal_value);
+          return (
+            <span className={settled ? "text-success" : "text-warning"}>
+              {formatCurrency(paid, dealCcy(d))}
+            </span>
+          );
+        },
+      },
+      {
+        header: "Close date",
+        icon: CalendarDays,
+        sortKey: (d) => d.close_date ?? "",
+        render: (d) => (
+          <span className="text-muted-foreground">
+            {d.close_date ? formatDate(d.close_date) : "—"}
+          </span>
+        ),
+      },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [clients, base, currency]
+  );
+
+  const [view, setView] = useViewPreference<"table" | "board">("pipeline", "table");
 
   /**
-   * Deals sitting in each stage right now — exactly what the board shows.
-   * We deliberately do NOT infer a funnel: without stage history there's no
-   * way to know a deal ever passed through the stages it skipped, so any
-   * "reached this stage" number would be a guess that contradicts the board.
+   * How far back the chart looks.
+   *
+   * Without this the chart silently meant "everything ever", so a bar labelled
+   * Closed Won counted deals from eighteen months ago alongside last week's.
+   * A stage chart is only useful against a period — otherwise Closed Won grows
+   * forever and never tells you anything.
+   *
+   * Deals with no close date are always included: an open deal hasn't got one
+   * yet, and dropping them would empty the Lead and Qualified columns.
    */
-  // `value` is summed in the base currency (each deal converted from its own),
-  // so mixed-currency stages add up correctly.
-  const stageBars = useMemo(
-    () =>
-      DEAL_STAGES.map((stage) => {
-        const inStage = deals.filter((d) => d.deal_stage === stage);
-        return {
-          stage,
-          deals: inStage.length,
-          value: inStage.reduce((sum, d) => sum + toBase(Number(d.deal_value), dealCcy(d)), 0),
-        };
-      }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [deals]
-  );
+  const [range, setRange] = useState<"week" | "month" | "year" | "all" | "custom">("year");
+  const [customFrom, setCustomFrom] = useState<string | null>(null);
+  const [customTo, setCustomTo] = useState<string | null>(null);
 
-  /** Pie needs empty stages dropped, otherwise it renders zero-width slices. */
-  const stageSlices = useMemo(
-    () =>
-      stageBars
-        .map((s, i) => ({
-          label: s.stage,
-          value: s.deals,
-          color: STAGE_COLORS[i % STAGE_COLORS.length],
-        }))
-        .filter((s) => s.value > 0),
-    [stageBars]
-  );
+  const rangeStart = useMemo(() => {
+    if (range === "all") return null;
+    if (range === "custom") return customFrom;
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    if (range === "week") d.setDate(d.getDate() - 7);
+    if (range === "month") d.setMonth(d.getMonth() - 1);
+    if (range === "year") d.setFullYear(d.getFullYear() - 1);
+    return d.toISOString().slice(0, 10);
+  }, [range, customFrom]);
+
+  const rangeEnd = range === "custom" ? customTo : null;
 
   const visibleDeals = useMemo(
     () =>
@@ -149,6 +218,53 @@ export default function PipelinePage() {
     [deals, filters, clients]
   );
 
+  const chartDeals = useMemo(
+    () =>
+      visibleDeals.filter((d) => {
+        if (!d.close_date) return true;
+        if (rangeStart && d.close_date < rangeStart) return false;
+        if (rangeEnd && d.close_date > rangeEnd) return false;
+        return true;
+      }),
+    [visibleDeals, rangeStart, rangeEnd]
+  );
+
+  const stageBars = useMemo(
+    () =>
+      DEAL_STAGES.map((stage) => {
+        const inStage = chartDeals.filter((d) => d.deal_stage === stage);
+        return {
+          stage,
+          deals: inStage.length,
+          value: inStage.reduce((sum, d) => sum + toBase(Number(d.deal_value), dealCcy(d)), 0),
+        };
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [chartDeals]
+  );
+
+  /** Pie needs empty stages dropped, otherwise it renders zero-width slices. */
+  const stageSlices = useMemo(
+    () =>
+      stageBars
+        .map((s, i) => ({
+          label: s.stage,
+          value: s.deals,
+          color: STAGE_COLORS[i % STAGE_COLORS.length],
+        }))
+        .filter((s) => s.value > 0),
+    [stageBars]
+  );
+
+
+  /**
+   * Deals sitting in each stage right now — exactly what the board shows.
+   * We deliberately do NOT infer a funnel: without stage history there's no
+   * way to know a deal ever passed through the stages it skipped, so any
+   * "reached this stage" number would be a guess that contradicts the board.
+   */
+  // `value` is summed in the base currency (each deal converted from its own),
+  // so mixed-currency stages add up correctly.
   async function handleStageMove(deal: Deal, stage: string) {
     setRows((prev) => prev.map((d) => (d.id === deal.id ? { ...d, deal_stage: stage as Deal["deal_stage"] } : d)));
     const supabase = createClient();
@@ -286,6 +402,27 @@ export default function PipelinePage() {
           >
             <Plus className="h-4 w-4" /> New Deal
           </Button>
+          <div className="flex items-center gap-0.5 rounded-lg border border-border bg-surface p-0.5">
+            {([["table", "Table", List], ["board", "Board", LayoutGrid]] as const).map(
+              ([id, label, Icon]) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setView(id)}
+                  title={label}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs transition-colors",
+                    view === id
+                      ? "bg-white/10 font-medium text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {label}
+                </button>
+              )
+            )}
+          </div>
         </div>
       </div>
 
@@ -308,8 +445,49 @@ export default function PipelinePage() {
             <div>
               <h3 className="text-sm font-semibold">Deals by stage</h3>
               <p className="text-xs text-muted-foreground">
-                Where your deals sit right now — matches the board below.
+                {rangeStart
+                  ? `Closed ${formatDate(rangeStart)}${rangeEnd ? ` – ${formatDate(rangeEnd)}` : " to today"}, plus everything still open.`
+                  : "Every deal on record, plus everything still open."}
               </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-0.5 rounded-md border border-border bg-surface p-1">
+                {(
+                  [
+                    ["week", "7d"],
+                    ["month", "1m"],
+                    ["year", "1y"],
+                    ["all", "All"],
+                    ["custom", "Custom"],
+                  ] as const
+                ).map(([id, label]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setRange(id)}
+                    className={cn(
+                      "rounded px-2 py-1 text-xs font-medium transition-colors",
+                      range === id
+                        ? "bg-white/10 text-foreground"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {range === "custom" && (
+                <div className="flex items-center gap-1.5">
+                  <div className="w-[8.5rem]">
+                    <DatePicker value={customFrom} onChange={setCustomFrom} />
+                  </div>
+                  <span className="text-xs text-muted-2">to</span>
+                  <div className="w-[8.5rem]">
+                    <DatePicker value={customTo} onChange={setCustomTo} />
+                  </div>
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-0.5 rounded-md border border-border bg-surface p-1">
               {STAGE_CHARTS.map((c) => (
@@ -398,28 +576,56 @@ export default function PipelinePage() {
         </Card>
       )}
 
-      <KanbanBoard
-        columns={DEAL_STAGES.map((s) => ({ id: s, label: s }))}
-        items={visibleDeals}
-        getColumnId={(d) => d.deal_stage}
-        onMove={handleStageMove}
-        columnMeta={(_, items) =>
-          items.length > 0 ? (
-            <span className="text-xs font-medium tabular-nums text-success">
-              {formatCurrency(items.reduce((sum, d) => sum + toBase(Number(d.deal_value), dealCcy(d)), 0))}
-            </span>
-          ) : null
-        }
-        renderCard={(d) => (
-          <div onClick={() => setSelected(d)}>
-            <p className="text-sm font-medium">{d.deal_name}</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">{clientName(d.client_id)}</p>
-            <p className="mt-2 text-sm font-semibold text-primary">
-              {formatCurrency(Number(d.deal_value), dealCcy(d))}
-            </p>
-          </div>
-        )}
-      />
+      {view === "table" ? (
+        <DataTable
+          rows={visibleDeals}
+          columns={dealColumns}
+          rowKey={(d) => d.id}
+          onRowClick={(d) => setSelected(d)}
+          // Lost deals stay in the list — you want to see what you didn't win —
+          // but they shouldn't compete with live work for attention.
+          isDimmed={(d) => d.deal_stage === "Closed Lost"}
+          emptyMessage="No deals match these filters."
+        />
+      ) : (
+        <KanbanBoard
+          columns={DEAL_STAGES.map((s) => ({ id: s, label: s }))}
+          items={visibleDeals}
+          getColumnId={(d) => d.deal_stage}
+          onMove={handleStageMove}
+          columnMeta={(_, items) =>
+            items.length > 0 ? (
+              <span className="text-xs font-medium tabular-nums text-success">
+                {formatCurrency(items.reduce((sum, d) => sum + toBase(Number(d.deal_value), dealCcy(d)), 0))}
+              </span>
+            ) : null
+          }
+          /*
+           * Three stacked lines with the value on its own row made every card
+           * tall and mostly empty, which is what made a board of 22 deals feel
+           * like scrolling through padding. Name and value share a line now —
+           * they're the two things you read — with the client underneath.
+           */
+          renderCard={(d) => (
+            <div onClick={() => setSelected(d)} className="flex flex-col gap-0.5">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="min-w-0 truncate text-[13px] font-medium">{d.deal_name}</span>
+                <span className="shrink-0 text-[13px] font-semibold tabular-nums text-primary">
+                  {formatCurrency(Number(d.deal_value), dealCcy(d))}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-2 text-[11.5px] text-muted-2">
+                <span className="min-w-0 truncate">{clientName(d.client_id)}</span>
+                {Number(d.paid) > 0 && Number(d.paid) < Number(d.deal_value) && (
+                  <span className="shrink-0 text-warning">
+                    {Math.round((Number(d.paid) / Number(d.deal_value)) * 100)}% paid
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+        />
+      )}
 
       <Drawer open={!!selected} onClose={() => setSelected(null)} title={selected?.deal_name ?? ""}>
         {selected && (

@@ -66,8 +66,10 @@ import { nextTaskPayload } from "@/lib/recurrence";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { formatDate, initials } from "@/lib/format";
+import { useCurrency } from "@/lib/currency";
+import { BarRow } from "@/components/ui/BarRow";
 import { useTabs } from "@/lib/tabs";
-import type { Activity, Client, Project, ProjectTask, TaskItem, TaskPriority, TaskStatus } from "@/lib/types";
+import type { Activity, Client, Deal, Project, ProjectTask, TaskItem, TaskPriority, TaskStatus } from "@/lib/types";
 import { PRIORITY_ORDER, PROJECT_STATUSES, TASK_STATUSES } from "@/lib/types";
 import { useViewPreference } from "@/lib/useViewPreference";
 import { PriorityFlag } from "@/components/ui/PriorityPicker";
@@ -108,6 +110,8 @@ export default function ProjectDetailPage() {
     ascending: true,
   });
   const { rows: clients, setRows: setClients } = useSupabaseTable<Client>("clients");
+  const { rows: deals } = useSupabaseTable<Deal>("deals");
+  const { format: formatCurrency } = useCurrency();
   const { rows: profiles } = useStaffProfiles();
   const { rows: activities, setRows: setActivityRows } = useSupabaseTable<Activity>("activities");
   const { rows: allSubtasks } = useSupabaseTable<TaskItem>("task_items");
@@ -235,6 +239,9 @@ export default function ProjectDetailPage() {
 
   const clientName = (id: string | null) => clients.find((c) => c.id === id)?.company ?? "—";
   const projectClient = clients.find((c) => c.id === project?.client_id) ?? null;
+
+  /** The deal this project came out of, if it was created from one. */
+  const projectDeal = deals.find((d) => d.id === project?.deal_id) ?? null;
 
   /**
    * Logs contact against the CLIENT record, not the project — there's one
@@ -770,6 +777,86 @@ export default function ProjectDetailPage() {
         <DashGrid
           storageKey={`trydent-overview-layout:${projectId}`}
           cards={[
+          /*
+           * Where this project came from.
+           *
+           * A project created from a won deal carries `deal_id`, but until now
+           * nothing on this page said so — you'd finish the work with no idea
+           * what it was sold for or whether the client had actually paid. The
+           * paid bar is the point: "delivered" and "settled" are different
+           * questions and this is the page where you'd think to ask both.
+           *
+           * Hidden entirely when there's no deal, rather than showing an empty
+           * shell. Plenty of projects are internal or predate the pipeline.
+           */
+          ...(projectDeal
+            ? [{ id: "deal", defaultSpan: 1, render: () => {
+                const value = Number(projectDeal.deal_value);
+                const paid = Number(projectDeal.paid);
+                const pct = value > 0 ? (paid / value) * 100 : 0;
+                const outstanding = Math.max(0, value - paid);
+                return (
+                  <Card className="flex flex-col overflow-hidden">
+                    <div className="mb-2 flex shrink-0 items-center justify-between">
+                      <h3 className="text-sm font-semibold">From the pipeline</h3>
+                      <Link
+                        href="/pipeline"
+                        className="flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                      >
+                        Pipeline <ChevronRight className="h-3 w-3" />
+                      </Link>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="truncate text-[13.5px] font-medium">
+                        {projectDeal.deal_name}
+                      </span>
+                      <Badge tone={statusTone(projectDeal.deal_stage)}>
+                        {projectDeal.deal_stage}
+                      </Badge>
+                    </div>
+
+                    <div className="mt-3 flex items-baseline gap-2">
+                      <span className="text-2xl font-semibold tabular-nums">
+                        {formatCurrency(value, projectDeal.currency)}
+                      </span>
+                      <span className="text-[11.5px] text-muted-2">deal value</span>
+                    </div>
+
+                    <div className="mt-3">
+                      <BarRow
+                        label="Paid"
+                        value={formatCurrency(paid, projectDeal.currency)}
+                        pct={pct}
+                        tone={pct >= 100 ? "success" : pct > 0 ? "primary" : "warning"}
+                      />
+                      {outstanding > 0 && (
+                        <p className="mt-1 text-[11.5px] text-warning">
+                          {formatCurrency(outstanding, projectDeal.currency)} outstanding
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="mt-auto grid grid-cols-2 gap-2 pt-3 text-[11.5px]">
+                      <div>
+                        <p className="text-muted-2">Closed</p>
+                        <p className="mt-0.5 text-foreground-secondary">
+                          {projectDeal.close_date ? formatDate(projectDeal.close_date) : "—"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-muted-2">Budget</p>
+                        <p className="mt-0.5 text-foreground-secondary">
+                          {Number(project.budget) > 0
+                            ? formatCurrency(Number(project.budget), project.currency)
+                            : "Not set"}
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              }}]
+            : []),
           { id: "progress", defaultSpan: 1, render: () => (
           <Card className="flex flex-col overflow-hidden">
             <div className="mb-2 flex shrink-0 items-center justify-between">
