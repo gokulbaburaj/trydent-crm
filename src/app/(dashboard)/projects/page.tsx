@@ -4,6 +4,7 @@ import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
+  Box,
   Building2,
   CalendarDays,
   ChevronRight,
@@ -12,6 +13,7 @@ import {
   LayoutGrid,
   List,
   Plus,
+  TrendingUp,
   User,
   X,
 } from "lucide-react";
@@ -99,6 +101,7 @@ function ProjectsPageInner() {
     return [
       {
         header: "Project",
+        icon: Box,
         sortKey: (p) => p.name,
         render: (p) => <span className="font-medium">{p.name}</span>,
       },
@@ -130,6 +133,7 @@ function ProjectsPageInner() {
       },
       {
         header: "Progress",
+        icon: TrendingUp,
         className: "w-40",
         // Projects with no tasks sort last rather than as 0% — "not started"
         // and "no plan yet" are different things.
@@ -368,7 +372,7 @@ function ProjectsPageInner() {
           rowKey={(p) => p.id}
           onRowClick={(p) => openInNewTab(`/projects/${p.id}`, p.name)}
           emptyMessage="No projects match these filters."
-          pageSize={10}
+          pageSize={15}
         />
       ) : (
         <>

@@ -124,8 +124,8 @@ export default function MyWorkPage() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <div>
-        <h2 className="text-xl font-semibold tracking-tight">My Work</h2>
-        <p className="mt-0.5 text-sm text-muted-foreground">
+        {/* Title lives in the topbar. */}
+        <p className="text-sm text-muted-foreground">
           {mine.length === 0
             ? "All clear — nothing assigned to you right now."
             : `${mine.length} open task${mine.length === 1 ? "" : "s"} assigned to you across ${

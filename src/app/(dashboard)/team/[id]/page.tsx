@@ -131,10 +131,11 @@ function DeliveryView({ d }: { d: Dash }) {
         />
       </div>
 
-      {/* items-start, not the default stretch: the throughput chart has a fixed
-          aspect ratio, so stretching its card to match a taller Projects card
-          just adds dead space under the bars. Let each be its own height. */}
-      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+      {/* Back to the default stretch. items-start killed the dead space by
+          shrinking the card, which left a hole in the row instead. The chart
+          now fills whatever height the row gives it (see ThroughputCard), so
+          both cards end level and neither is padded out. */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <ProjectsCard d={d} />
         <ThroughputCard data={d.throughput} />
       </div>
@@ -283,7 +284,7 @@ function ThroughputCard({ data }: { data: { week: string; done: number }[] }) {
   const total = data.reduce((sum, w) => sum + w.done, 0);
 
   return (
-    <Card>
+    <Card className="flex flex-col">
       <h3 className="text-sm font-semibold">Throughput</h3>
       <p className="mt-0.5 text-xs text-muted-foreground">
         Tasks completed per week, last eight. {total} in total.
@@ -293,11 +294,20 @@ function ThroughputCard({ data }: { data: { week: string; done: number }[] }) {
           Nothing completed in the last eight weeks.
         </p>
       ) : (
-        <div className="mt-2">
+        /*
+         * flex-1 plus h-full on the chart, rather than an aspect ratio.
+         * An aspect ratio fixes the height to the width, so on a wide screen
+         * the card grew a gap under the bars and on a narrow one the bars
+         * squashed. Letting the chart take the row's height means it's the
+         * bars that get taller, which is also the more readable outcome —
+         * a taller plot separates a 1 from a 5 better than a wider one does.
+         * min-h stops it collapsing when the row happens to be short.
+         */
+        <div className="mt-2 flex min-h-[260px] flex-1 flex-col">
           <BarChart
+            className="h-full flex-1"
             data={data}
             xDataKey="week"
-            aspectRatio="5 / 2"
             barGap={0.3}
             barWidth={22}
             margin={{ top: 20, right: 8, bottom: 34, left: 8 }}

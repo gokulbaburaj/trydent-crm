@@ -220,45 +220,12 @@ export default function OrganizationPage() {
     // No max-width here on purpose: this is a dashboard, not a reading page, so
     // it should use whatever room the screen gives it.
     <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-5">
-      <div>
-        <h2 className="text-xl font-semibold tracking-tight">Organisation</h2>
-        <p className="mt-0.5 text-sm text-muted-foreground">
-          How the company runs: goals, hiring, onboarding and the team itself.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {visible.map((card) => (
-          <button
-            key={card.label}
-            onClick={() => openInNewTab(card.href, card.label)}
-            className="group rounded-xl border border-border bg-surface p-4 text-left lift shadow-sm hover:border-primary/30 hover:bg-white/[0.04]"
-          >
-            <div className="flex items-center gap-2">
-              <card.icon className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-semibold">{card.label}</span>
-              <ArrowUpRight className="ml-auto h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-            </div>
-            <p className="mt-1.5 text-xs text-muted-foreground">{card.description}</p>
-            <div className="mt-3.5 flex gap-6 border-t border-border-subtle pt-3">
-              {card.stats.map((s) => (
-                <div key={s.label}>
-                  <p className="text-lg font-semibold tabular-nums">{s.value}</p>
-                  <p className="text-[11px] text-muted-foreground">{s.label}</p>
-                </div>
-              ))}
-            </div>
-          </button>
-        ))}
-      </div>
-
-      {visible.length === 0 && (
-        <Card className="rounded-xl shadow-sm">
-          <p className="py-6 text-center text-sm text-muted-foreground">
-            Nothing here for your role yet.
-          </p>
-        </Card>
-      )}
+      {/* No page title here — the topbar already says "Organisation", and
+          printing it twice, six lines apart, is just noise. The subtitle
+          survives because it says something the topbar doesn't. */}
+      <p className="text-sm text-muted-foreground">
+        How the company runs: goals, hiring, onboarding and the team itself.
+      </p>
 
       {/* ============ VISUALISATIONS ============ */}
       {/*
@@ -426,6 +393,39 @@ export default function OrganizationPage() {
           </Card>
         )}
       </div>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {visible.map((card) => (
+          <button
+            key={card.label}
+            onClick={() => openInNewTab(card.href, card.label)}
+            className="group rounded-xl border border-border bg-surface p-4 text-left lift shadow-sm hover:border-primary/30 hover:bg-white/[0.04]"
+          >
+            <div className="flex items-center gap-2">
+              <card.icon className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-semibold">{card.label}</span>
+              <ArrowUpRight className="ml-auto h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+            </div>
+            <p className="mt-1.5 text-xs text-muted-foreground">{card.description}</p>
+            <div className="mt-3.5 flex gap-6 border-t border-border-subtle pt-3">
+              {card.stats.map((s) => (
+                <div key={s.label}>
+                  <p className="text-lg font-semibold tabular-nums">{s.value}</p>
+                  <p className="text-[11px] text-muted-foreground">{s.label}</p>
+                </div>
+              ))}
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {visible.length === 0 && (
+        <Card className="rounded-xl shadow-sm">
+          <p className="py-6 text-center text-sm text-muted-foreground">
+            Nothing here for your role yet.
+          </p>
+        </Card>
+      )}
     </div>
   );
 }

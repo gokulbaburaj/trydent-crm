@@ -246,8 +246,9 @@ function GoalsInner() {
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-5">
       <div className="flex flex-wrap items-center gap-3">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight">Company goals</h2>
-          <p className="mt-0.5 text-sm text-muted-foreground">
+          {/* Title lives in the topbar; repeating it here just said the same
+              word twice on one screen. */}
+          <p className="text-sm text-muted-foreground">
             Objectives and key results. Data-backed metrics update themselves.
           </p>
         </div>

@@ -20,7 +20,19 @@ import {
   subMonths,
   subWeeks,
 } from "date-fns";
-import { Calendar, ChevronLeft, ChevronRight, List, Plus, Repeat, User } from "lucide-react";
+import {
+  Bell,
+  Building2,
+  Calendar,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  FileText,
+  List,
+  Plus,
+  Repeat,
+  User,
+} from "lucide-react";
 import {
   DndContext,
   DragEndEvent,
@@ -200,6 +212,7 @@ export default function SchedulePage() {
   const columns: Column<Activity>[] = [
     {
       header: "Description",
+      icon: FileText,
       render: (a) => (
         <span className="flex items-center gap-1.5 font-medium">
           {a.description}
@@ -210,23 +223,27 @@ export default function SchedulePage() {
     },
     {
       header: "Client",
+      icon: Building2,
       render: (a) => clientName(a.client_id),
       sortKey: (a) =>
         a.client_id ? clientName(a.client_id).toLowerCase() : null,
     },
     {
       header: "Assigned To",
+      icon: User,
       render: (a) => assigneeName(a.assigned_to),
       sortKey: (a) =>
         a.assigned_to ? assigneeName(a.assigned_to).toLowerCase() : null,
     },
     {
       header: "Date",
+      icon: CalendarDays,
       render: (a) => formatDate(a.activity_date),
       sortKey: (a) => a.activity_date,
     },
     {
       header: "Follow-up",
+      icon: Bell,
       render: (a) =>
         a.follow_up_required ? (
           <Badge tone="yellow" dot>Required</Badge>

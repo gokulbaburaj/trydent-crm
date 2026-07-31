@@ -248,8 +248,8 @@ function OnboardingInner() {
     <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-5">
       <div className="flex flex-wrap items-center gap-3">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight">Onboarding</h2>
-          <p className="mt-0.5 text-sm text-muted-foreground">
+          {/* Title lives in the topbar. */}
+          <p className="text-sm text-muted-foreground">
             Everyone still finding their feet, and how far along they are.
           </p>
         </div>

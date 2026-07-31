@@ -6,6 +6,7 @@ import {
   CalendarDays,
   ChevronDown,
   CircleDot,
+  Handshake,
   IndianRupee,
   LayoutGrid,
   List,
@@ -92,7 +93,7 @@ export default function PipelinePage() {
   const { openInNewTab } = useTabs();
   const isPhone = useIsPhone();
 
-  const [stageChart, setStageChart] = useState<StageChart>("bar");
+  const [stageChart, setStageChart] = useState<StageChart>("share");
   /** The deal just dragged into Closed Won, awaiting a decision. */
   const [wonDeal, setWonDeal] = useState<Deal | null>(null);
   const [projName, setProjName] = useState("");
@@ -116,6 +117,7 @@ export default function PipelinePage() {
     () => [
       {
         header: "Deal",
+        icon: Handshake,
         sortKey: (d) => d.deal_name,
         render: (d) => <span className="font-medium">{d.deal_name}</span>,
       },
@@ -600,7 +602,7 @@ export default function PipelinePage() {
           // but they shouldn't compete with live work for attention.
           isDimmed={(d) => d.deal_stage === "Closed Lost"}
           emptyMessage="No deals match these filters."
-          pageSize={10}
+          pageSize={15}
         />
       ) : (
         <KanbanBoard

@@ -1,7 +1,18 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { LayoutGrid, List, Plus, X } from "lucide-react";
+import {
+  Building2,
+  CalendarDays,
+  CircleDot,
+  LayoutGrid,
+  List,
+  Mail,
+  Plus,
+  ShieldCheck,
+  User,
+  X,
+} from "lucide-react";
 import { toast } from "@/components/Toaster";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { TableSkeleton } from "@/components/ui/Skeletons";
@@ -119,11 +130,13 @@ export default function ClientsPage() {
   const columns: Column<Client>[] = [
     {
       header: "Company",
+      icon: Building2,
       render: (c) => <PersonCell name={c.company} subtitle={c.point_person} />,
       sortKey: (c) => c.company.toLowerCase(),
     },
     {
       header: "Status",
+      icon: CircleDot,
       render: (c) => (
         <StatusPicker
           value={c.status}
@@ -135,17 +148,20 @@ export default function ClientsPage() {
     },
     {
       header: "Email",
+      icon: Mail,
       render: (c) => c.email || "—",
       sortKey: (c) => c.email?.toLowerCase() || null,
     },
     {
       header: "Owner",
+      icon: User,
       render: (c) => ownerName(c.account_owner),
       sortKey: (c) =>
         c.account_owner ? ownerName(c.account_owner).toLowerCase() : null,
     },
     {
       header: "Portal",
+      icon: ShieldCheck,
       render: (c) => {
         const p = portals.find((x) => x.client_id === c.id);
         if (!p) return <span className="text-xs text-muted-foreground">—</span>;
@@ -162,6 +178,7 @@ export default function ClientsPage() {
     },
     {
       header: "Last Contact",
+      icon: CalendarDays,
       render: (c) => formatDate(c.last_contact),
       sortKey: (c) => c.last_contact,
     },
@@ -257,7 +274,7 @@ export default function ClientsPage() {
           rows={visibleClients}
           rowKey={(c) => c.id}
           onRowClick={openClient}
-          pageSize={10}
+          pageSize={15}
           selection={{ selected: checked, onToggle: toggle, onToggleAll: setMany }}
           emptyMessage={
             loading ? (

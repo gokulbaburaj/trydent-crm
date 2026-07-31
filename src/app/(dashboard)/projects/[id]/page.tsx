@@ -522,7 +522,7 @@ export default function ProjectDetailPage() {
 
       {/* Header card */}
       <Card className="p-4 sm:p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-start justify-between gap-4">
           <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/15 sm:h-10 sm:w-10">
               <Box className="h-4 w-4 text-primary sm:h-5 sm:w-5" />
@@ -532,6 +532,49 @@ export default function ProjectDetailPage() {
               {project.name}
             </h1>
           </div>
+
+          {/*
+            Top-right of the card, level with the title.
+
+            It lived at the end of the field row before, which had two costs:
+            it competed with the chips for horizontal space (pushing Team onto
+            a second line) and it read as one more attribute. The money is the
+            headline fact about a project, so it belongs beside the headline.
+          */}
+          {projectDeal && (
+            <div className="hidden shrink-0 items-stretch gap-4 sm:flex">
+              <div className="w-px shrink-0 bg-border" />
+              <div className="text-right">
+                <Label>Deal</Label>
+                <Link
+                  href="/pipeline"
+                  className="group -mr-1 flex items-center justify-end gap-1.5 rounded-md px-1 py-0.5 hover:bg-white/5"
+                >
+                  <span className="text-[19px] font-semibold leading-none tabular-nums">
+                    {formatCurrency(Number(projectDeal.deal_value), projectDeal.currency)}
+                  </span>
+                  <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-2 transition-transform group-hover:translate-x-0.5" />
+                </Link>
+                {(() => {
+                  const owed = Math.max(
+                    0,
+                    Number(projectDeal.deal_value) - Number(projectDeal.paid)
+                  );
+                  return (
+                    <p className="mt-1 px-1 text-[11px]">
+                      {owed > 0 ? (
+                        <span className="text-warning">
+                          {formatCurrency(owed, projectDeal.currency)} outstanding
+                        </span>
+                      ) : (
+                        <span className="text-success">Paid in full</span>
+                      )}
+                    </p>
+                  );
+                })()}
+              </div>
+            </div>
+          )}
         </div>
         <textarea
           rows={2}
@@ -552,18 +595,10 @@ export default function ProjectDetailPage() {
         {/* Phones get a two-column grid rather than a wrapping flex row: with
             flex-wrap the fields land at whatever x-offset the previous one
             happened to end at, which is the ragged look in the screenshots. */}
-        {/*
-          Two parts, not one wrapping row.
-
-          The fields were a single `flex-wrap` list and the deal was the last
-          item in it, pushed right with `ml-auto`. An auto margin doesn't stop
-          an item wrapping — it only right-aligns it on whatever line it ends up
-          on — so the deal dropped to a second row and sat there looking
-          stranded. Splitting it out means the fields can reflow all they like
-          and the money stays pinned to the top-right where it belongs.
-        */}
-        <div className="mt-4 flex items-end justify-between gap-5">
-          <div className="grid min-w-0 flex-1 grid-cols-2 items-end gap-x-3 gap-y-3 sm:flex sm:flex-wrap sm:gap-x-5">
+        {/* One row, full width. With the deal moved up to the title there's
+            nothing competing for space, so the chips get the whole card and
+            Team stays on the first line where it started. */}
+        <div className="mt-4 grid grid-cols-2 items-end gap-x-3 gap-y-3 sm:flex sm:flex-wrap sm:gap-x-5">
           <div className="min-w-0">
             <Label>Status</Label>
             <div className="flex h-9 items-center">
@@ -755,49 +790,6 @@ export default function ProjectDetailPage() {
               )}
             </Popover>
           </div>
-
-          </div>
-
-          {/*
-            Inside the header card, hard right, behind a divider. Everything
-            here is a fact about the project and the money is the most
-            consequential one, so it earns a bigger figure and a rule rather
-            than being one more chip in the list.
-          */}
-          {projectDeal && (
-            <div className="hidden shrink-0 items-stretch gap-4 pl-1 sm:flex">
-              <div className="w-px shrink-0 bg-border" />
-              <div className="text-right">
-                <Label>Deal</Label>
-                <Link
-                  href="/pipeline"
-                  className="group flex h-9 items-center justify-end gap-2 rounded-md px-1 hover:bg-white/5"
-                >
-                  <span className="text-lg font-semibold leading-none tabular-nums">
-                    {formatCurrency(Number(projectDeal.deal_value), projectDeal.currency)}
-                  </span>
-                  <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-2 transition-transform group-hover:translate-x-0.5" />
-                </Link>
-                {(() => {
-                  const owed = Math.max(
-                    0,
-                    Number(projectDeal.deal_value) - Number(projectDeal.paid)
-                  );
-                  return (
-                    <p className="mt-0.5 px-1 text-[11px]">
-                      {owed > 0 ? (
-                        <span className="text-warning">
-                          {formatCurrency(owed, projectDeal.currency)} outstanding
-                        </span>
-                      ) : (
-                        <span className="text-success">Paid in full</span>
-                      )}
-                    </p>
-                  );
-                })()}
-              </div>
-            </div>
-          )}
         </div>
       </Card>
 

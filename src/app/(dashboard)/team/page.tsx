@@ -4,7 +4,7 @@ import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { X } from "lucide-react";
-import { Briefcase, Building2, CreditCard, Eye, Network, Plus, Trash2, User, UserPlus, Users } from "lucide-react";
+import { Briefcase, Building2, CalendarDays, CreditCard, Eye, Network, Plus, Trash2, User, UserPlus, Users } from "lucide-react";
 import { toast } from "@/components/Toaster";
 import { DataTable, Column } from "@/components/DataTable";
 import { OrgChartFlow } from "@/components/OrgChartFlow";
@@ -350,7 +350,12 @@ function TeamPageInner() {
         ),
       sortKey: (p) => nameOf(p.reports_to)?.toLowerCase() ?? "~",
     },
-    { header: "Joined", render: (p) => formatDate(p.created_at), sortKey: (p) => p.created_at },
+    {
+      header: "Joined",
+      icon: CalendarDays,
+      render: (p) => formatDate(p.created_at),
+      sortKey: (p) => p.created_at,
+    },
     ...(isAdmin
       ? [
           {
