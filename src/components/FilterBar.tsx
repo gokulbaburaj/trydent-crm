@@ -1,7 +1,7 @@
 "use client";
 
-import { ReactNode } from "react";
 import { format, parseISO } from "date-fns";
+import type { ReactNode } from "react";
 import {
   Bookmark,
   Check,
@@ -54,6 +54,7 @@ export function FilterBar({
   showDue = false,
   dueLabel = "Due",
   placeholder = "Filter…",
+  trailing,
 }: {
   filters: FilterState;
   onChange: (f: FilterState) => void;
@@ -70,6 +71,12 @@ export function FilterBar({
   priorities?: boolean;
   /** Show the due-date range facet. */
   showDue?: boolean;
+  /**
+   * Extra controls pinned after the saved-views button — a view switcher, say.
+   * They belong here rather than in the page header because they act on this
+   * list, and controls over a list should sit with the list's other controls.
+   */
+  trailing?: ReactNode;
   dueLabel?: string;
   placeholder?: string;
 }) {
@@ -255,7 +262,7 @@ export function FilterBar({
         )}
 
         {/* Saved views */}
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
           <Popover
             align="right"
             trigger={
@@ -318,6 +325,7 @@ export function FilterBar({
               </>
             )}
           </Popover>
+          {trailing}
         </div>
       </div>
 

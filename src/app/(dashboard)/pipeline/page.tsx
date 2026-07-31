@@ -26,6 +26,7 @@ import { Card } from "@/components/ui/Card";
 import { cn } from "@/lib/utils";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { DataTable, type Column } from "@/components/DataTable";
+import { StatusPicker } from "@/components/ui/StatusPicker";
 import { useViewPreference } from "@/lib/useViewPreference";
 import { Button } from "@/components/ui/Button";
 import { Badge, statusTone } from "@/components/ui/Badge";
@@ -128,10 +129,18 @@ export default function PipelinePage() {
         header: "Stage",
         icon: CircleDot,
         sortKey: (d) => DEAL_STAGES.indexOf(d.deal_stage),
+        // Editable in place. Opening a drawer to change one enum is the kind
+        // of friction that stops people keeping a pipeline current, and a
+        // pipeline nobody updates is worse than no pipeline.
         render: (d) => (
-          <Badge tone={statusTone(d.deal_stage)} dot>
-            {d.deal_stage}
-          </Badge>
+          <span onClick={(e) => e.stopPropagation()}>
+            <StatusPicker
+              value={d.deal_stage}
+              options={DEAL_STAGES}
+              onChange={(stage) => handleStageMove(d, stage)}
+              label="Change stage"
+            />
+          </span>
         ),
       },
       {
@@ -402,7 +411,25 @@ export default function PipelinePage() {
           >
             <Plus className="h-4 w-4" /> New Deal
           </Button>
-          <div className="flex items-center gap-0.5 rounded-lg border border-border bg-surface p-0.5">
+
+        </div>
+      </div>
+
+      <FilterBar
+        filters={filters}
+        onChange={setFilters}
+        views={views}
+        onViewsChange={setViews}
+        statuses={DEAL_STAGES}
+        statusLabel="Stage"
+        assignees={profiles.map((p) => ({ value: p.id, label: p.full_name }))}
+        showDue
+        dueLabel="Close date"
+        placeholder="Filter deals…"
+        /* Next to Views rather than up in the page header: it's a control over
+           this list, and it belongs with the other controls over this list. */
+        trailing={
+          <div className="flex shrink-0 items-center gap-0.5 rounded-lg border border-border bg-surface p-0.5">
             {([["table", "Table", List], ["board", "Board", LayoutGrid]] as const).map(
               ([id, label, Icon]) => (
                 <button
@@ -423,20 +450,7 @@ export default function PipelinePage() {
               )
             )}
           </div>
-        </div>
-      </div>
-
-      <FilterBar
-        filters={filters}
-        onChange={setFilters}
-        views={views}
-        onViewsChange={setViews}
-        statuses={DEAL_STAGES}
-        statusLabel="Stage"
-        assignees={profiles.map((p) => ({ value: p.id, label: p.full_name }))}
-        showDue
-        dueLabel="Close date"
-        placeholder="Filter deals…"
+        }
       />
 
       {deals.length > 0 && (
@@ -586,6 +600,7 @@ export default function PipelinePage() {
           // but they shouldn't compete with live work for attention.
           isDimmed={(d) => d.deal_stage === "Closed Lost"}
           emptyMessage="No deals match these filters."
+          pageSize={10}
         />
       ) : (
         <KanbanBoard

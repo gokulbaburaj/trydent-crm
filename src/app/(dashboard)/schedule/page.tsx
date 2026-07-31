@@ -136,7 +136,9 @@ export default function SchedulePage() {
   const { rows: projectTasks, setRows: setTaskRows } = useSupabaseTable<ProjectTask>("project_tasks");
   const { rows: projects, setRows: setProjectRows } = useSupabaseTable<Project>("projects");
 
-  const [tab, setTab] = useState<Tab>("all");
+  /* Opens on the calendar: a schedule is a shape in time, and the list is the
+     view you switch to when you want to search or bulk-edit. */
+  const [tab, setTab] = useState<Tab>("calendar");
   const [calView, setCalView] = useState<CalView>("week");
   const [editing, setEditing] = useState<Partial<Activity> | null>(null);
   const [saving, setSaving] = useState(false);

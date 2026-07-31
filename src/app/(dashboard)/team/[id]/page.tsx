@@ -115,7 +115,7 @@ function DeliveryView({ d }: { d: Dash }) {
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 [&>*]:transition-[border-color,background-color,translate] [&>*]:duration-150 [&>*:hover]:-translate-y-px [&>*:hover]:border-white/15">
         <StatCard label="Open tasks" value={String(d.openTasks.length)} icon={ClipboardList} />
         <StatCard label="Overdue" value={String(d.overdue.length)} icon={AlertTriangle} />
         <StatCard label="Due this week" value={String(d.dueThisWeek.length)} icon={CalendarDays} />
@@ -131,7 +131,10 @@ function DeliveryView({ d }: { d: Dash }) {
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      {/* items-start, not the default stretch: the throughput chart has a fixed
+          aspect ratio, so stretching its card to match a taller Projects card
+          just adds dead space under the bars. Let each be its own height. */}
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
         <ProjectsCard d={d} />
         <ThroughputCard data={d.throughput} />
       </div>
@@ -160,7 +163,11 @@ function WorkloadCard({ workload }: { workload: MemberLoad[] }) {
       </p>
       <div className="mt-3.5 flex flex-col gap-1.5">
         {workload.map((w, i) => (
-          <div key={w.profile.id} style={staggerDelay(i)} className="animate-row">
+          <div
+            key={w.profile.id}
+            style={staggerDelay(i)}
+            className="animate-row -mx-1.5 rounded-md px-1.5 py-0.5 transition-colors hover:bg-white/[0.03]"
+          >
             <BarRow
               label={w.profile.full_name}
               value={String(w.open)}
@@ -296,7 +303,9 @@ function ThroughputCard({ data }: { data: { week: string; done: number }[] }) {
             margin={{ top: 20, right: 8, bottom: 34, left: 8 }}
           >
             <Grid horizontal fadeHorizontal vertical={false} />
-            <Bar dataKey="done" fill={seriesFill(0)} lineCap="round" />
+            {/* fadedOpacity is what makes hovering mean something: the other
+                bars recede so the one under the cursor reads clearly. */}
+            <Bar dataKey="done" fill={seriesFill(0)} lineCap="round" fadedOpacity={0.25} />
             <BarXAxis />
           </BarChart>
         </div>

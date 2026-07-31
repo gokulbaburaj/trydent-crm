@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode, useMemo, useState } from "react";
-import { Check, ChevronDown, ChevronUp, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ChevronsUpDown } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +28,22 @@ export interface TableSelection {
   onToggleAll?: (ids: string[], on: boolean) => void;
 }
 
+/**
+ * Page buttons to render: always first and last, the current page and its
+ * neighbours, `null` where a gap belongs.
+ */
+function pageNumbers(current: number, total: number): (number | null)[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i);
+  const out: (number | null)[] = [0];
+  const from = Math.max(1, current - 1);
+  const to = Math.min(total - 2, current + 1);
+  if (from > 1) out.push(null);
+  for (let i = from; i <= to; i++) out.push(i);
+  if (to < total - 2) out.push(null);
+  out.push(total - 1);
+  return out;
+}
+
 export function DataTable<T>({
   columns,
   rows,
@@ -36,6 +52,7 @@ export function DataTable<T>({
   emptyMessage = "No records yet.",
   selection,
   isDimmed,
+  pageSize,
 }: {
   columns: Column<T>[];
   rows: T[];
@@ -50,8 +67,19 @@ export function DataTable<T>({
    * rows without having to check a column.
    */
   isDimmed?: (row: T) => boolean;
+  /**
+   * Rows per page. Omit for no pagination.
+   *
+   * Paging is client-side, over rows already in memory — the whole table is
+   * fetched up front (see lib/useSupabaseTable). That's a real limit worth
+   * naming: this makes long lists *readable*, it doesn't make them *cheap*.
+   * Server-side paging is the fix when the tables get big, and it belongs in
+   * the query layer rather than here.
+   */
+  pageSize?: number;
 }) {
   const [sort, setSort] = useState<{ index: number; dir: 1 | -1 } | null>(null);
+  const [page, setPage] = useState(0);
 
   const sorted = useMemo(() => {
     const key = sort ? columns[sort.index]?.sortKey : undefined;
@@ -75,6 +103,22 @@ export function DataTable<T>({
       return s.dir === 1 ? { index, dir: -1 } : null;
     });
   }
+
+  const totalPages = pageSize ? Math.max(1, Math.ceil(sorted.length / pageSize)) : 1;
+
+  /*
+   * Filtering can leave you on a page that no longer exists. Clamp on render
+   * rather than syncing state in an effect: the stored page may be stale but
+   * `safePage` is always valid, and every read goes through it. Writing state
+   * back from an effect would cause a second render for no benefit — and it's
+   * what react-hooks/set-state-in-effect is there to stop.
+   */
+  const safePage = Math.min(page, totalPages - 1);
+
+  const visible = useMemo(
+    () => (pageSize ? sorted.slice(safePage * pageSize, safePage * pageSize + pageSize) : sorted),
+    [sorted, pageSize, safePage]
+  );
 
   const sortedIds = useMemo(() => sorted.map(rowKey), [sorted, rowKey]);
   const anySelected = !!selection && selection.selected.size > 0;
@@ -132,7 +176,7 @@ export function DataTable<T>({
           </tr>
         </thead>
         <tbody>
-          {sorted.length === 0 && (
+          {visible.length === 0 && (
             <tr>
               <td
                 colSpan={columns.length + (selection ? 1 : 0)}
@@ -142,7 +186,7 @@ export function DataTable<T>({
               </td>
             </tr>
           )}
-          {sorted.map((row, idx) => {
+          {visible.map((row, idx) => {
             const id = rowKey(row);
             const isSelected = !!selection?.selected.has(id);
             const dimmed = !!isDimmed?.(row);
@@ -183,6 +227,62 @@ export function DataTable<T>({
           })}
         </tbody>
       </table>
+
+      {pageSize && sorted.length > pageSize && (
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border-subtle px-4 py-2.5 text-xs">
+          <span className="text-muted-foreground">
+            {safePage * pageSize + 1}–{Math.min((safePage + 1) * pageSize, sorted.length)} of{" "}
+            {sorted.length}
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              disabled={safePage === 0}
+              aria-label="Previous page"
+              className="rounded-md border border-border p-1 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground disabled:pointer-events-none disabled:opacity-35"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </button>
+
+            {/* Numbered, not just arrows — jumping to page 4 is a real thing
+                you want to do, and "Page 2 of 5" alone doesn't let you. Capped
+                at seven buttons with an ellipsis so a long list can't turn the
+                footer into its own paragraph. */}
+            {pageNumbers(safePage, totalPages).map((n, i) =>
+              n === null ? (
+                <span key={`gap-${i}`} className="px-1 text-muted-2">
+                  …
+                </span>
+              ) : (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setPage(n)}
+                  className={cn(
+                    "min-w-[1.75rem] rounded-md px-1.5 py-1 tabular-nums transition-colors",
+                    n === safePage
+                      ? "bg-white/10 font-medium text-foreground"
+                      : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
+                  )}
+                >
+                  {n + 1}
+                </button>
+              )
+            )}
+
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+              disabled={safePage >= totalPages - 1}
+              aria-label="Next page"
+              className="rounded-md border border-border p-1 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground disabled:pointer-events-none disabled:opacity-35"
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

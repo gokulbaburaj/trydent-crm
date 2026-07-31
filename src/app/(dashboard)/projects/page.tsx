@@ -23,6 +23,9 @@ import { Drawer } from "@/components/ui/Drawer";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { Dropdown } from "@/components/ui/Dropdown";
+import { StatusPicker } from "@/components/ui/StatusPicker";
+import { Popover, MenuLabel } from "@/components/ui/Popover";
+import { toast } from "@/components/Toaster";
 import { FilterBar } from "@/components/FilterBar";
 import { DataTable, type Column } from "@/components/DataTable";
 import { useViewPreference } from "@/lib/useViewPreference";
@@ -66,7 +69,7 @@ function ProjectsPageInner() {
   const { rows: clients } = useSupabaseTable<Client>("clients");
   const { rows: profiles } = useStaffProfiles();
   const { rows: tasks } = useSupabaseTable<ProjectTask>("project_tasks");
-  const { rows: deals } = useSupabaseTable<Deal>("deals");
+  const { rows: deals, setRows: setDeals } = useSupabaseTable<Deal>("deals");
   const { format: formatCurrency } = useCurrency();
 
   /** The deal a project came out of, when it was created from one. */
@@ -113,7 +116,17 @@ function ProjectsPageInner() {
         header: "Status",
         icon: CircleDot,
         sortKey: (p) => PROJECT_STATUSES.indexOf(p.status),
-        render: (p) => <Badge tone={statusTone(p.status)} dot>{p.status}</Badge>,
+        // Editable in place — same reasoning as the pipeline stage: a status
+        // you have to open a drawer to change is a status that goes stale.
+        render: (p) => (
+          <span onClick={(e) => e.stopPropagation()}>
+            <StatusPicker
+              value={p.status}
+              options={PROJECT_STATUSES}
+              onChange={(status) => updateProjectStatus(p.id, status)}
+            />
+          </span>
+        ),
       },
       {
         header: "Progress",
@@ -158,11 +171,10 @@ function ProjectsPageInner() {
         render: (p) => {
           const deal = dealFor(p);
           if (!deal) return <span className="text-muted-2">—</span>;
-          const owed = Math.max(0, Number(deal.deal_value) - Number(deal.paid));
-          return owed > 0 ? (
-            <span className="text-warning">{formatCurrency(owed, deal.currency)}</span>
-          ) : (
-            <span className="text-success">paid</span>
+          return (
+            <span onClick={(e) => e.stopPropagation()}>
+              <PaidEditor deal={deal} onSaved={refreshDeals} />
+            </span>
           );
         },
       },
@@ -186,6 +198,21 @@ function ProjectsPageInner() {
     ];
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clients, tasks, deals, profiles]);
+
+  const refreshDeals = (updated: Deal) =>
+    setDeals((prev) => prev.map((d) => (d.id === updated.id ? updated : d)));
+
+  async function updateProjectStatus(id: string, status: Project["status"]) {
+    const before = allProjects;
+    setRows((prev) => prev.map((p) => (p.id === id ? { ...p, status } : p)));
+    const supabase = createClient();
+    if (!supabase) return;
+    const { error } = await supabase.from("projects").update({ status }).eq("id", id);
+    if (error) {
+      setRows(before);
+      toast.error(`Couldn't update: ${error.message}`);
+    }
+  }
 
   const [editing, setEditing] = useState<Partial<Project> | null>(null);
   const [saving, setSaving] = useState(false);
@@ -341,6 +368,7 @@ function ProjectsPageInner() {
           rowKey={(p) => p.id}
           onRowClick={(p) => openInNewTab(`/projects/${p.id}`, p.name)}
           emptyMessage="No projects match these filters."
+          pageSize={10}
         />
       ) : (
         <>
@@ -554,5 +582,108 @@ function ProjectsPageInner() {
         )}
       </Drawer>
     </div>
+  );
+}
+
+
+/**
+ * Record money received, without leaving the row.
+ *
+ * Payment lands on the DEAL, not the project — a project has a budget, a deal
+ * has an invoice. Editing it here is a shortcut to the same record the Pipeline
+ * shows, which is why the number updates in both places at once.
+ */
+function PaidEditor({ deal, onSaved }: { deal: Deal; onSaved: (d: Deal) => void }) {
+  const { format: formatCurrency } = useCurrency();
+  const [draft, setDraft] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const value = Number(deal.deal_value);
+  const paid = Number(deal.paid);
+  const owed = Math.max(0, value - paid);
+
+  async function save(next: number, close: () => void) {
+    // Clamped: you can't have paid more than the deal is worth, and a negative
+    // payment is a refund, which is a different thing than this field records.
+    const amount = Math.max(0, Math.min(value, next));
+    setBusy(true);
+    const supabase = createClient();
+    if (!supabase) return setBusy(false);
+    const { data, error } = await supabase
+      .from("deals")
+      .update({ paid: amount })
+      .eq("id", deal.id)
+      .select()
+      .single();
+    setBusy(false);
+    if (error || !data) {
+      toast.error(`Couldn't save: ${error?.message ?? "unknown error"}`);
+      return;
+    }
+    onSaved(data as Deal);
+    close();
+    toast.success(
+      amount >= value ? "Marked paid in full" : `Recorded ${formatCurrency(amount, deal.currency)}`
+    );
+  }
+
+  return (
+    <Popover
+      align="right"
+      trigger={
+        <button
+          className={cn(
+            "rounded px-1 py-0.5 transition-colors hover:bg-white/5",
+            owed > 0 ? "text-warning" : "text-success"
+          )}
+          title="Record a payment"
+        >
+          {owed > 0 ? formatCurrency(owed, deal.currency) : "paid"}
+        </button>
+      }
+    >
+      {(close) => (
+        <div className="flex w-56 flex-col gap-2 p-2">
+          <MenuLabel>Paid against {deal.deal_name}</MenuLabel>
+          <div className="px-1 text-[11px] text-muted-2">
+            {formatCurrency(paid, deal.currency)} of {formatCurrency(value, deal.currency)}
+          </div>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const n = Number(draft);
+              if (!Number.isFinite(n)) return;
+              save(n, close);
+            }}
+            className="flex flex-col gap-2"
+          >
+            <Input
+              autoFocus
+              type="number"
+              inputMode="decimal"
+              placeholder={String(paid)}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+            />
+            <div className="flex gap-1.5">
+              <Button type="submit" size="sm" disabled={busy || draft === ""}>
+                Save
+              </Button>
+              {owed > 0 && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  disabled={busy}
+                  onClick={() => save(value, close)}
+                >
+                  Mark paid
+                </Button>
+              )}
+            </div>
+          </form>
+        </div>
+      )}
+    </Popover>
   );
 }

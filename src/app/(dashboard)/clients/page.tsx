@@ -257,6 +257,7 @@ export default function ClientsPage() {
           rows={visibleClients}
           rowKey={(c) => c.id}
           onRowClick={openClient}
+          pageSize={10}
           selection={{ selected: checked, onToggle: toggle, onToggleAll: setMany }}
           emptyMessage={
             loading ? (
