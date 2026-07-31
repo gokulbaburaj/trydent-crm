@@ -39,6 +39,11 @@ export interface LineChartProps {
   /** CSS easing for clip-reveal. Default: cubic-bezier(0.85, 0, 0.15, 1) */
   animationEasing?: string;
   enterTransition?: Transition;
+  /**
+   * How each x tick is written. Defaults to "MMM d" — pass a month-year
+   * formatter for a monthly series, or the axis reads as days.
+   */
+  labelFormat?: (date: Date) => string;
   revealSignature?: string;
   /** Aspect ratio as "width / height". Default: "2 / 1". Omit to fill a sized parent. */
   aspectRatio?: string;
@@ -147,6 +152,11 @@ interface ChartInnerProps {
   animationDuration: number;
   animationEasing?: string;
   enterTransition?: Transition;
+  /**
+   * How each x tick is written. Defaults to "MMM d" — pass a month-year
+   * formatter for a monthly series, or the axis reads as days.
+   */
+  labelFormat?: (date: Date) => string;
   revealSignature?: string;
   chartStatus: ChartStatus;
   loadingLabel?: string;
@@ -169,6 +179,7 @@ function ChartInner({
   animationDuration,
   animationEasing,
   enterTransition,
+  labelFormat,
   revealSignature,
   chartStatus,
   loadingLabel,
@@ -197,7 +208,8 @@ function ChartInner({
       loadingLabel={loadingLabel}
       margin={margin}
       onPhaseChange={onPhaseChange}
-      revealSignature={revealSignature}
+      labelFormat={labelFormat}
+            revealSignature={revealSignature}
       tweenYDomainOnXDomainChange={tweenYDomainOnXDomainChange}
       width={width}
       xDataKey={xDataKey}
@@ -218,6 +230,7 @@ export function LineChart({
   animationDuration = 450,
   animationEasing,
   enterTransition,
+  labelFormat,
   revealSignature,
   aspectRatio = "2 / 1",
   className = "",
@@ -276,6 +289,7 @@ export function LineChart({
             loadingLabel={loadingLabel}
             margin={margin}
             onPhaseChange={handlePhaseChange}
+            labelFormat={labelFormat}
             revealSignature={revealSignature}
             tweenYDomainOnXDomainChange={tweenYDomainOnXDomainChange}
             width={width}

@@ -135,6 +135,12 @@ export interface TimeSeriesChartInnerProps {
   animationDuration: number;
   animationEasing?: string;
   enterTransition?: Transition;
+  /**
+   * How each x tick is written. Defaults to "MMM d", which is correct for a
+   * daily series and misleading for a monthly one — twelve months of data
+   * would label as "Jan 1, Feb 1, Mar 1", which reads as three days.
+   */
+  labelFormat?: (date: Date) => string;
   /** Signature of motion URL state — triggers reveal replay when it changes. */
   revealSignature?: string;
   children: ReactNode;
@@ -185,6 +191,7 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
   animationDuration,
   animationEasing = DEFAULT_ANIMATION_EASING,
   enterTransition,
+  labelFormat,
   revealSignature = "",
   children,
   containerRef,
@@ -399,8 +406,8 @@ const TimeSeriesChartCore = memo(function TimeSeriesChartCore({
   );
 
   const dateLabels = useMemo(
-    () => visiblePlotData.map((d) => shortDateFmt.format(xAccessor(d))),
-    [visiblePlotData, xAccessor]
+    () => visiblePlotData.map((d) => (labelFormat ?? shortDateFmt.format)(xAccessor(d))),
+    [visiblePlotData, xAccessor, labelFormat]
   );
 
   const canInteract = isLoaded && isChartInteractionPhase(chartPhase);

@@ -37,6 +37,19 @@ const COLORS = SERIES_SWATCHES;
 /** Chart shapes that actually suit a monthly revenue series. */
 type RevenueChart = "bar" | "line" | "area";
 
+/**
+ * Ticks on a monthly series say "Jan 26", not "Jan 1".
+ *
+ * The chart's default formatter is "MMM d", which is right for a daily series
+ * and actively misleading here — every point sits on the 1st, so twelve months
+ * of revenue would label as "Jan 1, Feb 1, Mar 1" and read as three days.
+ */
+const monthTickFmt = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  year: "2-digit",
+});
+const monthTick = (d: Date) => monthTickFmt.format(d);
+
 const REVENUE_CHARTS: { id: RevenueChart; label: string; hint: string }[] = [
   { id: "bar", label: "Bar", hint: "Compare month totals" },
   { id: "line", label: "Line", hint: "Follow the trend month to month" },
@@ -153,13 +166,28 @@ export default function DashboardPage() {
     const [firstY, firstM] = keys[0].split("-").map(Number);
     const [lastY, lastM] = keys[keys.length - 1].split("-").map(Number);
 
-    const out: { month: string; revenue: number }[] = [];
+    /*
+     * Each row carries BOTH a label and a real Date, and they are not
+     * interchangeable.
+     *
+     * `month` ("Jan 26") is for the bar chart, which uses a band scale and
+     * treats x as a category. `date` is for the line and area charts, which
+     * build a time scale and parse x with `new Date(...)`.
+     *
+     * Handing the label to a time scale is what produced two crossing lines on
+     * this card: `new Date("Sep 25")` is not September 2025, it's the 25th of
+     * September in the current year — the "25" is read as a day. So a series
+     * spanning late 2025 into 2026 came out with the 2025 months sorted AFTER
+     * the 2026 ones, and the path doubled back across the chart.
+     */
+    const out: { month: string; date: Date; revenue: number }[] = [];
     const cursor = new Date(firstY, firstM - 1, 1);
     const end = new Date(lastY, lastM - 1, 1);
     while (cursor <= end) {
       const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}`;
       out.push({
         month: cursor.toLocaleDateString("en-US", { month: "short", year: "2-digit" }),
+        date: new Date(cursor),
         revenue: buckets.get(key) ?? 0,
       });
       cursor.setMonth(cursor.getMonth() + 1);
@@ -351,7 +379,9 @@ export default function DashboardPage() {
             ) : revenueChart === "line" ? (
               <LineChart
                 data={monthlyRevenue}
-                xDataKey="month"
+                /* Real Dates, not the label — see the note in monthlyRevenue. */
+                xDataKey="date"
+                labelFormat={monthTick}
                 aspectRatio="5 / 2"
                 margin={{ top: 24, right: 16, bottom: 36, left: 16 }}
               >
@@ -363,7 +393,8 @@ export default function DashboardPage() {
             ) : (
               <AreaChart
                 data={monthlyRevenue}
-                xDataKey="month"
+                xDataKey="date"
+                labelFormat={monthTick}
                 aspectRatio="5 / 2"
                 margin={{ top: 24, right: 16, bottom: 36, left: 16 }}
               >
