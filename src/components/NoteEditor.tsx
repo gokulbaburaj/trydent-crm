@@ -5,7 +5,12 @@ import { useTheme } from "next-themes";
 import type { Block, PartialBlock } from "@blocknote/core";
 import { useCreateBlockNote } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/shadcn";
-import "@blocknote/core/style.css";
+/*
+ * Only the shadcn stylesheet. It already bundles core's and react's rules —
+ * importing all three ships the same ~200KB of CSS three times and makes
+ * override specificity a coin toss, since identical selectors then win on
+ * source order rather than intent.
+ */
 import "@blocknote/shadcn/style.css";
 import { cn } from "@/lib/utils";
 
