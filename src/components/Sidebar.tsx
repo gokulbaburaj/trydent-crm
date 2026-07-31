@@ -4,24 +4,25 @@ import { useMemo } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
-  LayoutDashboard,
-  ListChecks,
-  Users,
-  GitBranch,
-  FolderKanban,
-  Calendar,
-  UsersRound,
   Building2,
-  Settings,
-  Wallet,
+  Calendar,
   ChevronDown,
   ChevronRight,
-  Search,
-  SquarePen,
+  ClipboardCheck,
+  FolderKanban,
+  GitBranch,
+  LayoutDashboard,
+  Library,
+  ListChecks,
   Plus,
+  Search,
+  Settings,
+  SquarePen,
   Target,
   UserPlus,
-  ClipboardCheck,
+  Users,
+  UsersRound,
+  Wallet,
 } from "lucide-react";
 import {
   DndContext,
@@ -66,6 +67,7 @@ const WORKSPACE: NavItem[] = [
   { href: "/pipeline", label: "Pipeline", icon: GitBranch, page: "pipeline" },
   { href: "/projects", label: "Projects", icon: FolderKanban, page: "projects" },
   { href: "/schedule", label: "Schedule", icon: Calendar, page: "schedule" },
+  { href: "/resources", label: "Resources", icon: Library, page: "resources" },
 ];
 
 const ORGANIZATION: NavItem[] = [

@@ -3,19 +3,20 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  Building2,
   Calendar,
   FolderKanban,
   GitBranch,
   LayoutDashboard,
+  Library,
   ListChecks,
   Palette,
-  Building2,
   Settings,
-  Wallet,
   Target,
   UserPlus,
   Users,
   UsersRound,
+  Wallet,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -48,6 +49,7 @@ const PAGES: { href: string; label: string; icon: LucideIcon; page: PageKey }[] 
   { href: "/pipeline", label: "Pipeline", icon: GitBranch, page: "pipeline" },
   { href: "/projects", label: "Projects", icon: FolderKanban, page: "projects" },
   { href: "/schedule", label: "Schedule", icon: Calendar, page: "schedule" },
+  { href: "/resources", label: "Resources", icon: Library, page: "resources" },
   { href: "/organization", label: "Organisation", icon: Building2, page: "organization" },
   { href: "/accounts", label: "Accounts", icon: Wallet, page: "accounts" },
   { href: "/goals", label: "Goals", icon: Target, page: "goals" },
