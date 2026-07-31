@@ -520,13 +520,35 @@ button:not(:disabled):active,
 .note-editor [data-level="5"] { --level: 0.9rem; }
 .note-editor [data-level="6"] { --level: 0.875rem; }
 
-/* Space between blocks, and more above a heading that follows something so
-   sections read as sections. :first-child is exempt or the note opens on a gap. */
-.note-editor .bn-block-outer:not(:first-child) > .bn-block > .bn-block-content {
+/*
+  Block spacing goes on `.bn-block-outer`, NOT on `.bn-block-content`.
+
+  This is the fix for the drag handle and + button sitting above the heading
+  they belong to. BlockNote centres the side menu vertically against the block
+  box, so any margin *inside* that box makes the box taller than its text and
+  the buttons centre on the padding rather than on the words. Putting the
+  spacing on the outer wrapper leaves the block hugging its own text, and the
+  handle lands where the text is.
+
+  Worth remembering as a rule: anything that changes a block's height changes
+  where its controls sit.
+*/
+.note-editor .bn-block-outer:not(:first-child) {
   margin-top: 0.3rem;
 }
-.note-editor .bn-block-outer:not(:first-child) > .bn-block > .bn-block-content[data-content-type="heading"] {
+.note-editor .bn-block-outer:not(:first-child):has(
+    > .bn-block > .bn-block-content[data-content-type="heading"]
+  ) {
   margin-top: 1.15rem;
+}
+
+/*
+  Headings get their own leading. 1.7 is a reading measure for body copy; on a
+  26px heading it opens a gap the handle then has to centre across, which is
+  the same misalignment by another route.
+*/
+.note-editor .bn-block-content[data-content-type="heading"] .bn-inline-content {
+  line-height: 1.3;
 }
 
 /* Placeholder is a hint, not content: same size as the text it stands in for,
