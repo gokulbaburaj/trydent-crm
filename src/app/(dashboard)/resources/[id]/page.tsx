@@ -9,19 +9,22 @@ import {
   Building2,
   Eye,
   ExternalLink,
+  FileText,
   FolderKanban,
   Library,
+  Link2,
   Pin,
-  Tag,
   Trash2,
   Users,
   X,
 } from "lucide-react";
 import { toast } from "@/components/Toaster";
+import { Card } from "@/components/ui/Card";
 import { Dropdown } from "@/components/ui/Dropdown";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { TableSkeleton } from "@/components/ui/Skeletons";
+import { Input, Label } from "@/components/ui/Input";
 import { Popover, MenuItem, MenuLabel } from "@/components/ui/Popover";
+import { TableSkeleton } from "@/components/ui/Skeletons";
 import { RequireAccess } from "@/components/RequireAccess";
 import { useResources, urlHost, normaliseUrl } from "@/lib/useResources";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
@@ -56,19 +59,6 @@ export default function ResourcePage() {
   );
 }
 
-/*
- * This page is a DOCUMENT, not a form.
- *
- * It used to be three stacked cards — title in a bordered input, metadata as
- * full-width selects, visibility as a banner — and it read as a settings
- * screen that happened to contain some prose. Compare a Notion page: one
- * column, one left edge, no boxes, and the properties recede until you point
- * at them.
- *
- * So: no Cards here at all. A single measured column, everything sharing the
- * title's left edge, and controls that look like text until hovered. The
- * chrome earns its ink only when you reach for it.
- */
 function ResourceInner() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -81,20 +71,18 @@ function ResourceInner() {
   const resource = resources.find((r) => r.id === params.id) ?? null;
 
   const [title, setTitle] = useState("");
-  const [summary, setSummary] = useState("");
   const [seededFor, setSeededFor] = useState<string | null>(null);
 
   /*
-   * Seed local drafts when the row identity changes. Adjusted during render
+   * Seed the title when the row identity changes. Adjusted during render
    * rather than in an effect: React re-runs the component before committing,
    * so there's no flash of the previous note and no second paint. An effect
-   * would also fight the inputs for the cursor, since the hook's optimistic
+   * would also fight the input for the cursor, since the hook's optimistic
    * writes hand back a new object on every save.
    */
   if (resource && seededFor !== resource.id) {
     setSeededFor(resource.id);
     setTitle(resource.title);
-    setSummary(resource.summary ?? "");
   }
 
   const resourceId = resource?.id;
@@ -105,7 +93,7 @@ function ResourceInner() {
     [resourceId, update]
   );
 
-  const tags = useMemo(() => resource?.tags ?? [], [resource?.tags]);
+  const tagText = useMemo(() => (resource?.tags ?? []).join(", "), [resource?.tags]);
 
   if (loading && !resource) return <TableSkeleton rows={5} />;
 
@@ -120,35 +108,23 @@ function ResourceInner() {
   }
 
   const isNote = resource.kind === "note";
-  const clientName = clients.find((c) => c.id === resource.client_id)?.company;
-  const projectName = projects.find((p) => p.id === resource.project_id)?.name;
 
-  async function commit(patch: Record<string, unknown>) {
-    if (resource) await update(resource.id, patch);
-  }
-
+  /** Committed on blur — one write per edit, not one per letter. */
   async function saveTitle() {
     if (!resource) return;
     const next = title.trim();
     // An untitled note is unfindable, so an emptied field reverts rather than
-    // saves. Silently keeping the old value beats a row you can't search for.
+    // saving. Keeping the old value beats a row you can't search for.
     if (!next || next === resource.title) return setTitle(resource.title);
-    await commit({ title: next });
-  }
-
-  async function saveSummary() {
-    if (!resource) return;
-    const next = summary.trim();
-    if (next === (resource.summary ?? "")) return;
-    await commit({ summary: next || null });
+    await update(resource.id, { title: next });
   }
 
   async function setVisibility(visibility: ResourceVisibility) {
     if (!resource) return;
     // Clear the other list when switching. Leaving stale ids behind means a
-    // toggle back silently restores a set you'd forgotten about — the wrong
-    // kind of surprise on a permissions control.
-    await commit({
+    // toggle back silently restores a set you'd forgotten about, which on a
+    // permissions control is the wrong kind of surprise.
+    await update(resource.id, {
       visibility,
       visible_role_ids: visibility === "roles" ? resource.visible_role_ids : [],
       visible_to: visibility === "people" ? resource.visible_to : [],
@@ -158,7 +134,7 @@ function ResourceInner() {
   async function toggleRole(roleId: string) {
     if (!resource) return;
     const on = resource.visible_role_ids.includes(roleId);
-    await commit({
+    await update(resource.id, {
       visible_role_ids: on
         ? resource.visible_role_ids.filter((id) => id !== roleId)
         : [...resource.visible_role_ids, roleId],
@@ -168,7 +144,7 @@ function ResourceInner() {
   async function togglePerson(profileId: string) {
     if (!resource) return;
     const on = resource.visible_to.includes(profileId);
-    await commit({
+    await update(resource.id, {
       visible_to: on
         ? resource.visible_to.filter((id) => id !== profileId)
         : [...resource.visible_to, profileId],
@@ -183,140 +159,168 @@ function ResourceInner() {
     router.push("/resources");
   }
 
-  const restricted = resource.visibility !== "everyone";
-  const audienceCount =
-    resource.visibility === "roles"
-      ? resource.visible_role_ids.length
-      : resource.visible_to.length;
-
   return (
-    <div className="mx-auto flex w-full max-w-[820px] flex-col pb-32 pt-1">
-      {/* Top bar: back on the left, destructive and pin actions far right and
-          quiet. Notion keeps page actions out of the reading column entirely. */}
-      <div className="mb-6 flex items-center justify-between">
-        <Link
-          href="/resources"
-          className="inline-flex items-center gap-1.5 text-[12.5px] text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          Resources
-        </Link>
+    <div className="mx-auto flex w-full max-w-[1100px] flex-col gap-4">
+      <Link
+        href="/resources"
+        className="inline-flex w-fit items-center gap-1.5 text-[12.5px] text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <ArrowLeft className="h-3.5 w-3.5" />
+        Resources
+      </Link>
 
-        {canEdit && (
-          <div className="flex items-center gap-0.5">
-            <IconAction
-              title={resource.pinned ? "Unpin" : "Pin to the top of the list"}
-              active={resource.pinned}
-              onClick={() => commit({ pinned: !resource.pinned })}
-            >
-              <Pin className={cn("h-3.5 w-3.5", resource.pinned && "fill-current")} />
-            </IconAction>
-            <IconAction title="Delete" danger onClick={destroy}>
-              <Trash2 className="h-3.5 w-3.5" />
-            </IconAction>
-          </div>
-        )}
-      </div>
-
-      {/* Title — document scale, no border, no box. */}
-      {canEdit ? (
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          onBlur={saveTitle}
-          aria-label="Title"
-          placeholder="Untitled"
-          className="w-full bg-transparent text-[30px] font-bold leading-tight tracking-tight text-foreground outline-none placeholder:text-muted-2"
-        />
-      ) : (
-        <h1 className="text-[30px] font-bold leading-tight tracking-tight">{resource.title}</h1>
-      )}
-
-      {/* Summary sits with the title as a subtitle, not as a labelled field. */}
-      {canEdit ? (
-        <input
-          value={summary}
-          onChange={(e) => setSummary(e.target.value)}
-          onBlur={saveSummary}
-          aria-label="Summary"
-          placeholder="Add a one-line summary…"
-          className="mt-1.5 w-full bg-transparent text-[14.5px] text-muted-foreground outline-none placeholder:text-muted-2"
-        />
-      ) : (
-        resource.summary && (
-          <p className="mt-1.5 text-[14.5px] text-muted-foreground">{resource.summary}</p>
-        )
-      )}
-
-      {/*
-        Properties.
-
-        Label-left rows at the same scale as the body, with controls that read
-        as plain text until you hover. Full-width bordered selects made three
-        optional fields look like the most important thing on the page.
-      */}
-      <div className="mt-7 flex flex-col">
-        <PropRow icon={Tag} label="Tags">
-          {canEdit ? (
-            <TagField key={resource.id} tags={tags} onSave={(t) => commit({ tags: t })} />
-          ) : tags.length > 0 ? (
-            <div className="flex flex-wrap gap-1 py-1">
-              {tags.map((t) => (
-                <span
-                  key={t}
-                  className="rounded bg-white/5 px-1.5 py-0.5 text-[11.5px] text-foreground-secondary"
-                >
-                  {t}
-                </span>
-              ))}
+      {/* Header card — same shape as the project detail hero, so the two
+          detail pages in the app read as siblings. */}
+      <Card className="p-4 sm:p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/15">
+              {isNote ? (
+                <FileText className="h-4 w-4 text-primary" />
+              ) : (
+                <Link2 className="h-4 w-4 text-primary" />
+              )}
             </div>
-          ) : (
-            <Empty />
-          )}
-        </PropRow>
+            {canEdit ? (
+              /* Always editable, no Edit button. Reading and writing are the
+                 same mode — a note you have to unlock before fixing a typo is
+                 a note that keeps its typos. */
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                onBlur={saveTitle}
+                aria-label="Title"
+                className="border-transparent bg-transparent px-1 text-[19px] font-semibold shadow-none hover:border-border focus-visible:border-primary/60"
+              />
+            ) : (
+              <h1 className="min-w-0 text-[19px] font-semibold leading-tight tracking-tight">
+                {resource.title}
+              </h1>
+            )}
+          </div>
 
-        <PropRow icon={Building2} label="Client">
-          {canEdit ? (
-            <GhostSelect
-              value={resource.client_id ?? ""}
-              placeholder="Empty"
-              onChange={(v) => commit({ client_id: v || null })}
-              options={[
-                { value: "", label: "Empty" },
-                ...clients.map((c) => ({ value: c.id, label: c.company })),
-              ]}
-            />
-          ) : clientName ? (
-            <PlainValue>{clientName}</PlainValue>
-          ) : (
-            <Empty />
-          )}
-        </PropRow>
+          <div className="flex shrink-0 items-center gap-1.5">
+            {canEdit && (
+              <>
+                <button
+                  type="button"
+                  title={resource.pinned ? "Unpin" : "Pin to the top of the list"}
+                  onClick={() => update(resource.id, { pinned: !resource.pinned })}
+                  className={cn(
+                    "rounded-md border p-1.5 transition-colors",
+                    resource.pinned
+                      ? "border-warning/40 bg-warning/10 text-warning"
+                      : "border-border text-muted-foreground hover:bg-white/5 hover:text-foreground"
+                  )}
+                >
+                  <Pin className={cn("h-3.5 w-3.5", resource.pinned && "fill-current")} />
+                </button>
+                <button
+                  type="button"
+                  title="Delete resource"
+                  onClick={destroy}
+                  className="rounded-md border border-border p-1.5 text-muted-foreground transition-colors hover:border-danger/40 hover:bg-danger/10 hover:text-danger"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </>
+            )}
+          </div>
+        </div>
 
-        <PropRow icon={FolderKanban} label="Project">
-          {canEdit ? (
-            <GhostSelect
-              value={resource.project_id ?? ""}
-              placeholder="Empty"
-              onChange={(v) => commit({ project_id: v || null })}
-              options={[
-                { value: "", label: "Empty" },
-                ...projects
-                  .filter((p) => !p.archived)
-                  .map((p) => ({ value: p.id, label: p.name })),
-              ]}
-            />
-          ) : projectName ? (
-            <PlainValue>{projectName}</PlainValue>
-          ) : (
-            <Empty />
-          )}
-        </PropRow>
+        {resource.summary && (
+          <p className="mt-2.5 text-sm text-foreground-secondary">{resource.summary}</p>
+        )}
 
-        {canEdit && (
-          <PropRow icon={Eye} label="Visible to">
-            <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-              <GhostSelect
+        <div className="mt-4 grid grid-cols-2 items-end gap-x-3 gap-y-3 sm:flex sm:flex-wrap sm:gap-x-5">
+          <div className="min-w-0">
+            <Label>Tags</Label>
+            {canEdit ? (
+              <TagEditor key={resource.id} value={tagText} onSave={(tags) => update(resource.id, { tags })} />
+            ) : (resource.tags ?? []).length > 0 ? (
+              <div className="flex h-9 flex-wrap items-center gap-1">
+                {resource.tags.map((t) => (
+                  <span
+                    key={t}
+                    className="rounded bg-white/5 px-1.5 py-0.5 text-[11px] text-foreground-secondary"
+                  >
+                    {t}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <span className="flex h-9 items-center text-xs text-muted-2">None</span>
+            )}
+          </div>
+
+          <div className="min-w-0">
+            <Label>Client</Label>
+            {canEdit ? (
+              <div className="w-full sm:w-44">
+                <Dropdown
+                  value={resource.client_id ?? ""}
+                  onChange={(v) => update(resource.id, { client_id: v || null })}
+                  options={[
+                    { value: "", label: "None" },
+                    ...clients.map((c) => ({ value: c.id, label: c.company })),
+                  ]}
+                />
+              </div>
+            ) : (
+              <Chip icon={Building2}>
+                {clients.find((c) => c.id === resource.client_id)?.company ?? "None"}
+              </Chip>
+            )}
+          </div>
+
+          <div className="min-w-0">
+            <Label>Project</Label>
+            {canEdit ? (
+              <div className="w-full sm:w-44">
+                <Dropdown
+                  value={resource.project_id ?? ""}
+                  onChange={(v) => update(resource.id, { project_id: v || null })}
+                  options={[
+                    { value: "", label: "None" },
+                    ...projects
+                      .filter((p) => !p.archived)
+                      .map((p) => ({ value: p.id, label: p.name })),
+                  ]}
+                />
+              </div>
+            ) : (
+              <Chip icon={FolderKanban}>
+                {projects.find((p) => p.id === resource.project_id)?.name ?? "None"}
+              </Chip>
+            )}
+          </div>
+
+          <div className="min-w-0">
+            <Label>Updated</Label>
+            <span className="flex h-9 items-center text-xs text-muted-foreground">
+              {formatDate(resource.updated_at)}
+            </span>
+          </div>
+        </div>
+      </Card>
+
+      {/* Visibility gets its own card rather than a chip in the row above.
+          It's the only control here that decides what someone else can read,
+          and burying it among "Tags" and "Client" would put a permissions
+          change one accidental click away from a metadata change. */}
+      {canEdit && (
+        <Card className="p-4 sm:p-5">
+          <div className="flex flex-wrap items-center gap-3">
+            <div>
+              <h3 className="flex items-center gap-1.5 text-sm font-semibold">
+                <Eye className="h-3.5 w-3.5 text-muted-foreground" /> Visible to
+              </h3>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Enforced by the database, not by hiding it here.
+              </p>
+            </div>
+            <div className="ml-auto w-48">
+              <Dropdown
                 value={resource.visibility}
                 onChange={(v) => setVisibility(v as ResourceVisibility)}
                 options={RESOURCE_VISIBILITIES.map((v) => ({
@@ -324,69 +328,67 @@ function ResourceInner() {
                   label: RESOURCE_VISIBILITY_LABELS[v],
                 }))}
               />
-
-              {resource.visibility === "roles" && (
-                <AudiencePicker
-                  chips={resource.visible_role_ids.map((id) => ({
-                    id,
-                    label: roles.find((r) => r.id === id)?.name ?? "Unknown role",
-                  }))}
-                  options={roles.map((r) => ({ id: r.id, label: r.name }))}
-                  selected={resource.visible_role_ids}
-                  onToggle={toggleRole}
-                  menuLabel="Roles that can see this"
-                />
-              )}
-
-              {resource.visibility === "people" && (
-                <AudiencePicker
-                  chips={resource.visible_to.map((id) => ({
-                    id,
-                    label: staff.find((p) => p.id === id)?.full_name ?? "Unknown",
-                  }))}
-                  options={staff.map((p) => ({ id: p.id, label: p.full_name }))}
-                  selected={resource.visible_to}
-                  onToggle={togglePerson}
-                  menuLabel="People who can see this"
-                />
-              )}
-
-              {restricted && audienceCount === 0 && (
-                <span className="text-[11.5px] text-warning">
-                  nobody picked — admin-only
-                </span>
-              )}
             </div>
-          </PropRow>
-        )}
+          </div>
 
-        <PropRow label="Updated">
-          <PlainValue>{formatDate(resource.updated_at)}</PlainValue>
-        </PropRow>
-      </div>
+          {resource.visibility === "roles" && (
+            <PickerRow
+              label="Roles"
+              empty="No roles picked — nobody but admins can see this."
+              chips={resource.visible_role_ids.map((id) => ({
+                id,
+                label: roles.find((r) => r.id === id)?.name ?? "Unknown role",
+              }))}
+              options={roles.map((r) => ({ id: r.id, label: r.name }))}
+              selected={resource.visible_role_ids}
+              onToggle={toggleRole}
+              menuLabel="Roles that can see this"
+            />
+          )}
 
-      {/* One hairline between the properties and the writing, standing in for
-          the three card borders it replaces. */}
-      <div className="mb-6 mt-7 h-px bg-border-subtle" />
+          {resource.visibility === "people" && (
+            <PickerRow
+              label="People"
+              empty="Nobody picked — only admins can see this."
+              chips={resource.visible_to.map((id) => ({
+                id,
+                label: staff.find((p) => p.id === id)?.full_name ?? "Unknown",
+              }))}
+              options={staff.map((p) => ({ id: p.id, label: p.full_name }))}
+              selected={resource.visible_to}
+              onToggle={togglePerson}
+              menuLabel="People who can see this"
+            />
+          )}
+        </Card>
+      )}
 
+      {/* Body */}
       {isNote ? (
-        /*
-          key={resource.id} is doing real work. BlockNote reads `initialContent`
-          once, at construction, and ignores it afterwards — correctly, since
-          re-seeding a live editor would stomp whatever was just typed.
-          Remounting is the only way to switch notes.
-        */
-        <NoteEditor
-          key={resource.id}
-          content={resource.content}
-          markdown={resource.body}
-          editable={canEdit}
-          onSave={saveNote}
-        />
+        <Card className="p-4 sm:p-5">
+          {/*
+            key={resource.id} is doing real work. BlockNote reads
+            `initialContent` once, at construction, and ignores it afterwards —
+            correctly, since re-seeding a live editor would stomp whatever was
+            just typed. Remounting is the only way to switch notes.
+          */}
+          <NoteEditor
+            key={resource.id}
+            content={resource.content}
+            markdown={resource.body}
+            editable={canEdit}
+            onSave={saveNote}
+          />
+        </Card>
       ) : (
-        <div className="flex flex-col gap-2">
+        <Card className="p-4 sm:p-5">
+          <Label>Link</Label>
           {canEdit ? (
-            <UrlField key={resource.id} value={resource.url ?? ""} onSave={(url) => commit({ url })} />
+            <UrlEditor
+              key={resource.id}
+              value={resource.url ?? ""}
+              onSave={(url) => update(resource.id, { url })}
+            />
           ) : (
             <a
               href={normaliseUrl(resource.url ?? "")}
@@ -398,152 +400,64 @@ function ResourceInner() {
               <ExternalLink className="h-3.5 w-3.5" />
             </a>
           )}
-        </div>
+        </Card>
       )}
     </div>
   );
 }
 
-/* ── Pieces ─────────────────────────────────────────────────────────────── */
+/* ── Small pieces ───────────────────────────────────────────────────────── */
 
-function IconAction({
-  title,
-  onClick,
-  active,
-  danger,
-  children,
-}: {
-  title: string;
-  onClick: () => void;
-  active?: boolean;
-  danger?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      title={title}
-      onClick={onClick}
-      className={cn(
-        "rounded-md p-1.5 transition-colors",
-        active
-          ? "text-warning hover:bg-warning/10"
-          : danger
-            ? "text-muted-foreground hover:bg-danger/10 hover:text-danger"
-            : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
-      )}
-    >
-      {children}
-    </button>
-  );
-}
-
-/** Label left, value right, both at body scale. The row is the hover target. */
-function PropRow({
+function Chip({
   icon: Icon,
-  label,
   children,
 }: {
-  icon?: React.ComponentType<{ className?: string }>;
-  label: string;
+  icon: React.ComponentType<{ className?: string }>;
   children: React.ReactNode;
 }) {
   return (
-    <div className="group flex min-h-[34px] items-start gap-3 rounded-md px-1 py-0.5 transition-colors hover:bg-white/[0.02]">
-      <div className="flex w-[110px] shrink-0 items-center gap-1.5 pt-[7px] text-[13px] text-muted-foreground">
-        {Icon && <Icon className="h-3.5 w-3.5 text-muted-2" />}
-        {label}
-      </div>
-      <div className="min-w-0 flex-1">{children}</div>
-    </div>
+    <span className="flex h-9 items-center gap-1.5 text-xs text-foreground-secondary">
+      <Icon className="h-3 w-3 text-muted-2" />
+      {children}
+    </span>
   );
-}
-
-function PlainValue({ children }: { children: React.ReactNode }) {
-  return <span className="block py-[7px] text-[13px] text-foreground-secondary">{children}</span>;
-}
-
-function Empty() {
-  return <span className="block py-[7px] text-[13px] text-muted-2">Empty</span>;
 }
 
 /**
- * A select that looks like text until you hover it.
+ * Commit on blur, not per keystroke — one write per edit, not one per letter.
  *
- * Wraps the app's Dropdown rather than restyling a native select, so the menu
- * still matches every other menu in the CRM — only the trigger is quiet.
+ * No effect syncing `value` into `text`: the parent keys this on the resource
+ * id, so switching resources remounts it with fresh state. Within one resource
+ * the only thing that changes `value` is this component saving, at which point
+ * `text` already matches.
  */
-function GhostSelect({
-  value,
-  options,
-  onChange,
-  placeholder,
-}: {
-  value: string;
-  options: { value: string; label: string }[];
-  onChange: (v: string) => void;
-  placeholder?: string;
-}) {
-  return (
-    <div className="ghost-select -ml-1 max-w-[280px]">
-      <Dropdown value={value} options={options} onChange={onChange} placeholder={placeholder} />
-    </div>
-  );
-}
-
-/** Chips plus an inline input. Enter or comma commits; Backspace on an empty
- *  field removes the last one, which is what every tag field ever has done. */
-function TagField({ tags, onSave }: { tags: string[]; onSave: (t: string[]) => void }) {
-  const [draft, setDraft] = useState("");
-
-  function add() {
-    const next = draft.trim().toLowerCase();
-    setDraft("");
-    if (!next || tags.includes(next)) return;
-    onSave([...tags, next]);
-  }
-
-  return (
-    <div className="flex flex-wrap items-center gap-1 py-1">
-      {tags.map((t) => (
-        <span
-          key={t}
-          className="group/tag flex items-center gap-1 rounded bg-white/5 py-0.5 pl-1.5 pr-1 text-[11.5px] text-foreground-secondary"
-        >
-          {t}
-          <button
-            type="button"
-            onClick={() => onSave(tags.filter((x) => x !== t))}
-            className="rounded-sm text-muted-2 opacity-0 transition-opacity hover:text-foreground group-hover/tag:opacity-100"
-          >
-            <X className="h-2.5 w-2.5" />
-          </button>
-        </span>
-      ))}
-      <input
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={add}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === ",") {
-            e.preventDefault();
-            add();
-          } else if (e.key === "Backspace" && !draft && tags.length > 0) {
-            onSave(tags.slice(0, -1));
-          }
-        }}
-        placeholder={tags.length === 0 ? "Add a tag…" : ""}
-        className="min-w-[90px] flex-1 bg-transparent py-0.5 text-[13px] outline-none placeholder:text-muted-2"
-      />
-    </div>
-  );
-}
-
-function UrlField({ value, onSave }: { value: string; onSave: (url: string) => void }) {
+function TagEditor({ value, onSave }: { value: string; onSave: (tags: string[]) => void }) {
   const [text, setText] = useState(value);
+
+  return (
+    <Input
+      value={text}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={() => {
+        const tags = text
+          .split(",")
+          .map((t) => t.trim().toLowerCase())
+          .filter(Boolean);
+        if (tags.join(",") !== value) onSave(tags);
+      }}
+      placeholder="sop, pricing"
+      className="w-full sm:w-52"
+    />
+  );
+}
+
+/** Same key-remount reasoning as TagEditor. */
+function UrlEditor({ value, onSave }: { value: string; onSave: (url: string) => void }) {
+  const [text, setText] = useState(value);
+
   return (
     <div className="flex items-center gap-2">
-      <input
+      <Input
         value={text}
         onChange={(e) => setText(e.target.value)}
         onBlur={() => {
@@ -551,7 +465,6 @@ function UrlField({ value, onSave }: { value: string; onSave: (url: string) => v
           if (next && next !== value) onSave(next);
         }}
         placeholder="https://…"
-        className="min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-1 py-1.5 text-sm text-primary outline-none hover:border-border focus:border-primary/50"
       />
       {value && (
         <a
@@ -559,7 +472,7 @@ function UrlField({ value, onSave }: { value: string; onSave: (url: string) => v
           target="_blank"
           rel="noopener noreferrer"
           title="Open"
-          className="shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+          className="shrink-0 rounded-md border border-border p-2 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
         >
           <ExternalLink className="h-3.5 w-3.5" />
         </a>
@@ -568,13 +481,17 @@ function UrlField({ value, onSave }: { value: string; onSave: (url: string) => v
   );
 }
 
-function AudiencePicker({
+function PickerRow({
+  label,
+  empty,
   chips,
   options,
   selected,
   onToggle,
   menuLabel,
 }: {
+  label: string;
+  empty: string;
   chips: { id: string; label: string }[];
   options: { id: string; label: string }[];
   selected: string[];
@@ -582,52 +499,57 @@ function AudiencePicker({
   menuLabel: string;
 }) {
   return (
-    <>
-      {chips.map((c) => (
-        <span
-          key={c.id}
-          className="group/chip flex items-center gap-1 rounded bg-white/5 py-0.5 pl-1.5 pr-1 text-[11.5px] text-foreground-secondary"
+    <div className="mt-3.5 border-t border-border-subtle pt-3.5">
+      <Label>{label}</Label>
+      <div className="flex flex-wrap items-center gap-1.5">
+        {chips.map((c) => (
+          <span
+            key={c.id}
+            className="flex items-center gap-1.5 rounded-full border border-border bg-white/5 py-1 pl-2.5 pr-1.5 text-[11.5px]"
+          >
+            {c.label}
+            <button
+              type="button"
+              onClick={() => onToggle(c.id)}
+              className="rounded-full p-0.5 text-muted-2 hover:bg-white/10 hover:text-foreground"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </span>
+        ))}
+
+        <Popover
+          trigger={
+            <button
+              type="button"
+              className="flex items-center gap-1.5 rounded-full border border-dashed border-border px-2.5 py-1 text-[11.5px] text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+            >
+              <Users className="h-3 w-3" /> Add
+            </button>
+          }
         >
-          {c.label}
-          <button
-            type="button"
-            onClick={() => onToggle(c.id)}
-            className="rounded-sm text-muted-2 opacity-0 transition-opacity hover:text-foreground group-hover/chip:opacity-100"
-          >
-            <X className="h-2.5 w-2.5" />
-          </button>
-        </span>
-      ))}
-      <Popover
-        trigger={
-          <button
-            type="button"
-            className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[11.5px] text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
-          >
-            <Users className="h-3 w-3" /> Add
-          </button>
-        }
-      >
-        {() => (
-          <>
-            <MenuLabel>{menuLabel}</MenuLabel>
-            {options.length === 0 && (
-              <div className="px-2 py-1.5 text-xs text-muted-foreground">Nothing to pick.</div>
-            )}
-            {options.map((o) => (
-              <MenuItem
-                key={o.id}
-                selected={selected.includes(o.id)}
-                /* Stays open — granting to four roles shouldn't mean opening
-                   the menu four times. */
-                onClick={() => onToggle(o.id)}
-              >
-                {o.label}
-              </MenuItem>
-            ))}
-          </>
-        )}
-      </Popover>
-    </>
+          {() => (
+            <>
+              <MenuLabel>{menuLabel}</MenuLabel>
+              {options.length === 0 && (
+                <div className="px-2 py-1.5 text-xs text-muted-foreground">Nothing to pick.</div>
+              )}
+              {options.map((o) => (
+                <MenuItem
+                  key={o.id}
+                  selected={selected.includes(o.id)}
+                  /* Stays open — granting to four roles shouldn't mean opening
+                     the menu four times. */
+                  onClick={() => onToggle(o.id)}
+                >
+                  {o.label}
+                </MenuItem>
+              ))}
+            </>
+          )}
+        </Popover>
+      </div>
+      {chips.length === 0 && <p className="mt-1.5 text-[11.5px] text-warning">{empty}</p>}
+    </div>
   );
 }

@@ -469,21 +469,29 @@ button:not(:disabled):active,
     start clipping; BlockNote ships 54px, which inside a measured column reads
     as an indent rather than a margin.
   */
-  padding-inline: 24px;
+  padding-inline: 20px;
   padding-block: 0;
 }
 
 /*
-  Then pull the block back by exactly that gutter, so the TEXT shares the
-  title's left edge and the controls overhang into the page margin. The two
-  numbers have to match — mismatch them and the body sits at a different x
-  from everything above it, which is what it was doing.
+  Then pull the block back by the CARD's padding, so the text lines up with the
+  card's other content and the gutter overhangs into the padding where nothing
+  else lives.
+
+  These numbers are coupled to the Card: p-4 (16px) on mobile, sm:p-5 (20px)
+  above. Change the Card's padding and this has to follow, or the body sits at
+  a different x from the title above it.
 */
 .note-editor {
-  margin-inline-start: -24px;
+  margin-inline-start: -16px;
   /* Room to write into. An empty note that's 40px tall looks broken; a page
      you can click anywhere in to start typing does not. */
-  min-height: 340px;
+  min-height: 300px;
+}
+@media (min-width: 640px) {
+  .note-editor {
+    margin-inline-start: -20px;
+  }
 }
 
 /*
@@ -545,29 +553,4 @@ button:not(:disabled):active,
 /* A drag handle you can't drag is an invitation to try. */
 .note-editor--readonly .bn-side-menu {
   display: none;
-}
-
-/*
-  A select that reads as text until you reach for it.
-
-  The property rows are metadata, not a form — bordered full-width selects made
-  three optional fields shout louder than the writing. Border and surface
-  appear on hover or focus only, which is why a Notion page reads as a document
-  and a settings screen doesn't.
-*/
-.ghost-select [data-slot="select-trigger"] {
-  border-color: transparent;
-  background: transparent;
-  height: auto;
-  padding-block: 0.35rem;
-  font-size: 13px;
-  box-shadow: none;
-}
-.ghost-select [data-slot="select-trigger"]:hover {
-  background: oklch(1 0 0 / 0.04);
-}
-.ghost-select [data-slot="select-trigger"][data-state="open"],
-.ghost-select [data-slot="select-trigger"]:focus-visible {
-  border-color: var(--border);
-  background: oklch(1 0 0 / 0.04);
 }
