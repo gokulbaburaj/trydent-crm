@@ -2,17 +2,19 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Building2,
   Calendar,
   ChevronDown,
   ChevronRight,
   ClipboardCheck,
+  FileText,
   FolderKanban,
   GitBranch,
   LayoutDashboard,
   Library,
+  Link2,
   ListChecks,
   Plus,
   Search,
@@ -41,6 +43,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
 import { openCommandMenu } from "@/components/CommandMenu";
+import { Popover, MenuItem, MenuLabel } from "@/components/ui/Popover";
 import { applyOrder, useNavState } from "@/lib/nav";
 import { useTabs } from "@/lib/tabs";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
@@ -106,6 +109,7 @@ export function Sidebar({
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const activeTeam = searchParams.get("team");
   const { state, toggleSection, toggleTeam, setOrder } = useNavState();
@@ -191,12 +195,51 @@ export function Sidebar({
           >
             <Search className="h-3.5 w-3.5" />
           </button>
-          <button
-            title="New"
-            className="rounded p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground"
-          >
-            <SquarePen className="h-3.5 w-3.5" />
-          </button>
+          {/* This was a button with no onClick — a "New" affordance that did
+              nothing. It now writes a note, which is what the icon has always
+              looked like it does. Quick capture belongs in the chrome: the
+              value of a notes feature is how little friction sits between
+              having the thought and writing it down. */}
+          {canAccess(access, "resources") && (
+            <Popover
+              align="left"
+              className="w-48"
+              trigger={
+                <button
+                  title="New note or link"
+                  className="rounded p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground"
+                >
+                  <SquarePen className="h-3.5 w-3.5" />
+                </button>
+              }
+            >
+              {(close) => (
+                <>
+                  <MenuLabel>Quick capture</MenuLabel>
+                  <MenuItem
+                    icon={<FileText className="h-3.5 w-3.5" />}
+                    onClick={() => {
+                      close();
+                      onNavigate?.();
+                      router.push("/resources?new=note");
+                    }}
+                  >
+                    New note
+                  </MenuItem>
+                  <MenuItem
+                    icon={<Link2 className="h-3.5 w-3.5" />}
+                    onClick={() => {
+                      close();
+                      onNavigate?.();
+                      router.push("/resources?new=link");
+                    }}
+                  >
+                    New link
+                  </MenuItem>
+                </>
+              )}
+            </Popover>
+          )}
         </div>
       </div>
 

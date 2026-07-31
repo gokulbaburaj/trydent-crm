@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Building2,
   ExternalLink,
@@ -43,7 +43,11 @@ import {
 export default function ResourcesPage() {
   return (
     <RequireAccess page="resources">
-      <ResourcesInner />
+      {/* useSearchParams needs a Suspense boundary in the App Router — the
+          sidebar's quick-capture button arrives here as ?new=note. */}
+      <Suspense fallback={<TableSkeleton rows={6} />}>
+        <ResourcesInner />
+      </Suspense>
     </RequireAccess>
   );
 }
@@ -70,6 +74,7 @@ const emptyDraft: NewDraft = {
 
 function ResourcesInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { openInNewTab } = useTabs();
   const { resources, tagCounts, loading, canEdit, create } = useResources();
   const { rows: clients } = useSupabaseTable<Client>("clients");
@@ -78,6 +83,22 @@ function ResourcesInner() {
   const { filters, views, setFilters, setViews } = useStoredFilters("resources");
   const [draft, setDraft] = useState<NewDraft | null>(null);
   const [saving, setSaving] = useState(false);
+  const [handledParam, setHandledParam] = useState(false);
+
+  /*
+   * ?new=note / ?new=link opens the composer straight away — that's the
+   * sidebar's quick-capture button landing here.
+   *
+   * Opened during render rather than in an effect, guarded by a flag so
+   * closing the drawer doesn't immediately reopen it. An effect would paint
+   * the list first and pop the modal a frame later, which reads as a glitch,
+   * and it's the cascading-render pattern the lint rule catches.
+   */
+  const newParam = searchParams.get("new");
+  if (!handledParam && canEdit && (newParam === "note" || newParam === "link")) {
+    setHandledParam(true);
+    setDraft({ ...emptyDraft, kind: newParam });
+  }
 
   const clientName = (id: string | null) =>
     clients.find((c) => c.id === id)?.company ?? null;
