@@ -126,17 +126,29 @@ export function Sidebar({
     ascending: true,
   });
 
-  // Real team records, plus any legacy names still sitting on profiles.
+  /**
+   * Real team records, plus any legacy names still sitting on profiles.
+   *
+   * The id is what the dashboard route needs. Legacy names have none — they're
+   * a team someone typed onto a profile before `teams` existed — so those rows
+   * stay expandable but don't link anywhere. Creating the team properly in
+   * Settings is what gives them a page.
+   */
   const teams = useMemo(() => {
-    const names = new Set(teamRows.map((t) => t.name));
-    for (const p of profiles) if (p.role !== "client" && p.team) names.add(p.team);
-    return Array.from(names).sort();
+    const byName = new Map<string, string | null>();
+    for (const t of teamRows) byName.set(t.name, t.id);
+    for (const p of profiles) {
+      if (p.role !== "client" && p.team && !byName.has(p.team)) byName.set(p.team, null);
+    }
+    return Array.from(byName.entries())
+      .map(([name, id]) => ({ name, id }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [teamRows, profiles]);
 
   async function createTeam() {
     const name = window.prompt("New team name:")?.trim();
     if (!name) return;
-    if (teams.includes(name)) {
+    if (teams.some((t) => t.name === name)) {
       toast.error(`"${name}" already exists.`);
       return;
     }
@@ -232,26 +244,63 @@ export function Sidebar({
                   No teams yet{isAdmin ? " — use + to create one." : "."}
                 </p>
               )}
-              {teams.map((team) => {
+              {teams.map(({ name: team, id: teamId }) => {
                 const expanded = !!state.teams[team];
                 return (
                   <div key={team} className="flex flex-col gap-px">
-                    <button
-                      onClick={() => toggleTeam(team)}
-                      className="flex items-center gap-1.5 rounded px-2 py-[7px] text-[13px] font-medium text-foreground-secondary transition-colors hover:bg-white/5 hover:text-foreground"
+                    {/*
+                      Chevron toggles, name navigates. One control doing both
+                      is the usual sidebar mistake: expanding to see what's
+                      inside and opening the thing itself are different
+                      intentions, and a row that only expands makes the team
+                      name look like a header rather than a destination.
+                    */}
+                    <div
+                      className={cn(
+                        "group/team flex items-center rounded pr-2 transition-colors hover:bg-white/5",
+                        pathname === `/team/${teamId}` && "bg-white/[0.07]"
+                      )}
                     >
-                      <ChevronRight
-                        className={cn(
-                          "h-3 w-3 shrink-0 text-muted-foreground transition-transform duration-150",
-                          expanded && "rotate-90"
-                        )}
-                      />
-                      <Building2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                      <span className="min-w-0 flex-1 truncate text-left">{team}</span>
-                      <span className="shrink-0 text-[10px] tabular-nums text-muted-2">
+                      <button
+                        onClick={() => toggleTeam(team)}
+                        aria-label={expanded ? `Collapse ${team}` : `Expand ${team}`}
+                        className="shrink-0 rounded py-[7px] pl-2 pr-1 text-muted-foreground hover:text-foreground"
+                      >
+                        <ChevronRight
+                          className={cn(
+                            "h-3 w-3 transition-transform duration-150",
+                            expanded && "rotate-90"
+                          )}
+                        />
+                      </button>
+                      {teamId ? (
+                        <Link
+                          href={`/team/${teamId}`}
+                          onClick={onNavigate}
+                          className={cn(
+                            "flex min-w-0 flex-1 items-center gap-1.5 py-[7px] text-[13px] font-medium transition-colors",
+                            pathname === `/team/${teamId}`
+                              ? "text-foreground"
+                              : "text-foreground-secondary group-hover/team:text-foreground"
+                          )}
+                        >
+                          <Building2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                          <span className="min-w-0 flex-1 truncate text-left">{team}</span>
+                        </Link>
+                      ) : (
+                        <button
+                          onClick={() => toggleTeam(team)}
+                          title="Create this team in Settings to give it a page"
+                          className="flex min-w-0 flex-1 items-center gap-1.5 py-[7px] text-[13px] font-medium text-foreground-secondary transition-colors group-hover/team:text-foreground"
+                        >
+                          <Building2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                          <span className="min-w-0 flex-1 truncate text-left">{team}</span>
+                        </button>
+                      )}
+                      <span className="shrink-0 pl-1.5 text-[10px] tabular-nums text-muted-2">
                         {profiles.filter((p) => p.team === team && p.role !== "client").length}
                       </span>
-                    </button>
+                    </div>
                     {expanded && (
                       <div className="ml-[15px] flex flex-col gap-px border-l border-border-subtle pl-2">
                         <SubLink
