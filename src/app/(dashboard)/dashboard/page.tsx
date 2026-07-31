@@ -116,18 +116,55 @@ export default function DashboardPage() {
     [deals]
   );
 
+  /**
+   * Closed-won revenue per month, in calendar order with no gaps.
+   *
+   * Two bugs lived here.
+   *
+   * 1. ORDER. The bucket key was the display label ("Aug 26"), and
+   *    Object.entries returns insertion order — i.e. whatever order the deals
+   *    happened to arrive in. On the bar chart that looked like nothing worse
+   *    than shuffled months. On the line chart it drew an S: the x-axis is a
+   *    real time scale, so each point sits at its true date while the line
+   *    connects them in array order, and the stroke doubles back on itself.
+   *    A chart that loops is a sorting bug every time. Bucketing on a sortable
+   *    "YYYY-MM" key and formatting only at the end fixes both views.
+   *
+   * 2. GAPS. A month with no closed-won deals was simply absent, so the line
+   *    ran straight from June to August as though July had been steady. For a
+   *    revenue series an empty month is not missing data — it's zero, and
+   *    saying so is the honest shape. Filled between the first and last month
+   *    that actually have deals; we don't invent leading or trailing zeros.
+   */
   const monthlyRevenue = useMemo(() => {
-    const months: Record<string, number> = {};
+    const buckets = new Map<string, number>();
     deals
       .filter((d) => d.deal_stage === "Closed Won" && d.close_date)
       .forEach((d) => {
-        const key = new Date(d.close_date as string).toLocaleDateString("en-US", {
-          month: "short",
-          year: "2-digit",
-        });
-        months[key] = (months[key] || 0) + dealBase(d);
+        const date = new Date(d.close_date as string);
+        if (Number.isNaN(date.getTime())) return;
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+        buckets.set(key, (buckets.get(key) ?? 0) + dealBase(d));
       });
-    return Object.entries(months).map(([month, revenue]) => ({ month, revenue }));
+
+    if (buckets.size === 0) return [];
+
+    const keys = Array.from(buckets.keys()).sort();
+    const [firstY, firstM] = keys[0].split("-").map(Number);
+    const [lastY, lastM] = keys[keys.length - 1].split("-").map(Number);
+
+    const out: { month: string; revenue: number }[] = [];
+    const cursor = new Date(firstY, firstM - 1, 1);
+    const end = new Date(lastY, lastM - 1, 1);
+    while (cursor <= end) {
+      const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}`;
+      out.push({
+        month: cursor.toLocaleDateString("en-US", { month: "short", year: "2-digit" }),
+        revenue: buckets.get(key) ?? 0,
+      });
+      cursor.setMonth(cursor.getMonth() + 1);
+    }
+    return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deals]);
 
