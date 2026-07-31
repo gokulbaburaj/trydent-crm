@@ -40,6 +40,24 @@ export const VIEW_PREFERENCES = [
     fallback: "table",
   },
   {
+    key: "projects",
+    label: "Projects",
+    options: [
+      { id: "table", label: "Table" },
+      { id: "grouped", label: "By client" },
+    ],
+    fallback: "table",
+  },
+  {
+    key: "pipeline",
+    label: "Pipeline",
+    options: [
+      { id: "table", label: "Table" },
+      { id: "board", label: "Board" },
+    ],
+    fallback: "table",
+  },
+  {
     key: "recruiting",
     label: "Recruiting",
     options: [
