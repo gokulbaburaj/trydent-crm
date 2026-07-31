@@ -647,8 +647,28 @@ export interface Resource {
   title: string;
   /** One line under the title in the list. Optional on purpose. */
   summary: string | null;
-  /** Markdown. Present when kind is "note". */
+  /**
+   * Markdown MIRROR of `content`, regenerated on every save.
+   *
+   * Derived, not authoritative. It exists so the full-text index has prose to
+   * index rather than jsonb structure keys — indexing the block tree would
+   * make every note match a search for "paragraph". Never read back into the
+   * editor; the conversion is lossy by design (a callout flattens to a
+   * blockquote) and that's fine for something only ever searched.
+   */
   body: string | null;
+  /**
+   * BlockNote block tree — the source of truth for a note's body.
+   *
+   * `unknown[]` rather than BlockNote's `Block[]`: types.ts is imported by
+   * every page and shouldn't drag an editor dependency along with it. The
+   * editor casts at its own boundary, which is the only place that knows the
+   * shape anyway.
+   *
+   * Null means the note predates the block editor — its markdown is parsed
+   * into blocks the first time it's opened.
+   */
+  content: unknown[] | null;
   /** Present when kind is "link". */
   url: string | null;
   tags: string[];

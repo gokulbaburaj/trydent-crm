@@ -409,3 +409,73 @@ button:not(:disabled):active,
   --chart-4: #d9a53f;
   --chart-5: #d95c8a;
 }
+
+/*
+  ---break---
+*/
+
+/*
+  BlockNote (the Notion-style note editor) ships its own `--bn-*` variables and
+  its own light/dark palettes. Left alone it renders a small, correct-looking
+  editor that belongs to a different app — different greys, different radii,
+  different font.
+
+  Mapping its variables onto our tokens is the cheap fix: one block here, and
+  the editor inherits the theme, including the accent picker in Settings. The
+  alternative — overriding BlockNote's own class names — breaks on every
+  upgrade, because those are internal and its variables are the public surface.
+*/
+.note-editor {
+  --bn-colors-editor-text: var(--foreground-secondary);
+  --bn-colors-editor-background: transparent;
+
+  --bn-colors-menu-text: var(--foreground);
+  --bn-colors-menu-background: var(--popover);
+
+  --bn-colors-tooltip-text: var(--foreground);
+  --bn-colors-tooltip-background: var(--popover);
+
+  --bn-colors-hovered-text: var(--foreground);
+  --bn-colors-hovered-background: oklch(1 0 0 / 0.06);
+
+  --bn-colors-selected-text: var(--primary-foreground);
+  --bn-colors-selected-background: var(--primary);
+
+  --bn-colors-disabled-text: var(--muted-2);
+  --bn-colors-disabled-background: transparent;
+
+  --bn-colors-border: var(--border);
+  --bn-colors-side-menu: var(--muted-2);
+  --bn-colors-shadow: oklch(0 0 0 / 0.5);
+
+  --bn-font-family: inherit;
+  --bn-border-radius-small: 0.25rem;
+  --bn-border-radius-medium: 0.375rem;
+  --bn-border-radius-large: 0.5rem;
+
+  /*
+    The editor sits inside a Card that already provides padding. BlockNote's
+    default page padding on top of that pushes the first line a long way from
+    the card edge and makes the note look like it starts halfway down.
+
+    The inline padding stays: the drag handle and + button live in that gutter,
+    and removing it puts them under the card border where they can't be
+    clicked.
+  */
+  --bn-mobile-keyboard-offset: 0px;
+}
+
+.note-editor .bn-editor {
+  padding-block: 0;
+}
+
+.note-editor .bn-container {
+  font-size: 13.5px;
+  line-height: 1.65;
+}
+
+/* Read-only notes lose the hover affordances — a drag handle you can't drag
+   is an invitation to try. */
+.note-editor--readonly .bn-side-menu {
+  display: none;
+}

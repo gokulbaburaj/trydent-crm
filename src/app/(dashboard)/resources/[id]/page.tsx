@@ -1,34 +1,43 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Building2,
-  Check,
   Eye,
   ExternalLink,
   FileText,
   FolderKanban,
   Library,
   Link2,
-  Pencil,
   Pin,
   Trash2,
   Users,
   X,
 } from "lucide-react";
 import { toast } from "@/components/Toaster";
-import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Dropdown } from "@/components/ui/Dropdown";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { Input, Label, Textarea } from "@/components/ui/Input";
+import { Input, Label } from "@/components/ui/Input";
 import { Popover, MenuItem, MenuLabel } from "@/components/ui/Popover";
 import { TableSkeleton } from "@/components/ui/Skeletons";
-import { Markdown } from "@/components/Markdown";
 import { RequireAccess } from "@/components/RequireAccess";
+
+/*
+ * ssr: false is required, not a preference. BlockNote is built on ProseMirror,
+ * which touches `document` while constructing its view — rendering it on the
+ * server throws. Loading it lazily also keeps the editor and its ProseMirror
+ * dependencies out of every other route's bundle, which matters because it is
+ * by some distance the heaviest thing in the app.
+ */
+const NoteEditor = dynamic(() => import("@/components/NoteEditor"), {
+  ssr: false,
+  loading: () => <TableSkeleton rows={6} />,
+});
 import { useResources, urlHost, normaliseUrl } from "@/lib/useResources";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { useStaffProfiles } from "@/lib/useStaffProfiles";
@@ -62,26 +71,35 @@ function ResourceInner() {
 
   const resource = resources.find((r) => r.id === params.id) ?? null;
 
-  const [editing, setEditing] = useState(false);
-  const [body, setBody] = useState("");
   const [title, setTitle] = useState("");
   const [seededFor, setSeededFor] = useState<string | null>(null);
 
   /*
-   * Seed the local draft from the row when the row identity changes.
+   * Seed the title from the row when the row identity changes.
    *
-   * Adjusting state during render rather than in an effect: React handles this
-   * by re-running the component before committing, so there's no flash of the
-   * previous note's text and no second paint. An effect here would be the
-   * cascading-render pattern react-hooks/set-state-in-effect exists to catch —
-   * and it would also fight the textarea for the cursor, because the hook's
-   * optimistic writes hand back a new object on every save.
+   * Adjusted during render rather than in an effect: React re-runs the
+   * component before committing, so there's no flash of the previous note's
+   * title and no second paint. An effect here would be the cascading-render
+   * pattern react-hooks/set-state-in-effect exists to catch, and it would also
+   * fight the input for the cursor — the hook's optimistic writes hand back a
+   * new object on every save.
+   *
+   * The body isn't mirrored into state at all any more: BlockNote owns the
+   * document and hands it back through onSave. Keeping a second copy here
+   * would just be something to get out of sync.
    */
   if (resource && seededFor !== resource.id) {
     setSeededFor(resource.id);
-    setBody(resource.body ?? "");
     setTitle(resource.title);
   }
+
+  const resourceId = resource?.id;
+  const saveNote = useCallback(
+    (next: { content: unknown[]; body: string }) => {
+      if (resourceId) update(resourceId, next);
+    },
+    [resourceId, update]
+  );
 
   const tagText = useMemo(() => (resource?.tags ?? []).join(", "), [resource?.tags]);
 
@@ -99,15 +117,15 @@ function ResourceInner() {
 
   const isNote = resource.kind === "note";
 
-  async function saveBody() {
+  /** Committed on blur — one write per edit, not one per letter. */
+  async function saveTitle() {
     if (!resource) return;
-    setEditing(false);
-    const patch: Record<string, string> = {};
-    if (title.trim() && title !== resource.title) patch.title = title.trim();
-    // The shape constraint rejects an empty note, so an emptied editor is a
-    // no-op rather than a failed round trip and a confusing toast.
-    if (isNote && body.trim() && body !== resource.body) patch.body = body;
-    if (Object.keys(patch).length > 0) await update(resource.id, patch);
+    const next = title.trim();
+    if (!next || next === resource.title) {
+      setTitle(resource.title); // reject an empty title rather than save it
+      return;
+    }
+    await update(resource.id, { title: next });
   }
 
   async function setVisibility(visibility: ResourceVisibility) {
@@ -170,11 +188,16 @@ function ResourceInner() {
                 <Link2 className="h-4 w-4 text-primary" />
               )}
             </div>
-            {editing ? (
+            {canEdit ? (
+              /* Always editable, no Edit button. The whole point of a block
+                 editor is that reading and writing are the same mode — a note
+                 you have to unlock before fixing a typo is a note with typos. */
               <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="text-lg font-semibold"
+                onBlur={saveTitle}
+                aria-label="Note title"
+                className="border-transparent bg-transparent px-1 text-[19px] font-semibold shadow-none hover:border-border focus-visible:border-primary/60 md:text-[19px]"
               />
             ) : (
               <h1 className="min-w-0 text-[19px] font-semibold leading-tight tracking-tight">
@@ -198,21 +221,6 @@ function ResourceInner() {
               >
                 <Pin className={cn("h-3.5 w-3.5", resource.pinned && "fill-current")} />
               </button>
-              {isNote &&
-                (editing ? (
-                  <>
-                    <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>
-                      <X className="h-3.5 w-3.5" /> Cancel
-                    </Button>
-                    <Button size="sm" onClick={saveBody}>
-                      <Check className="h-3.5 w-3.5" /> Save
-                    </Button>
-                  </>
-                ) : (
-                  <Button size="sm" variant="secondary" onClick={() => setEditing(true)}>
-                    <Pencil className="h-3.5 w-3.5" /> Edit
-                  </Button>
-                ))}
               <button
                 type="button"
                 title="Delete resource"
@@ -372,26 +380,21 @@ function ResourceInner() {
 
       {/* Body */}
       {isNote ? (
-        <Card className="p-4 sm:p-5">
-          {editing ? (
-            <>
-              <Textarea
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-                rows={18}
-                className="font-mono text-[12.5px] leading-relaxed"
-                placeholder="# Heading&#10;&#10;Markdown works: **bold**, *italic*, `code`, [links](https://…), - lists, > quotes."
-              />
-              <div className="mt-4 border-t border-border-subtle pt-4">
-                <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-2">
-                  Preview
-                </p>
-                <Markdown>{body}</Markdown>
-              </div>
-            </>
-          ) : (
-            <Markdown>{resource.body ?? ""}</Markdown>
-          )}
+        <Card className="min-h-[380px] p-4 sm:p-5">
+          {/*
+            key={resource.id} is doing real work. BlockNote reads
+            `initialContent` once, at construction, and ignores it afterwards —
+            correctly, since re-seeding a live editor from props would stomp
+            whatever was just typed. Remounting is therefore the only way to
+            switch notes, and the key is what makes that happen.
+          */}
+          <NoteEditor
+            key={resource.id}
+            content={resource.content}
+            markdown={resource.body}
+            editable={canEdit}
+            onSave={saveNote}
+          />
         </Card>
       ) : (
         <Card className="p-4 sm:p-5">
