@@ -32,26 +32,39 @@ export function BarRow({
 }) {
   const width = Math.max(0, Math.min(100, pct));
   const fill = {
-    primary: "bg-primary/25",
-    success: "bg-success/25",
-    warning: "bg-warning/25",
-    danger: "bg-danger/25",
+    primary: "bg-primary/25 group-hover/bar:bg-primary/40",
+    success: "bg-success/25 group-hover/bar:bg-success/40",
+    warning: "bg-warning/25 group-hover/bar:bg-warning/40",
+    danger: "bg-danger/25 group-hover/bar:bg-danger/40",
   }[tone];
 
   return (
-    <div className={cn("flex items-center gap-2.5", className)}>
+    <div className={cn("group/bar flex items-center gap-2.5", className)}>
       {leading}
-      <div className="relative min-w-0 flex-1 overflow-hidden rounded-md">
+      {/*
+        The fill is rounded on its own, not clipped by the track.
+
+        `overflow-hidden` on the track squared the fill's right edge at every
+        width below 100%, so a 3/5 bar ended in a hard vertical cut while the
+        full-width ones looked rounded — the shape changed with the data, which
+        made short bars read as truncated rather than short.
+      */}
+      <div className="relative min-w-0 flex-1">
         <div
           aria-hidden
-          className={cn("absolute inset-y-0 left-0 transition-[width] duration-500 ease-out", fill)}
+          className={cn(
+            "absolute inset-y-0 left-0 rounded-md transition-[width,background-color] duration-300 ease-out",
+            fill
+          )}
           style={{ width: `${width}%` }}
         />
         <span className="relative block truncate px-2 py-1.5 text-[12.5px] text-foreground">
           {label}
         </span>
       </div>
-      <span className="shrink-0 text-[12.5px] tabular-nums text-muted-foreground">{value}</span>
+      <span className="shrink-0 text-[12.5px] tabular-nums text-foreground-secondary transition-colors group-hover/bar:text-foreground">
+        {value}
+      </span>
     </div>
   );
 }

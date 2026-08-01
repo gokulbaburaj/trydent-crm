@@ -25,6 +25,8 @@ import { BarChart } from "@/components/charts/bar-chart";
 import { Bar } from "@/components/charts/bar";
 import { BarXAxis } from "@/components/charts/bar-x-axis";
 import { Grid } from "@/components/charts/grid";
+import { ChartTooltip } from "@/components/charts/tooltip/chart-tooltip";
+import { TooltipContent } from "@/components/charts/tooltip/tooltip-content";
 import { useTeamDashboard, type MemberLoad } from "@/lib/useTeamDashboard";
 import { useAuth } from "@/lib/useAuth";
 import { isAdmin as hasAdminRights } from "@/lib/permissions";
@@ -280,6 +282,22 @@ function ProjectsCard({ d }: { d: Dash }) {
   );
 }
 
+const throughputTooltip = ({ point }: { point: Record<string, unknown> }) => {
+  const done = Number(point.done);
+  return (
+    <TooltipContent
+      title={`Week of ${String(point.week)}`}
+      rows={[
+        {
+          color: "var(--chart-1)",
+          label: done === 1 ? "task completed" : "tasks completed",
+          value: done,
+        },
+      ]}
+    />
+  );
+};
+
 function ThroughputCard({ data }: { data: { week: string; done: number }[] }) {
   const total = data.reduce((sum, w) => sum + w.done, 0);
 
@@ -317,6 +335,10 @@ function ThroughputCard({ data }: { data: { week: string; done: number }[] }) {
                 bars recede so the one under the cursor reads clearly. */}
             <Bar dataKey="done" fill={seriesFill(0)} lineCap="round" fadedOpacity={0.25} />
             <BarXAxis />
+            {/* This was simply missing. fadedOpacity dimmed the other bars on
+                hover, which made the chart feel interactive while telling you
+                nothing — the number you were hovering for never appeared. */}
+            <ChartTooltip content={throughputTooltip} />
           </BarChart>
         </div>
       )}
