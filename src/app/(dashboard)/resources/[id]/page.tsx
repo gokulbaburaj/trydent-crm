@@ -224,7 +224,16 @@ function ResourceInner() {
 
       {/* The document. 900px is Notion's measure — wide enough for a table,
           narrow enough that prose doesn't run away from the eye. */}
-      <div className="mx-auto w-full max-w-[900px] px-6 pb-32 pt-6 md:px-10">
+      {/*
+        1200px, not 900. 900 is Notion's measure for a centred page on a wide
+        monitor; inside this app's panel it left a third of the width empty and
+        read as "not full width".
+
+        md:px-14 is not decoration either — the editor's block controls live in
+        a 54px gutter that hangs left of the text, and this padding is the room
+        they hang into. Shrink it and the + button gets clipped again.
+      */}
+      <div className="mx-auto w-full max-w-[1200px] px-6 pb-32 pt-6 md:px-14">
         <div className="mb-1 flex items-center gap-3">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/15">
             {isNote ? (
@@ -455,7 +464,15 @@ function PropRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className="group -mx-1.5 flex min-h-[32px] items-start gap-3 rounded-md px-1.5 transition-colors hover:bg-white/[0.025]">
+    /*
+      max-w on the row, not the page column.
+
+      The hover tint used to span the full column, so pointing at "Client"
+      lit up 1200px of empty space — it read as selecting the page rather
+      than as "this row is interactive". A property row should be as wide
+      as its content plus a little slack.
+    */
+    <div className="group -mx-1.5 flex min-h-[32px] max-w-[560px] items-start gap-3 rounded-md px-1.5 transition-colors hover:bg-white/[0.03]">
       <div className="flex w-[104px] shrink-0 items-center gap-1.5 pt-[7px] text-[13px] text-muted-foreground">
         {Icon && <Icon className="h-3.5 w-3.5 text-muted-2" />}
         {label}

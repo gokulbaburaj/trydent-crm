@@ -445,22 +445,41 @@ button:not(:disabled):active,
 }
 
 /*
-  The gutter is NOT optional, and removing it is how the drag handle and +
-  button vanished.
+  The gutter is NOT optional, and 28px was not enough.
 
-  Plate positions those with `-translate-x-full absolute` — i.e. fully outside
-  the block, into the editor's own inline padding. Set that padding to 0 and
-  they render outside the editor box, where `main`'s `overflow-x-hidden` clips
-  them. Nothing errors; the controls are simply gone.
+  Plate positions the block controls with `-translate-x-full absolute` — fully
+  outside the block, into the editor's own inline padding. There are TWO of
+  them side by side, the + and the drag handle, and 28px fitted only the
+  handle: which is why the drag dots came back and the + still didn't.
+  Plate ships 54px for this and it's 54px because that's what the pair needs.
 
-  So: 28px of padding to hold them, and an equal negative margin so the TEXT
-  still starts on the title's left edge. The two numbers must match.
+  The negative margin must match it exactly, so the TEXT still starts on the
+  title's left edge while the controls hang into the page padding beside it.
+  That padding is `md:px-14` on the column — 56px, two to spare.
+
+  Below md there is no gutter and no negative margin: touch devices don't get
+  the side menu at all (Plate hides it — see use-is-touch-device), so the space
+  would be reserved for controls that never appear.
+*/
+@media (min-width: 768px) {
+  .note-editor [data-slate-editor] {
+    padding-inline: 54px;
+  }
+  .note-editor {
+    margin-inline-start: -54px;
+  }
+}
+
+/*
+  A normal text cursor.
+
+  EditorContainer ships `caret-primary`, which paints the caret in the brand
+  colour — a bright red bar in this theme. On an empty paragraph that reads as
+  a stray mark rather than a cursor, which is exactly what it got reported as.
+  A caret should be the colour of the text it's about to insert.
 */
 .note-editor [data-slate-editor] {
-  padding-inline: 28px;
-}
-.note-editor {
-  margin-inline-start: -28px;
+  caret-color: var(--foreground);
 }
 
 /* A drag handle you can't drag is an invitation to try. */
