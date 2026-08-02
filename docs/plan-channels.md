@@ -1,103 +1,12 @@
-# Plan — Resources, then Channels
+# Channels — build plan
 
-Two features, deliberately sequenced. Resources first: it's smaller, it has no
-realtime moving parts, and it gives Channels something worth linking to.
+Notes moved back to Notion and the Resources feature was deleted (2 Aug 2026).
+This is the half of that plan worth keeping.
 
----
-
-## Feature 1 — Resources
-
-### What it is
-
-A place for the things that currently have nowhere to live: process notes,
-useful documents, links to tutorials, brand assets, pricing references. Today
-they're in someone's head, a Notion page nobody opens, or a WhatsApp message.
-
-### The design decision worth making up front
-
-**One table, three kinds of item, not three features.** A note, an uploaded
-file and a link are the same object as far as the user is concerned — "a thing
-I want to find again". Splitting them into separate tables and separate pages
-means three search boxes and three empty states. One list, filtered by kind.
-
-### Schema
-
-```sql
-create table resources (
-  id           uuid primary key default gen_random_uuid(),
-  kind         text not null check (kind in ('note','file','link')),
-  title        text not null,
-  body         text,          -- markdown, for kind='note'
-  url          text,          -- for kind='link'
-  storage_path text,          -- for kind='file', private bucket
-  file_name    text,
-  file_size    bigint,
-  mime_type    text,
-  folder_id    uuid references resource_folders(id) on delete set null,
-  tags         text[] not null default '{}',
-  pinned       boolean not null default false,
-  client_id    uuid references clients(id) on delete set null,
-  project_id   uuid references projects(id) on delete set null,
-  created_by   uuid references profiles(id),
-  created_at   timestamptz not null default now(),
-  updated_at   timestamptz not null default now()
-);
-
-create table resource_folders (
-  id         uuid primary key default gen_random_uuid(),
-  name       text not null,
-  parent_id  uuid references resource_folders(id) on delete cascade,
-  created_at timestamptz not null default now()
-);
-```
-
-Indexes on `folder_id`, `client_id`, `project_id`, plus a GIN index on `tags`
-and a `tsvector` index over `title || body` for search. Both `client_id` and
-`project_id` are nullable and optional — most resources are company-wide.
-
-RLS: readable by any authenticated staff member, writable per the existing
-`current_can('resources')` grant. Client portal users get **nothing** here by
-default; client-facing documents already have their own table and their own
-sharing rules, and merging the two would be the fastest way to leak an
-internal pricing sheet.
-
-Storage: reuse the private-bucket pattern from `lib/storage.ts` with a new
-`resources` bucket and signed URLs.
-
-### Pages
-
-- `/resources` — the list. Sidebar of folders on the left, items on the right.
-  Filter chips for kind and tag, a search box wired to the tsvector index,
-  pinned items floated to the top. Grid or list view, same `useViewPreference`
-  hook the other pages use.
-- `/resources/[id]` — a note opens as a full editor page; a file opens a
-  preview with a download button; a link just navigates out. Same route, three
-  bodies.
-
-### Editor
-
-Markdown with a live preview, not a rich-text WYSIWYG. Reasons: markdown is
-diffable, pasteable, and survives being copied into Slack or a commit message.
-A WYSIWYG means fighting `contenteditable` for a month and owning the bug
-reports forever. If the editor needs to be prettier later, the stored format
-doesn't have to change.
-
-### Scope cut for v1
-
-No versioning, no comments, no per-item permissions, no client sharing. Each
-of those is a real feature and none of them is why the page exists.
-
-### Rough sequence
-
-1. Migration + `Resource` / `ResourceFolder` types
-2. `useResources` hook (list, create, update, delete, upload)
-3. `/resources` list page with folders, filters, search
-4. `/resources/[id]` detail with the markdown editor
-5. Register in nav, tabs, tab icons, command menu, and the roles page picker
-
----
-
-## Feature 2 — Channels
+One thing carried over from the deleted work: **`src/lib/useMentionables.ts`
+survives.** It's the picker that resolves `@` against real people, projects and
+clients, and it has no dependency on the note editor. That's most of item 4
+below already built and working.
 
 ### What it is
 
@@ -232,12 +141,3 @@ it survives across devices.
 5. Message actions: create task, react, reply in thread
 6. Project channels and the project-page Discussion tab
 7. Unread counts, notification trigger, nav badge
-
----
-
-## Order
-
-Resources first — one table, no realtime, and it stands on its own. Channels
-second, and only with the linking. Reassess after Resources ships: if the
-team doesn't use Resources, Channels is unlikely to fare better, and that's
-useful information to have before spending the larger effort.

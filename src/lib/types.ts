@@ -615,77 +615,6 @@ export interface Project {
   updated_at: string;
 }
 
-/* ── Resources ──────────────────────────────────────────────────────────── */
-
-export type ResourceKind = "note" | "link";
-export const RESOURCE_KINDS: ResourceKind[] = ["note", "link"];
-
-export const RESOURCE_KIND_LABELS: Record<ResourceKind, string> = {
-  note: "Note",
-  link: "Link",
-};
-
-/**
- * Who can read a resource.
- *
- * `everyone` is a separate state from "roles with an empty list" because those
- * mean opposite things — all versus none — and treating them as one is how a
- * resource ends up visible to nobody by accident.
- */
-export type ResourceVisibility = "everyone" | "roles" | "people";
-export const RESOURCE_VISIBILITIES: ResourceVisibility[] = ["everyone", "roles", "people"];
-
-export const RESOURCE_VISIBILITY_LABELS: Record<ResourceVisibility, string> = {
-  everyone: "Everyone",
-  roles: "Specific roles",
-  people: "Specific people",
-};
-
-export interface Resource {
-  id: string;
-  kind: ResourceKind;
-  title: string;
-  /** One line under the title in the list. Optional on purpose. */
-  summary: string | null;
-  /**
-   * Markdown MIRROR of `content`, regenerated on every save.
-   *
-   * Derived, not authoritative. It exists so the full-text index has prose to
-   * index rather than jsonb structure keys — indexing the block tree would
-   * make every note match a search for "paragraph". Never read back into the
-   * editor; the conversion is lossy by design (a callout flattens to a
-   * blockquote) and that's fine for something only ever searched.
-   */
-  body: string | null;
-  /**
-   * BlockNote block tree — the source of truth for a note's body.
-   *
-   * `unknown[]` rather than BlockNote's `Block[]`: types.ts is imported by
-   * every page and shouldn't drag an editor dependency along with it. The
-   * editor casts at its own boundary, which is the only place that knows the
-   * shape anyway.
-   *
-   * Null means the note predates the block editor — its markdown is parsed
-   * into blocks the first time it's opened.
-   */
-  content: unknown[] | null;
-  /** Present when kind is "link". */
-  url: string | null;
-  tags: string[];
-  /** Optional scoping — most resources are company-wide and leave these null. */
-  client_id: string | null;
-  project_id: string | null;
-  visibility: ResourceVisibility;
-  /** roles.id, not names: renaming a role must not revoke access. */
-  visible_role_ids: string[];
-  /** profiles.id, used only when visibility is "people". */
-  visible_to: string[];
-  pinned: boolean;
-  created_by: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface Database {
   public: {
     Tables: {
@@ -715,7 +644,6 @@ export interface Database {
       onboarding_tasks: { Row: OnboardingTask; Insert: Partial<OnboardingTask>; Update: Partial<OnboardingTask> };
       project_allocations: { Row: ProjectAllocation; Insert: Partial<ProjectAllocation>; Update: Partial<ProjectAllocation> };
       notifications: { Row: Notification; Insert: Partial<Notification>; Update: Partial<Notification> };
-      resources: { Row: Resource; Insert: Partial<Resource>; Update: Partial<Resource> };
     };
   };
 }

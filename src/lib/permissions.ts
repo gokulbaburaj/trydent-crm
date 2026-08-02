@@ -31,7 +31,6 @@ export type PageKey =
   | "pipeline"
   | "projects"
   | "schedule"
-  | "resources"
   | "organization"
   | "accounts"
   | "goals"
@@ -50,7 +49,6 @@ export const ALL_STAFF_PAGES: PageKey[] = [
   "pipeline",
   "projects",
   "schedule",
-  "resources",
   "organization",
   "accounts",
   "goals",
@@ -86,7 +84,6 @@ export const PAGE_LABELS: Record<PageKey, string> = {
   pipeline: "Pipeline",
   projects: "Projects",
   schedule: "Schedule",
-  resources: "Resources",
   organization: "Organisation",
   accounts: "Accounts",
   goals: "Goals",
@@ -108,9 +105,6 @@ export const ENFORCED_PAGES: PageKey[] = [
   "recruiting",
   "onboarding",
   "goals",
-  // Resources goes further than the others: the page grant decides whether you
-  // can open it at all, and each row then carries its own visibility on top.
-  "resources",
 ];
 
 /**
@@ -207,7 +201,6 @@ const ROUTE_KEYS: [string, PageKey][] = [
   ["/projects", "projects"],
   ["/schedule", "schedule"],
   ["/activities", "schedule"],
-  ["/resources", "resources"],
   ["/organization", "organization"],
   ["/accounts", "accounts"],
   ["/goals", "goals"],
