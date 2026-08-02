@@ -43,6 +43,39 @@ export function clearTableCache(table?: string) {
   }
 }
 
+/**
+ * The row count at which whole-table fetching stops being the right call.
+ *
+ * Not a hard limit and not enforced — a tripwire. Below this, one cached round
+ * trip beats a paged query on every measure that matters: it's faster, the
+ * client can filter and sort instantly, and saved views work without a server
+ * round trip per keystroke.
+ *
+ * 1,000 is where that inverts for a table of this shape (a few hundred bytes a
+ * row, rendered fifteen at a time). Largest table today is 26 rows, so this is
+ * years away — which is exactly why it needs to shout rather than be
+ * remembered.
+ */
+const LARGE_TABLE_ROWS = 1000;
+
+const warned = new Set<string>();
+
+function warnIfLarge(table: string, rows: number) {
+  if (rows < LARGE_TABLE_ROWS || warned.has(table)) return;
+  warned.add(table);
+  // Dev only. In production this would be noise in a console nobody reads;
+  // the fix is a code change, and code changes happen in development.
+  if (process.env.NODE_ENV !== "production") {
+    console.warn(
+      `[useSupabaseTable] "${table}" returned ${rows} rows and is fetched whole ` +
+        `on every page that uses it. Past ~${LARGE_TABLE_ROWS} rows this needs ` +
+        `server-side pagination — and filtering and sorting have to move with ` +
+        `it, or filters will silently apply to one page. ` +
+        `See docs/plan-server-pagination.md.`
+    );
+  }
+}
+
 export function useSupabaseTable<T>(
   table: string,
   orderBy?: { column: string; ascending?: boolean }
@@ -77,7 +110,9 @@ export function useSupabaseTable<T>(
         }
         const { data, error: err } = await query;
         if (err) throw new Error(err.message);
-        return (data as unknown[]) ?? [];
+        const rows = (data as unknown[]) ?? [];
+        warnIfLarge(table, rows.length);
+        return rows;
       })();
       inflight.set(key, request);
       // Whatever happens, the slot must free up or the table is stuck forever.
