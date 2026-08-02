@@ -6,8 +6,8 @@ import Link from "next/link";
 import {
   addDays,
   addMonths,
-  eachDayOfInterval,
   differenceInCalendarDays,
+  eachDayOfInterval,
   endOfMonth,
   endOfWeek,
   format,
@@ -26,12 +26,14 @@ import {
   Box,
   Building2,
   Calendar as CalendarIcon,
+  CalendarDays,
   Check,
   CheckCheck,
   ChevronLeft,
   ChevronRight,
-  LayoutGrid,
+  CircleDot,
   LayoutDashboard,
+  LayoutGrid,
   Link2,
   List,
   ListChecks,
@@ -44,6 +46,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/components/Toaster";
 import { BulkActionBar } from "@/components/BulkActionBar";
+import { DataTable, Column } from "@/components/DataTable";
 import { FilterBar } from "@/components/FilterBar";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { DashGrid } from "@/components/DashGrid";
@@ -186,7 +189,161 @@ export default function ProjectDetailPage() {
     [visibleTasks]
   );
 
-  const { selected, toggle, clear } = useMultiSelect();
+  const { selected, toggle, setMany, clear } = useMultiSelect();
+
+  /**
+   * Task columns for the List tab.
+   *
+   * The same shape as Projects, Clients and Pipeline — icons in the headers,
+   * click-to-sort, fixed widths — so the four tables in the app read as one
+   * component rather than four opinions. Everything that used to be a bespoke
+   * row (inline status, inline due date, the row menu) is now a cell.
+   */
+  const taskColumns: Column<ProjectTask>[] = [
+    {
+      header: "Status",
+      icon: CircleDot,
+      width: "150px",
+      sortKey: (t) => TASK_STATUSES.indexOf(t.status),
+      render: (t) => (
+        <span onClick={(e) => e.stopPropagation()}>
+          <StatusPicker
+            value={t.status}
+            options={TASK_STATUSES}
+            onChange={(status) => updateTask(t.id, { status })}
+          />
+        </span>
+      ),
+    },
+    {
+      header: "Task",
+      icon: ListChecks,
+      sortKey: (t) => t.name.toLowerCase(),
+      render: (t) => (
+        <button
+          onClick={() => setDetailTaskId(t.id)}
+          className="flex min-w-0 items-center gap-2 text-left"
+        >
+          <span
+            className={cn(
+              "min-w-0 truncate text-sm hover:underline",
+              (t.status === "Done" || t.status === "Archived") &&
+                "text-muted-foreground line-through decoration-muted-2"
+            )}
+            title={t.name}
+          >
+            {t.name}
+          </span>
+          <PriorityFlag priority={t.priority} />
+          <RecurrenceIndicator recurrence={t.recurrence} />
+          {t.approved_at && (
+            <span title="Approved by client">
+              <CheckCheck className="h-3.5 w-3.5 shrink-0 text-success" />
+            </span>
+          )}
+          {t.label && <LabelChip label={t.label} />}
+          {Array.isArray(t.links) && t.links.length > 0 && (
+            <span className="flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground">
+              <Link2 className="h-3 w-3" /> {t.links.length}
+            </span>
+          )}
+        </button>
+      ),
+    },
+    {
+      header: "Assignee",
+      icon: User,
+      width: "170px",
+      // Unassigned sorts last rather than first — an empty assignee isn't a
+      // name that begins with a space.
+      sortKey: (t) => (t.assigned_to ? personName(t.assigned_to)?.toLowerCase() ?? "" : null),
+      render: (t) =>
+        t.assigned_to ? (
+          <span className="flex min-w-0 items-center gap-2">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[9px] font-semibold text-primary">
+              {initials(personName(t.assigned_to))}
+            </span>
+            <span className="truncate text-[12.5px] text-muted-foreground">
+              {personName(t.assigned_to)}
+            </span>
+          </span>
+        ) : (
+          <span className="text-muted-2">Unassigned</span>
+        ),
+    },
+    {
+      header: "Due",
+      icon: CalendarDays,
+      width: "180px",
+      // Undated last, not first — an empty date isn't the dawn of time.
+      sortKey: (t) => t.due_date ?? "9999-12-31",
+      render: (t) => (
+        <span onClick={(e) => e.stopPropagation()}>
+          <DatePicker
+            align="right"
+            value={t.due_date}
+            placeholder="Due date"
+            onChange={(d) => updateTask(t.id, { due_date: d })}
+          />
+        </span>
+      ),
+    },
+    {
+      header: "",
+      width: "56px",
+      className: "text-right",
+      render: (t) => (
+        <span onClick={(e) => e.stopPropagation()}>
+          <Popover
+            align="right"
+            trigger={
+              <button className="rounded p-1 text-muted-foreground opacity-0 hover:bg-white/5 hover:text-foreground group-hover:opacity-100">
+                <MoreHorizontal className="h-3.5 w-3.5" />
+              </button>
+            }
+          >
+            {(close) => (
+              <>
+                <MenuLabel>Assign to</MenuLabel>
+                <MenuItem
+                  selected={!t.assigned_to}
+                  onClick={() => {
+                    updateTask(t.id, { assigned_to: null });
+                    close();
+                  }}
+                >
+                  Unassigned
+                </MenuItem>
+                {profiles.map((pr) => (
+                  <MenuItem
+                    key={pr.id}
+                    selected={t.assigned_to === pr.id}
+                    onClick={() => {
+                      updateTask(t.id, { assigned_to: pr.id });
+                      close();
+                    }}
+                  >
+                    {pr.full_name}
+                  </MenuItem>
+                ))}
+                <MenuItem
+                  danger
+                  icon={<Trash2 className="h-3.5 w-3.5" />}
+                  onClick={() => {
+                    close();
+                    deleteTask(t.id);
+                  }}
+                >
+                  Delete task
+                </MenuItem>
+              </>
+            )}
+          </Popover>
+        </span>
+      ),
+    },
+  ];
+
 
   // Bulk actions only touch rows that are both selected and currently visible.
   const selectedIds = useMemo(
@@ -1091,132 +1248,29 @@ export default function ProjectDetailPage() {
               <Plus className="h-4 w-4" /> Add
             </Button>
           </form>
-          <div className="overflow-hidden rounded border border-border bg-surface">
-            {visibleTasks.length === 0 && (
-              <p className="py-8 text-center text-sm text-muted-foreground">
-                {tasks.length > 0
-                  ? "No tasks match the current filters."
-                  : "No tasks yet."}
-              </p>
-            )}
-            {visibleTasks.map((t) => (
-              <div
-                key={t.id}
-                className={cn(
-                  "group flex items-center gap-3 border-b border-border-subtle px-3 py-2 last:border-0 hover:bg-white/[0.03]",
-                  selected.has(t.id) && "bg-primary/5"
-                )}
-              >
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggle(t.id, e.shiftKey, visibleTasks.map((x) => x.id));
-                  }}
-                  onMouseDown={(e) => {
-                    // Keep shift-click from selecting page text.
-                    if (e.shiftKey) e.preventDefault();
-                  }}
-                  title="Select task (shift-click for a range)"
-                  className={cn(
-                    "flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-[opacity,background-color,border-color]",
-                    selected.has(t.id)
-                      ? "border-primary bg-primary opacity-100"
-                      : cn(
-                          "border-muted-2 hover:border-muted-foreground",
-                          selected.size > 0
-                            ? "opacity-100"
-                            : "opacity-0 group-hover:opacity-100"
-                        )
-                  )}
-                >
-                  {selected.has(t.id) && (
-                    <Check className="h-3 w-3 text-primary-foreground" />
-                  )}
-                </button>
-                <StatusPicker
-                  value={t.status}
-                  options={TASK_STATUSES}
-                  onChange={(status) => updateTask(t.id, { status })}
-                />
-                <button
-                  onClick={() => setDetailTaskId(t.id)}
-                  className="flex min-w-0 flex-1 items-center gap-2 text-left"
-                >
-                  <span
-                    className={cn(
-                      "min-w-0 truncate text-sm hover:underline",
-                      (t.status === "Done" || t.status === "Archived") &&
-                        "text-muted-foreground line-through decoration-muted-2"
-                    )}
-                  >
-                    {t.name}
-                  </span>
-                  <PriorityFlag priority={t.priority} />
-                  <RecurrenceIndicator recurrence={t.recurrence} />
-                  {t.approved_at && (
-                    <span title="Approved by client">
-                      <CheckCheck className="h-3.5 w-3.5 shrink-0 text-success" />
-                    </span>
-                  )}
-                  {t.label && <LabelChip label={t.label} />}
-                  {Array.isArray(t.links) && t.links.length > 0 && (
-                    <span className="flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground">
-                      <Link2 className="h-3 w-3" /> {t.links.length}
-                    </span>
-                  )}
-                </button>
-                {t.assigned_to && (
-                  <span
-                    title={personName(t.assigned_to) ?? undefined}
-                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[9px] font-semibold text-primary"
-                  >
-                    {initials(personName(t.assigned_to))}
-                  </span>
-                )}
-                <div className="w-40 shrink-0">
-                  <DatePicker
-                    align="right"
-                    value={t.due_date}
-                    placeholder="Due date"
-                    onChange={(d) => updateTask(t.id, { due_date: d })}
-                  />
-                </div>
-                <Popover
-                  align="right"
-                  trigger={
-                    <button className="rounded p-1 text-muted-foreground opacity-0 hover:bg-white/5 hover:text-foreground group-hover:opacity-100">
-                      <MoreHorizontal className="h-3.5 w-3.5" />
-                    </button>
-                  }
-                >
-                  {(close) => (
-                    <>
-                      <MenuLabel>Assign to</MenuLabel>
-                      <MenuItem selected={!t.assigned_to} onClick={() => { updateTask(t.id, { assigned_to: null }); close(); }}>
-                        Unassigned
-                      </MenuItem>
-                      {profiles.map((p) => (
-                        <MenuItem
-                          key={p.id}
-                          selected={t.assigned_to === p.id}
-                          onClick={() => { updateTask(t.id, { assigned_to: p.id }); close(); }}
-                        >
-                          {p.full_name}
-                        </MenuItem>
-                      ))}
-                      <MenuItem
-                        danger
-                        icon={<Trash2 className="h-3.5 w-3.5" />}
-                        onClick={() => { close(); deleteTask(t.id); }}
-                      >
-                        Delete task
-                      </MenuItem>
-                    </>
-                  )}
-                </Popover>
-              </div>
-            ))}
-          </div>
+
+          {/*
+            The shared DataTable, not a hand-rolled row list.
+
+            This was the one list in the app that didn't use it, so it had no
+            sortable headers, no column icons, no fixed widths and no
+            pagination — and it visibly didn't match Projects or Clients. Every
+            behaviour below (inline status, inline due date, the row menu)
+            survives; they're just cells now.
+          */}
+          <DataTable
+            columns={taskColumns}
+            rows={visibleTasks}
+            rowKey={(t) => t.id}
+            pageSize={15}
+            minWidth="820px"
+            selection={{ selected, onToggle: toggle, onToggleAll: setMany }}
+            emptyMessage={
+              tasks.length > 0
+                ? "No tasks match the current filters."
+                : "No tasks yet."
+            }
+          />
         </div>
       )}
 
