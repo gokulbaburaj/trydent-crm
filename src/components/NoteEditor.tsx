@@ -143,7 +143,21 @@ export default function NoteEditor({
   return (
     <div className={cn("note-editor", !editable && "note-editor--readonly", className)}>
       <Plate editor={editor} onChange={handleChange} readOnly={!editable}>
-        <EditorContainer>
+        {/*
+          `h-auto overflow-visible` overrides two of EditorContainer's defaults,
+          and both matter.
+
+          Its base classes include `overflow-y-auto`, and CSS computes the other
+          axis to `auto` whenever one axis isn't `visible` — so the container
+          clips horizontally. Plate renders the drag handle and + button with
+          `-translate-x-full`, i.e. outside the block, so they get clipped away
+          silently. That is what "all the block commands are gone" was: a
+          layout bug with no error.
+
+          `h-full` is the other one: it would make the editor its own scroll
+          region inside the page. A document should scroll with the page.
+        */}
+        <EditorContainer className="h-auto overflow-visible">
           <Editor
             variant="none"
             placeholder={editable ? "Write, or press '/' for commands…" : ""}

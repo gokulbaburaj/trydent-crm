@@ -438,7 +438,6 @@ button:not(:disabled):active,
   reading, not scanning.
 */
 .note-editor [data-slate-editor] {
-  padding-inline: 0;
   padding-block: 0;
   min-height: 340px;
   font-size: 16px;
@@ -446,16 +445,22 @@ button:not(:disabled):active,
 }
 
 /*
-  No horizontal padding on the editor, and no negative margin to cancel it.
-  The page column owns the left edge now, so the body starts exactly where the
-  title does — which is the whole point of a document layout.
+  The gutter is NOT optional, and removing it is how the drag handle and +
+  button vanished.
 
-  The drag handle and + button are absolutely positioned into the space to the
-  left. That space exists because the page has 24–40px of gutter outside the
-  900px column; nothing else lives there, so the controls can have it.
+  Plate positions those with `-translate-x-full absolute` — i.e. fully outside
+  the block, into the editor's own inline padding. Set that padding to 0 and
+  they render outside the editor box, where `main`'s `overflow-x-hidden` clips
+  them. Nothing errors; the controls are simply gone.
+
+  So: 28px of padding to hold them, and an equal negative margin so the TEXT
+  still starts on the title's left edge. The two numbers must match.
 */
-.note-editor [data-slate-editor] > * {
-  position: relative;
+.note-editor [data-slate-editor] {
+  padding-inline: 28px;
+}
+.note-editor {
+  margin-inline-start: -28px;
 }
 
 /* A drag handle you can't drag is an invitation to try. */
