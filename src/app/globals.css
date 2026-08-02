@@ -430,34 +430,61 @@ button:not(:disabled):active,
   belongs to this page rather than to the editor.
 */
 
-/* The Card provides the surface and padding; the editor shouldn't add its own. */
+/*
+  Reading size, matched to the page around it.
+
+  Notion sits near 16px with a ~1.6 measure. 16/1.65 here reads the same and,
+  crucially, is bigger than the CRM's 13px table text — the note page is for
+  reading, not scanning.
+*/
 .note-editor [data-slate-editor] {
-  padding-inline: 20px;
+  padding-inline: 0;
   padding-block: 0;
-  min-height: 300px;
-  font-size: 15px;
-  line-height: 1.7;
+  min-height: 340px;
+  font-size: 16px;
+  line-height: 1.65;
 }
 
 /*
-  Pull back by the Card's own padding so body text lines up with the title and
-  fields above it, while the drag handle and + button overhang into the padding
-  where nothing else lives.
+  No horizontal padding on the editor, and no negative margin to cancel it.
+  The page column owns the left edge now, so the body starts exactly where the
+  title does — which is the whole point of a document layout.
 
-  Coupled to the Card's `p-4 sm:p-5`. Change that and this has to follow, or the
-  body silently sits at a different x from the header.
+  The drag handle and + button are absolutely positioned into the space to the
+  left. That space exists because the page has 24–40px of gutter outside the
+  900px column; nothing else lives there, so the controls can have it.
 */
-.note-editor {
-  margin-inline-start: -16px;
-}
-@media (min-width: 640px) {
-  .note-editor {
-    margin-inline-start: -20px;
-  }
+.note-editor [data-slate-editor] > * {
+  position: relative;
 }
 
 /* A drag handle you can't drag is an invitation to try. */
 .note-editor--readonly [data-plate-block-draggable],
 .note-editor--readonly .slate-blockDraggable {
   pointer-events: none;
+}
+
+/*
+  A select that reads as text until you reach for it.
+
+  The property rows are metadata, not a form — bordered full-width selects made
+  three optional fields shout louder than the writing. Border and surface appear
+  on hover or focus only, which is why a Notion page reads as a document and a
+  settings screen doesn't.
+*/
+.ghost-select [data-slot="select-trigger"] {
+  border-color: transparent;
+  background: transparent;
+  height: auto;
+  padding-block: 0.35rem;
+  font-size: 13px;
+  box-shadow: none;
+}
+.ghost-select [data-slot="select-trigger"]:hover {
+  background: oklch(1 0 0 / 0.04);
+}
+.ghost-select [data-slot="select-trigger"][data-state="open"],
+.ghost-select [data-slot="select-trigger"]:focus-visible {
+  border-color: var(--border);
+  background: oklch(1 0 0 / 0.04);
 }
