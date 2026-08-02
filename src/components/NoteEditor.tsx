@@ -1,49 +1,63 @@
 "use client";
 
 import { useCallback, useEffect, useRef } from "react";
-import { useTheme } from "next-themes";
-import type { Block, PartialBlock } from "@blocknote/core";
-import { useCreateBlockNote } from "@blocknote/react";
-import { BlockNoteView } from "@blocknote/shadcn";
-/*
- * Only the shadcn stylesheet. It already bundles core's and react's rules —
- * importing all three ships the same ~200KB of CSS three times and makes
- * override specificity a coin toss, since identical selectors then win on
- * source order rather than intent.
- */
-import "@blocknote/shadcn/style.css";
+import type { Value } from "platejs";
+import { deserializeMd, serializeMd } from "@platejs/markdown";
+import { Plate, usePlateEditor } from "platejs/react";
+import { Editor, EditorContainer } from "@/components/shadcn/editor";
+import { NoteEditorKit } from "@/components/editor/plugins/note-editor-kit";
 import { cn } from "@/lib/utils";
 
 /**
- * Notion-style block editor for resource notes.
+ * Notion-style block editor for resource notes, on Plate.
  *
  * Loaded through `next/dynamic` with `ssr: false` — see the detail page.
- * ProseMirror touches `document` while constructing its view, so rendering
- * this on the server is a fight with no prize.
+ * Slate builds its DOM on mount and the drag layer touches `window`, so
+ * server-rendering it is a fight with no prize.
  *
  * Storage contract, restated because it's easy to get backwards:
  *
- *   content (jsonb)  — what this component reads and writes. Source of truth.
- *   body    (text)   — a markdown mirror this component regenerates on save,
- *                      purely so the full-text index has prose to chew on.
+ *   content (jsonb)  — Slate value. Source of truth. What this reads and writes.
+ *   body    (text)   — a markdown MIRROR regenerated on every save, so the
+ *                      Postgres full-text index has prose to chew on rather
+ *                      than jsonb structure keys.
  *
- * Nothing ever loads a note back from `body`. The markdown conversion is lossy
- * — a callout flattens to a blockquote — and that's acceptable precisely
- * because the mirror is only ever searched, never read.
+ * Nothing ever loads a note back from `body` in normal operation. The one
+ * exception is the migration path below, which is exactly why keeping the
+ * mirror honest was worth the trouble.
  */
 
 const SAVE_DEBOUNCE_MS = 800;
 
 export interface NoteEditorProps {
-  /** Stored block tree. Null for a note written before the block editor. */
+  /** Stored document. May be a Slate value, or BlockNote's old block tree. */
   content: unknown[] | null;
-  /** Existing markdown, parsed into blocks when `content` is null. */
+  /** Markdown mirror. The fallback when `content` isn't usable Slate. */
   markdown: string | null;
   editable: boolean;
   /** Called with both representations. Debounced; also flushed on unmount. */
   onSave: (next: { content: unknown[]; body: string }) => void;
   className?: string;
 }
+
+/**
+ * Is this a Slate value, or the block tree BlockNote used to write?
+ *
+ * They're both arrays of objects with a `type` and `children`, so a shallow
+ * check isn't enough. BlockNote blocks always carry a `props` object; Slate
+ * nodes never do. When it isn't Slate we ignore `content` entirely and rebuild
+ * from the markdown mirror — lossy for callouts, but correct, and it means the
+ * editor swap needs no backfill and no downtime.
+ */
+function isSlateValue(content: unknown[] | null): content is Value {
+  if (!Array.isArray(content) || content.length === 0) return false;
+  const first = content[0] as Record<string, unknown> | null;
+  if (!first || typeof first !== "object") return false;
+  if ("props" in first) return false; // BlockNote
+  return "children" in first || "type" in first;
+}
+
+const EMPTY: Value = [{ type: "p", children: [{ text: "" }] }];
 
 export default function NoteEditor({
   content,
@@ -52,24 +66,25 @@ export default function NoteEditor({
   onSave,
   className,
 }: NoteEditorProps) {
-  const { resolvedTheme } = useTheme();
-
   /*
-   * Initial blocks are computed once, at construction.
+   * The initial value is computed once, inside the editor factory.
    *
-   * `initialContent` is not reactive — BlockNote reads it when the editor is
-   * built and ignores it afterwards, which is correct: re-seeding a live
-   * editor from props would stomp whatever the person had just typed. The
-   * detail page keys this component on the resource id so switching notes
-   * remounts rather than mutates.
-   *
-   * An empty array is not a valid initial document, so a genuinely empty note
-   * gets one empty paragraph. Passing `[]` throws inside ProseMirror with a
-   * message that doesn't mention BlockNote at all.
+   * Plate reads `value` when the editor is constructed and ignores it after —
+   * correctly, since re-seeding a live editor from props would stomp whatever
+   * had just been typed. The detail page keys this component on the resource
+   * id so switching notes remounts rather than mutates.
    */
-  const initial = (content ?? undefined) as PartialBlock[] | undefined;
-  const editor = useCreateBlockNote({
-    initialContent: initial && initial.length > 0 ? initial : undefined,
+  const editor = usePlateEditor({
+    plugins: NoteEditorKit,
+    value: (ed) => {
+      if (isSlateValue(content)) return content;
+      const md = markdown?.trim();
+      if (md) {
+        const parsed = deserializeMd(ed, md);
+        if (parsed.length > 0) return parsed;
+      }
+      return EMPTY;
+    },
   });
 
   /*
@@ -86,37 +101,6 @@ export default function NoteEditor({
 
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pending = useRef<{ content: unknown[]; body: string } | null>(null);
-  const migrated = useRef(false);
-
-  /*
-   * One-time migration: a note stored before the block editor arrives with
-   * `content: null` and markdown in `body`. Parse it, put it in the editor,
-   * and save so it never converts again.
-   *
-   * Done here rather than as a bulk SQL backfill because the parser lives in
-   * the browser — and because a note nobody opens costs nothing to leave
-   * alone. No downtime, no migration window, no risk of mangling every note at
-   * once with a conversion bug.
-   */
-  useEffect(() => {
-    if (migrated.current) return;
-    migrated.current = true;
-    if (content !== null || !markdown?.trim()) return;
-
-    let cancelled = false;
-    (async () => {
-      const blocks = await editor.tryParseMarkdownToBlocks(markdown);
-      if (cancelled || blocks.length === 0) return;
-      editor.replaceBlocks(editor.document, blocks);
-      onSaveRef.current({
-        content: editor.document,
-        body: await editor.blocksToMarkdownLossy(editor.document),
-      });
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [editor, content, markdown]);
 
   const flush = useCallback(() => {
     if (timer.current) {
@@ -129,19 +113,24 @@ export default function NoteEditor({
     }
   }, []);
 
-  const handleChange = useCallback(async () => {
-    if (!editable) return;
-    const blocks = editor.document as Block[];
-    // Generate the mirror here rather than at save time: it's cheap, and it
-    // keeps the two representations from ever drifting by a keystroke.
-    const body = await editor.blocksToMarkdownLossy(blocks);
-    pending.current = { content: blocks, body };
+  const handleChange = useCallback(
+    ({ value }: { value: Value }) => {
+      if (!editable) return;
+      // Serialise here rather than at save time: it's cheap, and it stops the
+      // two representations drifting apart by a keystroke.
+      pending.current = { content: value, body: serializeMd(editor) };
+      if (timer.current) clearTimeout(timer.current);
+      timer.current = setTimeout(flush, SAVE_DEBOUNCE_MS);
+    },
+    [editable, editor, flush]
+  );
 
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(flush, SAVE_DEBOUNCE_MS);
-  }, [editor, editable, flush]);
-
-  /* Never lose the last few hundred milliseconds of typing to a navigation. */
+  /*
+   * A note written up to the moment you close the tab should still be there.
+   * `beforeunload` covers the tab; the cleanup covers client-side navigation,
+   * which is the common case in a single-page app and the one people actually
+   * lose work to.
+   */
   useEffect(() => {
     const onHide = () => flush();
     window.addEventListener("beforeunload", onHide);
@@ -152,22 +141,15 @@ export default function NoteEditor({
   }, [flush]);
 
   return (
-    <div
-      className={cn(
-        // BlockNote ships its own CSS variables. Map them onto the app's tokens
-        // so the editor inherits the theme instead of announcing itself, and
-        // strip the default page padding — the Card already provides it.
-        "note-editor",
-        !editable && "note-editor--readonly",
-        className
-      )}
-    >
-      <BlockNoteView
-        editor={editor}
-        editable={editable}
-        theme={resolvedTheme === "light" ? "light" : "dark"}
-        onChange={handleChange}
-      />
+    <div className={cn("note-editor", !editable && "note-editor--readonly", className)}>
+      <Plate editor={editor} onChange={handleChange} readOnly={!editable}>
+        <EditorContainer>
+          <Editor
+            variant="none"
+            placeholder={editable ? "Write, or press '/' for commands…" : ""}
+          />
+        </EditorContainer>
+      </Plate>
     </div>
   );
 }
