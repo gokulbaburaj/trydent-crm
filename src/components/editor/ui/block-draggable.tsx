@@ -5,7 +5,7 @@ import * as React from 'react';
 import { DndPlugin, useDraggable, useDropLine } from '@platejs/dnd';
 import { expandListItemsWithChildren } from '@platejs/list';
 import { BlockSelectionPlugin } from '@platejs/selection/react';
-import { GripVertical } from 'lucide-react';
+import { GripVertical, Plus } from 'lucide-react';
 import { type TElement, getPluginByType, isType, KEYS } from 'platejs';
 import {
   type PlateEditor,
@@ -27,6 +27,25 @@ import {
 import { cn } from '@/lib/utils';
 
 const UNDRAGGABLE_KEYS = [KEYS.column, KEYS.tr, KEYS.td];
+
+/**
+ * Insert an empty paragraph directly after `element` and put the caret in it.
+ *
+ * `onMouseDown` is prevented on the button so the editor doesn't lose its
+ * selection before the click lands — without that, `select: true` has nothing
+ * to restore focus to and the caret ends up nowhere.
+ */
+function insertBlockBelow(editor: PlateEditor, element: TElement) {
+  const path = editor.api.findPath(element);
+  if (!path) return;
+
+  const at = [...path.slice(0, -1), path[path.length - 1] + 1];
+  editor.tf.insertNodes(
+    { children: [{ text: '' }], type: editor.getType(KEYS.p) },
+    { at, select: true }
+  );
+  editor.tf.focus();
+}
 
 export const BlockDraggable: RenderNodeWrapper = (props) => {
   const { editor, element, path } = props;
@@ -139,27 +158,56 @@ function Draggable(props: PlateElementProps) {
               isInColumn && 'h-4'
             )}
           >
+            {/*
+              Two controls, not one.
+
+              Plate's registry ships only the drag handle here — the "+" that
+              Notion and BlockNote put beside it doesn't exist in this file as
+              generated. It's added below, because a block editor where the
+              only way to add a block is to know a keyboard trick isn't one
+              most people will use.
+
+              Both buttons live in one absolutely-positioned row rather than
+              each being absolute, so they stay a fixed distance apart and the
+              vertical offset (`dragButtonTop`, which accounts for taller
+              blocks like headings) is applied once.
+            */}
             <div
               className={cn(
-                'slate-blockToolbar relative w-4.5',
+                'slate-blockToolbar relative w-11',
                 'pointer-events-auto mr-1 flex items-center',
                 isInColumn && 'mr-1.5'
               )}
             >
-              <Button
-                ref={handleRef}
-                variant="ghost"
-                className="-left-0 absolute h-6 w-full p-0"
+              <div
+                className="-left-0 absolute flex items-center gap-0.5"
                 style={{ top: `${dragButtonTop + 3}px` }}
-                data-plate-prevent-deselect
               >
-                <DragHandle
-                  isDragging={isDragging}
-                  previewRef={previewRef}
-                  resetPreview={resetPreview}
-                  setPreviewTop={setPreviewTop}
-                />
-              </Button>
+                <Button
+                  variant="ghost"
+                  className="h-6 w-5 p-0"
+                  title="Insert block below"
+                  data-plate-prevent-deselect
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => insertBlockBelow(editor, element)}
+                >
+                  <Plus className="size-4 text-muted-foreground" />
+                </Button>
+
+                <Button
+                  ref={handleRef}
+                  variant="ghost"
+                  className="h-6 w-5 p-0"
+                  data-plate-prevent-deselect
+                >
+                  <DragHandle
+                    isDragging={isDragging}
+                    previewRef={previewRef}
+                    resetPreview={resetPreview}
+                    setPreviewTop={setPreviewTop}
+                  />
+                </Button>
+              </div>
             </div>
           </div>
         </Gutter>

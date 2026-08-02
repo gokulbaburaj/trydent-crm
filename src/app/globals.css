@@ -445,28 +445,28 @@ button:not(:disabled):active,
 }
 
 /*
-  The gutter is NOT optional, and 28px was not enough.
+  The gutter holds the block controls, and its width is derived, not guessed.
 
-  Plate positions the block controls with `-translate-x-full absolute` — fully
-  outside the block, into the editor's own inline padding. There are TWO of
-  them side by side, the + and the drag handle, and 28px fitted only the
-  handle: which is why the drag dots came back and the + still didn't.
-  Plate ships 54px for this and it's 54px because that's what the pair needs.
+  Plate positions them with `-translate-x-full absolute` — fully outside the
+  block, into the editor's own inline padding. The toolbar is `w-11` (44px):
+  two 20px buttons plus a 2px gap, plus `mr-1` (4px). So 48px, and the
+  negative margin must match exactly so the TEXT still starts on the title's
+  left edge while the controls hang into the page padding beside it. That
+  padding is `md:px-14` — 56px, eight to spare.
 
-  The negative margin must match it exactly, so the TEXT still starts on the
-  title's left edge while the controls hang into the page padding beside it.
-  That padding is `md:px-14` on the column — 56px, two to spare.
+  My earlier numbers were wrong twice, in both directions: 28px fitted only
+  the drag handle, and 54px was sized for a pair of controls before the second
+  one existed. If you change `slate-blockToolbar`'s width, change this too.
 
-  Below md there is no gutter and no negative margin: touch devices don't get
-  the side menu at all (Plate hides it — see use-is-touch-device), so the space
-  would be reserved for controls that never appear.
+  No gutter below md: Plate hides the side menu on touch devices (see
+  use-is-touch-device), so reserving space there is just an indent.
 */
 @media (min-width: 768px) {
   .note-editor [data-slate-editor] {
-    padding-inline: 54px;
+    padding-inline: 48px;
   }
   .note-editor {
-    margin-inline-start: -54px;
+    margin-inline-start: -48px;
   }
 }
 

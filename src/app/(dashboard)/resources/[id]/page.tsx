@@ -465,14 +465,15 @@ function PropRow({
 }) {
   return (
     /*
-      max-w on the row, not the page column.
+      No hover tint on the row at all.
 
-      The hover tint used to span the full column, so pointing at "Client"
-      lit up 1200px of empty space — it read as selecting the page rather
-      than as "this row is interactive". A property row should be as wide
-      as its content plus a little slack.
+      Capping it at 560px still lit a 560px band when you pointed anywhere
+      near a label, which reads as selecting a region rather than as "this
+      value is editable". Notion doesn't tint the row either — only the
+      control responds, which is what `.ghost-select` and the tag field
+      already do on their own.
     */
-    <div className="group -mx-1.5 flex min-h-[32px] max-w-[560px] items-start gap-3 rounded-md px-1.5 transition-colors hover:bg-white/[0.03]">
+    <div className="flex min-h-[32px] max-w-[560px] items-start gap-3">
       <div className="flex w-[104px] shrink-0 items-center gap-1.5 pt-[7px] text-[13px] text-muted-foreground">
         {Icon && <Icon className="h-3.5 w-3.5 text-muted-2" />}
         {label}

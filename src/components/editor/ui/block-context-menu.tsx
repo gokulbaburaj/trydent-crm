@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 
-import { AIChatPlugin } from '@platejs/ai/react';
 import {
   BLOCK_CONTEXT_MENU_ID,
   BlockMenuPlugin,
@@ -28,11 +27,10 @@ import {
 import { setBlockType } from '@/components/editor/transforms';
 import { useIsTouchDevice } from '@/hooks/use-is-touch-device';
 
-type Value = 'askAI' | null;
 
 export function BlockContextMenu({ children }: { children: React.ReactNode }) {
   const { api, editor } = useEditorPlugin(BlockMenuPlugin);
-  const [value, setValue] = React.useState<Value>(null);
+  const [, setValue] = React.useState<null>(null);
   const isTouch = useIsTouchDevice();
   const readOnly = useEditorReadOnly();
   const openId = usePluginOption(BlockMenuPlugin, 'openId');
@@ -99,22 +97,10 @@ export function BlockContextMenu({ children }: { children: React.ReactNode }) {
           onCloseAutoFocus={(e) => {
             e.preventDefault();
             editor.getApi(BlockSelectionPlugin).blockSelection.focus();
-
-            if (value === 'askAI') {
-              editor.getApi(AIChatPlugin).aiChat.show();
-            }
-
             setValue(null);
           }}
         >
           <ContextMenuGroup>
-            <ContextMenuItem
-              onClick={() => {
-                setValue('askAI');
-              }}
-            >
-              Ask AI
-            </ContextMenuItem>
             <ContextMenuItem
               onClick={() => {
                 editor

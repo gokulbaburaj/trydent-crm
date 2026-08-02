@@ -4,7 +4,6 @@ import * as React from 'react';
 
 import type { PlateEditor, PlateElementProps } from 'platejs/react';
 
-import { AIChatPlugin } from '@platejs/ai/react';
 import {
   CalendarIcon,
   ChevronRightIcon,
@@ -20,7 +19,6 @@ import {
   PilcrowIcon,
   Quote,
   RadicalIcon,
-  SparklesIcon,
   Square,
   SuperscriptIcon,
   Table,
@@ -57,20 +55,14 @@ type Group = {
   }[];
 };
 
+/*
+ * No AI group.
+ *
+ * Removed rather than hidden: the entry called `editor.getApi(AIChatPlugin)`
+ * and AIChatPlugin is not in NoteEditorKit, so selecting it would have thrown.
+ * A menu item that crashes is worse than a missing one.
+ */
 const groups: Group[] = [
-  {
-    group: 'AI',
-    items: [
-      {
-        focusEditor: false,
-        icon: <SparklesIcon />,
-        value: 'AI',
-        onSelect: (editor) => {
-          editor.getApi(AIChatPlugin).aiChat.show();
-        },
-      },
-    ],
-  },
   {
     group: 'Basic blocks',
     items: [
