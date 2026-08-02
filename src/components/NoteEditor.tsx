@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef } from "react";
 import type { Value } from "platejs";
 import { deserializeMd, serializeMd } from "@platejs/markdown";
 import { Plate, usePlateEditor } from "platejs/react";
-import { Editor, EditorContainer } from "@/components/shadcn/editor";
+import { Editor, EditorContainer } from "@/components/editor/ui/editor";
 import { NoteEditorKit } from "@/components/editor/plugins/note-editor-kit";
 import { cn } from "@/lib/utils";
 

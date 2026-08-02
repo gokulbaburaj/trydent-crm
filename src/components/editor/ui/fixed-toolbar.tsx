@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils';
 
-import { Toolbar } from './toolbar';
+import { Toolbar } from '@/components/shadcn/toolbar';
 
 export function FixedToolbar(props: React.ComponentProps<typeof Toolbar>) {
   return (

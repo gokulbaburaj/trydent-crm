@@ -23,7 +23,7 @@ import {
   ToolbarSplitButton,
   ToolbarSplitButtonPrimary,
   ToolbarSplitButtonSecondary,
-} from './toolbar';
+} from '@/components/shadcn/toolbar';
 
 export function BulletedListToolbarButton() {
   const editor = useEditorRef();

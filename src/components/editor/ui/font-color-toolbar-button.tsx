@@ -31,7 +31,7 @@ import {
 } from '@/components/shadcn/tooltip';
 import { cn } from '@/lib/utils';
 
-import { ToolbarButton, ToolbarMenuGroup } from './toolbar';
+import { ToolbarButton, ToolbarMenuGroup } from '@/components/shadcn/toolbar';
 
 const MAX_CUSTOM_COLORS = 19;
 const HEX_COLOR_RE = /^#[\da-f]{6}$/i;

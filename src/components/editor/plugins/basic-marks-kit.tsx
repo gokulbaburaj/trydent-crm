@@ -23,9 +23,9 @@ import {
   UnderlinePlugin,
 } from '@platejs/basic-nodes/react';
 
-import { CodeLeaf } from '@/components/shadcn/code-node';
-import { HighlightLeaf } from '@/components/shadcn/highlight-node';
-import { KbdLeaf } from '@/components/shadcn/kbd-node';
+import { CodeLeaf } from '@/components/editor/ui/code-node';
+import { HighlightLeaf } from '@/components/editor/ui/highlight-node';
+import { KbdLeaf } from '@/components/editor/ui/kbd-node';
 
 export const BasicMarksKit = [
   BoldPlugin.configure({

@@ -27,6 +27,11 @@ const eslintConfig = defineConfig([
      * (mention-node reads real CRM records now), and the hook rules that have
      * caught real bugs in this codebase should keep applying. So: this one
      * rule off, everything else on.
+     *
+     * `src/components/editor/**` is where Plate's source lives after the
+     * reorganisation. `src/components/shadcn/**` stays listed because a few
+     * genuine shadcn primitives there (toolbar, context-menu) also arrived via
+     * the CLI and carry the same `any`s.
      */
     files: [
       "src/components/shadcn/**/*.{ts,tsx}",

@@ -4,7 +4,7 @@ import { AIChatPlugin } from '@platejs/ai/react';
 import { BlockSelectionPlugin } from '@platejs/selection/react';
 import { getPluginTypes, isHotkey, KEYS } from 'platejs';
 
-import { BlockSelection } from '@/components/shadcn/block-selection';
+import { BlockSelection } from '@/components/editor/ui/block-selection';
 
 export const hasSelectableClass = ({
   attributes,

@@ -105,7 +105,7 @@ import {
   ToolbarButton,
   ToolbarGroup,
   ToolbarMenuGroup,
-} from './toolbar';
+} from '@/components/shadcn/toolbar';
 
 type TableResizeDirection = 'bottom' | 'left' | 'right';
 

@@ -32,7 +32,7 @@ import {
 } from '@/components/shadcn/dropdown-menu';
 import { cn } from '@/lib/utils';
 
-import { ToolbarButton } from './toolbar';
+import { ToolbarButton } from '@/components/shadcn/toolbar';
 
 export function TableToolbarButton(props: DropdownMenuProps) {
   const tableSelected = useEditorSelector(

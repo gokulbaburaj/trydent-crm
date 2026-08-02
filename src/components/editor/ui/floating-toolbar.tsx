@@ -19,7 +19,7 @@ import {
 
 import { cn } from '@/lib/utils';
 
-import { Toolbar } from './toolbar';
+import { Toolbar } from '@/components/shadcn/toolbar';
 
 export function FloatingToolbar({
   children,
