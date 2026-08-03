@@ -44,8 +44,12 @@ export function withViewTransition(update: () => void) {
 }
 
 export function initials(name: string | null | undefined) {
-  if (!name) return "?";
-  const parts = name.trim().split(/\s+/);
+  // Trim before the emptiness check, not after: a whitespace-only name is
+  // truthy, so the old guard let it through and `"".slice(0, 2)` returned an
+  // empty string — a blank hole in the avatar circle rather than a fallback.
+  const trimmed = name?.trim();
+  if (!trimmed) return "?";
+  const parts = trimmed.split(/\s+/);
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }

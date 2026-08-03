@@ -54,6 +54,7 @@ import { nextActivityPayload } from "@/lib/recurrence";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Avatar } from "@/components/ui/Avatar";
+import { packColumns } from "@/lib/calendarLayout";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Drawer } from "@/components/ui/Drawer";
 import { Input, Label, Textarea } from "@/components/ui/Input";
@@ -106,36 +107,23 @@ function eventColor(a: Activity) {
   return EVENT_COLORS[Math.abs(hash) % EVENT_COLORS.length];
 }
 
-/** Assign overlapping events to side-by-side columns within a day. */
+/**
+ * Assign overlapping events to side-by-side columns within a day.
+ *
+ * The packing itself lives in `lib/calendarLayout.ts` so it can be tested;
+ * this is only the adapter that turns activities into minutes-since-midnight.
+ */
 function layoutDay(events: Activity[]) {
-  const sorted = [...events].sort(
-    (a, b) => parseISO(a.activity_date).getTime() - parseISO(b.activity_date).getTime()
-  );
-  const startMin = (a: Activity) => {
+  const timed = events.map((a) => {
     const d = parseISO(a.activity_date);
-    return getHours(d) * 60 + getMinutes(d);
-  };
-  const placed: { a: Activity; col: number; cols: number; start: number }[] = [];
-  let cluster: { a: Activity; col: number; start: number }[] = [];
-  let clusterEnd = -1;
-
-  const flush = () => {
-    const cols = Math.max(...cluster.map((c) => c.col), 0) + 1;
-    for (const c of cluster) placed.push({ a: c.a, col: c.col, cols, start: c.start });
-    cluster = [];
-  };
-
-  for (const a of sorted) {
-    const s = startMin(a);
-    if (cluster.length > 0 && s >= clusterEnd) flush();
-    const used = cluster.filter((c) => c.start + EVENT_MINUTES > s).map((c) => c.col);
-    let col = 0;
-    while (used.includes(col)) col++;
-    cluster.push({ a, col, start: s });
-    clusterEnd = Math.max(clusterEnd, s + EVENT_MINUTES);
-  }
-  if (cluster.length > 0) flush();
-  return placed;
+    return { item: a, startMin: getHours(d) * 60 + getMinutes(d) };
+  });
+  return packColumns(timed, EVENT_MINUTES).map((p) => ({
+    a: p.item,
+    col: p.col,
+    cols: p.cols,
+    start: p.startMin,
+  }));
 }
 
 export default function SchedulePage() {

@@ -4,8 +4,8 @@
 #
 #   ./ship.sh "Portal: invoices replace deal-derived payments"
 #
-# Runs the same two checks Claude runs before handing work over, and refuses to
-# push if either fails. A broken push means a broken Vercel deploy, and it's
+# Runs the same three checks Claude runs before handing work over, and refuses
+# to push if any fails. A broken push means a broken Vercel deploy, and it's
 # much cheaper to catch it here than in production.
 set -euo pipefail
 
@@ -27,6 +27,9 @@ npx tsc --noEmit
 
 echo "→ Linting..."
 npx eslint .
+
+echo "→ Testing..."
+npm test
 
 echo "→ Committing..."
 git add -A

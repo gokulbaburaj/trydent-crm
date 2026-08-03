@@ -29,9 +29,9 @@ name the file.
 - **Can't `npm run build`.** The Turbopack native binary can't be fetched
   (`EAI_AGAIN`). So the build is never verified from this side — say so rather
   than implying it passed.
-- **Can** run `npx tsc --noEmit` and `npx eslint`. Both must be clean before
-  handing anything over. They take ~30s; the bash tool caps at 45s, so run them
-  in separate calls.
+- **Can** run `npx tsc --noEmit`, `npx eslint` and `npm test`. All three must be
+  clean before handing anything over. tsc and eslint take ~30s; the bash tool
+  caps at 45s, so run them in separate calls. `npm test` is under a second.
 
 ## Database
 
@@ -58,9 +58,16 @@ Concretely:
   inspection because the thing described didn't exist or was deliberate.
 - Test RLS with forged JWTs per role, not by clicking around. The pattern is in
   `docs/plan-channels.md` and it has caught real bugs.
-- Pure logic (date maths, parsers) gets a quick node script exercising the
-  boundaries. This caught an off-by-one in overdue days and a regex where `^`
-  matched every string.
+- Pure logic (date maths, parsers) gets a test, not a throwaway script. There
+  is a suite now — `npm test`, Node's built-in runner, no dependencies. Files
+  are `src/lib/*.test.ts` and import with an explicit `.ts` extension because
+  type stripping needs it (`allowImportingTsExtensions` is on for this reason).
+  This caught an off-by-one in overdue days, a regex where `^` matched every
+  string, and `initials("   ")` returning an empty avatar.
+- **Anything moved out of a page for testing stays behaviour-identical.** The
+  calendar packing in `lib/calendarLayout.ts` was lifted out of the schedule
+  page unchanged; the page keeps a thin adapter. Don't fix and extract in the
+  same move — you lose the ability to tell which one broke it.
 
 If something can't be verified from here, say which part is unverified.
 
