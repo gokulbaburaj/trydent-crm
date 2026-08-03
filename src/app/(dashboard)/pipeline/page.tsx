@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Building2,
   CalendarDays,
@@ -106,7 +106,11 @@ export default function PipelinePage() {
   const { currency, setCurrency, base, toBase, format: formatCurrency } = useCurrency();
 
   /** A deal's own currency (older rows may predate the column). */
-  const dealCcy = (d: Deal): CurrencyCode => (d.currency as CurrencyCode) ?? base;
+  // Stable, so the sums below can list it and recompute when rates land.
+  const dealCcy = useCallback(
+    (d: Deal): CurrencyCode => (d.currency as CurrencyCode) ?? base,
+    [base]
+  );
 
   const clientName = (id: string) => clients.find((c) => c.id === id)?.company ?? "Unknown";
   const ownerName = (id: string | null) => profiles.find((p) => p.id === id)?.full_name ?? "Unassigned";
@@ -265,8 +269,7 @@ export default function PipelinePage() {
           value: inStage.reduce((sum, d) => sum + toBase(Number(d.deal_value), dealCcy(d)), 0),
         };
       }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [chartDeals]
+    [chartDeals, toBase, dealCcy]
   );
 
   /** Pie needs empty stages dropped, otherwise it renders zero-width slices. */

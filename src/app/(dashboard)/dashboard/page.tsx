@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { parseISO, format as formatDateFns } from "date-fns";
 import { PieChart } from "@/components/charts/pie-chart";
@@ -61,7 +61,12 @@ export default function DashboardPage() {
   const [revenueChart, setRevenueChart] = useState<RevenueChart>("bar");
   const { profile } = useAuth();
   const { rows: deals, loading: dealsLoading } = useSupabaseTable<Deal>("deals");
-  const dealBase = (d: Deal) => toBase(Number(d.deal_value), (d.currency as CurrencyCode) ?? base);
+  // Stable so the sums below can depend on it honestly. `toBase` changes
+  // identity only when the rates or the base currency change, so this does too.
+  const dealBase = useCallback(
+    (d: Deal) => toBase(Number(d.deal_value), (d.currency as CurrencyCode) ?? base),
+    [toBase, base]
+  );
   const { rows: clients, loading: clientsLoading } = useSupabaseTable<Client>("clients");
   const { rows: activities, loading: activitiesLoading } = useSupabaseTable<Activity>(
     "activities",
@@ -75,8 +80,7 @@ export default function DashboardPage() {
       deals
         .filter((d) => d.deal_stage !== "Closed Won" && d.deal_stage !== "Closed Lost")
         .reduce((sum, d) => sum + dealBase(d), 0),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [deals]
+    [deals, dealBase]
   );
 
   const closedWonThisYear = useMemo(() => {
@@ -89,8 +93,7 @@ export default function DashboardPage() {
           new Date(d.close_date).getFullYear() === year
       )
       .reduce((sum, d) => sum + dealBase(d), 0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deals]);
+  }, [deals, dealBase]);
 
   const activeClients = clients.filter(
     (c) => c.status === "Active Customer"
@@ -115,8 +118,7 @@ export default function DashboardPage() {
     if (deals.length === 0) return 0;
     const total = deals.reduce((s, d) => s + dealBase(d), 0);
     return total / deals.length;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deals]);
+  }, [deals, dealBase]);
 
   // PieData shape: { label, value, color }
   const stageData = useMemo(
@@ -193,8 +195,7 @@ export default function DashboardPage() {
       cursor.setMonth(cursor.getMonth() + 1);
     }
     return out;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deals]);
+  }, [deals, dealBase]);
 
   /** Shared tooltip so bar and area read identically. */
   // TooltipContent is the vendored bklit panel: padded, titled, colour-dotted

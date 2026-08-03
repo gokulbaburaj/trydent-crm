@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { CurrencyCode } from "@/lib/types";
 
@@ -172,44 +172,71 @@ export function useCurrency() {
     commit({ display: code });
   };
 
+  /*
+   * These are memoised on purpose, and it is load-bearing rather than
+   * micro-optimisation.
+   *
+   * Rates arrive asynchronously — `/api/fx` resolves after first paint — and
+   * until they do, `toBase` falls back to returning the amount unconverted.
+   * Callers wrap their sums in `useMemo`, so if `toBase` is a fresh closure on
+   * every render there is no honest dependency to list: adding it recomputes
+   * every render, omitting it means the sum is computed once with no rates and
+   * never corrected. Dashboard and Pipeline both took the second option and
+   * silenced the lint, which is why multi-currency totals were being added up
+   * at 1:1 and never revisited once the real rates landed.
+   *
+   * `getSnapshot` returns a module-level cached object, so `base`, `rates` and
+   * `display` are stable references between genuine changes. That makes these
+   * identities stable too, and a caller can list them in a dependency array and
+   * get exactly one recompute when the FX data or the setting actually moves.
+   */
+
   // Rates are fetched relative to `base`: rate(code) = units of `code` per 1
   // base. rate(base) is always 1. Returns null when we don't have it.
-  const rateOf = (code: CurrencyCode): number | null => {
-    if (code === base) return 1;
-    if (!rates || rates.base !== base) return null;
-    const r = rates.rates[code];
-    return typeof r === "number" && r > 0 ? r : null;
-  };
+  const rateOf = useCallback(
+    (code: CurrencyCode): number | null => {
+      if (code === base) return 1;
+      if (!rates || rates.base !== base) return null;
+      const r = rates.rates[code];
+      return typeof r === "number" && r > 0 ? r : null;
+    },
+    [base, rates]
+  );
 
   /** Convert an amount from one currency to another via the base-relative table. */
-  const convertAmount = (
-    value: number,
-    from: CurrencyCode,
-    to: CurrencyCode
-  ): number | null => {
-    if (from === to) return value;
-    const rf = rateOf(from);
-    const rt = rateOf(to);
-    if (rf == null || rt == null) return null;
-    return (value / rf) * rt;
-  };
+  const convertAmount = useCallback(
+    (value: number, from: CurrencyCode, to: CurrencyCode): number | null => {
+      if (from === to) return value;
+      const rf = rateOf(from);
+      const rt = rateOf(to);
+      if (rf == null || rt == null) return null;
+      return (value / rf) * rt;
+    },
+    [rateOf]
+  );
 
   /** Bring an amount into the base currency for summing (falls back to as-is). */
-  const toBase = (value: number, from: CurrencyCode = base): number => {
-    const c = convertAmount(value, from, base);
-    return c == null ? value : c;
-  };
+  const toBase = useCallback(
+    (value: number, from: CurrencyCode = base): number => {
+      const c = convertAmount(value, from, base);
+      return c == null ? value : c;
+    },
+    [convertAmount, base]
+  );
 
   /**
    * Format an amount that is stored in `from` (defaults to the base currency),
    * converted to the viewer's display currency. If we can't convert (rates
    * missing), we show it in its own currency rather than faking a number.
    */
-  const format = (value: number, from: CurrencyCode = base): string => {
-    const c = convertAmount(value, from, display);
-    if (c == null) return formatMoney(value, from);
-    return formatMoney(c, display);
-  };
+  const format = useCallback(
+    (value: number, from: CurrencyCode = base): string => {
+      const c = convertAmount(value, from, display);
+      if (c == null) return formatMoney(value, from);
+      return formatMoney(c, display);
+    },
+    [convertAmount, base, display]
+  );
 
   return {
     /** Viewer's chosen display currency. */

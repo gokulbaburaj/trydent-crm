@@ -95,6 +95,13 @@ If something can't be verified from here, say which part is unverified.
   outside the scroll lock a modal dialog installs (`react-remove-scroll`). Wheel
   events get swallowed while pointer drags still work. Floating elements inside
   a Drawer must render in normal flow — see `components/ui/TimePicker.tsx`.
+- **`useCurrency`'s helpers are memoised, and that is load-bearing.** Rates
+  arrive after first paint; until they do `toBase` returns amounts unconverted.
+  If `toBase` were a fresh closure per render, a caller's `useMemo` could
+  either recompute every render or never correct itself — Dashboard and
+  Pipeline took the second option behind an `exhaustive-deps` suppression, and
+  multi-currency totals were summed at 1:1 forever. Don't un-memoise them, and
+  do list them in dependency arrays rather than silencing the lint.
 - **`react-hooks/set-state-in-effect`.** Don't reset state in an effect. Derive
   during render, keeping the key the state belongs to inside the state itself —
   `lib/useChannel.ts` shows the pattern.
