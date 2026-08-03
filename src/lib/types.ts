@@ -416,6 +416,8 @@ export interface Channel {
   topic: string | null;
   project_id: string | null;
   client_id: string | null;
+  /** Set for a team's own channel. Created automatically with the team. */
+  team_id: string | null;
   archived: boolean;
   created_by: string | null;
   created_at: string;

@@ -316,6 +316,18 @@ export function Sidebar({
                           active={pathname === "/projects" && activeTeam === team}
                           onNavigate={onNavigate}
                         />
+                        {/* Every team has exactly one channel, created with the
+                            team. So this opens the conversation directly rather
+                            than a list of one. */}
+                        {canAccess(access, "channels") && (
+                          <SubLink
+                            href={`/channels?team=${encodeURIComponent(team)}`}
+                            label="Channel"
+                            icon={MessageSquare}
+                            active={pathname === "/channels" && activeTeam === team}
+                            onNavigate={onNavigate}
+                          />
+                        )}
                       </div>
                     )}
                   </div>

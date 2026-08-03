@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Hash, MessageSquare, Plus, Trash2 } from "lucide-react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Hash, MessageSquare, Plus, Trash2, Users } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -13,7 +14,7 @@ import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { useStaffProfiles } from "@/lib/useStaffProfiles";
 import { useAuth } from "@/lib/useAuth";
 import { useChannel } from "@/lib/useChannel";
-import type { Channel, Message } from "@/lib/types";
+import type { Channel, Message, Team } from "@/lib/types";
 
 /**
  * Channels — team chat.
@@ -45,11 +46,24 @@ function timeLabel(iso: string) {
 }
 
 export default function ChannelsPage() {
+  // useSearchParams needs a boundary or the route can't be prerendered.
+  return (
+    <Suspense fallback={<div className="p-6 text-[12px] text-muted-2">Loading channels...</div>}>
+      <Channels />
+    </Suspense>
+  );
+}
+
+function Channels() {
   const { profile } = useAuth();
+  const searchParams = useSearchParams();
+  const teamParam = searchParams.get("team");
+
   const { rows: channels, setRows: setChannels, loading } = useSupabaseTable<Channel>(
     "channels",
     { column: "name", ascending: true }
   );
+  const { rows: teams } = useSupabaseTable<Team>("teams", { column: "name", ascending: true });
   const { rows: staff } = useStaffProfiles();
 
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -59,12 +73,33 @@ export default function ChannelsPage() {
 
   const live = useMemo(() => channels.filter((c) => !c.archived), [channels]);
 
+  /** Team channels are listed apart — they're the ones with a home in the nav. */
+  const teamName = useMemo(() => {
+    const byId = new Map(teams.map((t) => [t.id, t.name]));
+    return (c: Channel) => (c.team_id ? byId.get(c.team_id) ?? null : null);
+  }, [teams]);
+
+  const teamChannels = useMemo(() => live.filter((c) => c.team_id), [live]);
+  const generalChannels = useMemo(() => live.filter((c) => !c.team_id), [live]);
+
   /*
-   * Land on the first channel without an effect. Reading a fallback during
-   * render avoids the extra paint (and the lint rule) that setting state in an
-   * effect would cost — and `activeId` still wins the moment one is picked.
+   * `?team=Design` from the sidebar wins over whatever was last clicked, so the
+   * link always lands where it says it will. The param is the team NAME, since
+   * that's what every other team link in the sidebar already carries.
    */
-  const activeChannelId = activeId ?? live[0]?.id ?? null;
+  const fromParam = useMemo(() => {
+    if (!teamParam) return null;
+    const team = teams.find((t) => t.name === teamParam);
+    if (!team) return null;
+    return live.find((c) => c.team_id === team.id)?.id ?? null;
+  }, [teamParam, teams, live]);
+
+  /*
+   * Land on a channel without an effect. Reading a fallback during render
+   * avoids the extra paint (and the lint rule) that setting state in an effect
+   * would cost.
+   */
+  const activeChannelId = fromParam ?? activeId ?? live[0]?.id ?? null;
   const active = live.find((c) => c.id === activeChannelId) ?? null;
 
   const { messages, loading: loadingMessages, hasMore, loadingOlder, loadOlder, send, remove, error } =
@@ -150,20 +185,28 @@ export default function ChannelsPage() {
           </form>
         )}
 
-        {live.map((c) => (
-          <button
+        {generalChannels.map((c) => (
+          <ChannelLink
             key={c.id}
+            channel={c}
+            active={c.id === activeChannelId}
             onClick={() => setActiveId(c.id)}
-            className={cn(
-              "flex items-center gap-1.5 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors",
-              c.id === activeChannelId
-                ? "bg-white/10 font-medium text-foreground"
-                : "text-foreground-secondary hover:bg-white/5 hover:text-foreground"
-            )}
-          >
-            <Hash className="h-3.5 w-3.5 shrink-0 text-muted-2" />
-            <span className="min-w-0 truncate">{c.name}</span>
-          </button>
+          />
+        ))}
+
+        {teamChannels.length > 0 && (
+          <p className="mb-0.5 mt-3 px-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            Teams
+          </p>
+        )}
+        {teamChannels.map((c) => (
+          <ChannelLink
+            key={c.id}
+            channel={c}
+            active={c.id === activeChannelId}
+            hint={teamName(c)}
+            onClick={() => setActiveId(c.id)}
+          />
         ))}
 
         {!loading && live.length === 0 && (
@@ -270,6 +313,38 @@ export default function ChannelsPage() {
         )}
       </section>
     </div>
+  );
+}
+
+function ChannelLink({
+  channel,
+  active,
+  hint,
+  onClick,
+}: {
+  channel: Channel;
+  active: boolean;
+  hint?: string | null;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      title={hint ? `${hint} team` : channel.topic ?? channel.name}
+      className={cn(
+        "flex items-center gap-1.5 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors",
+        active
+          ? "bg-white/10 font-medium text-foreground"
+          : "text-foreground-secondary hover:bg-white/5 hover:text-foreground"
+      )}
+    >
+      {channel.team_id ? (
+        <Users className="h-3.5 w-3.5 shrink-0 text-muted-2" />
+      ) : (
+        <Hash className="h-3.5 w-3.5 shrink-0 text-muted-2" />
+      )}
+      <span className="min-w-0 truncate">{channel.name}</span>
+    </button>
   );
 }
 
