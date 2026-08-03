@@ -1,15 +1,21 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { useId } from "react";
+import { Checkbox as ShadCheckbox } from "@/components/shadcn/checkbox";
 import { cn } from "@/lib/utils";
 
 /**
- * Brand checkbox.
+ * shadcn/ui Checkbox with our legacy props signature.
  *
- * `accent-color` on a native input gets you the OS control — rounded-square on
- * macOS, a different shape on Windows, and a blue that ignores the user's
- * accent. This keeps the real input for keyboard and screen-reader behaviour
- * but hides it and draws our own box on top.
+ * This used to be a hand-drawn box over a hidden native input, and it drifted
+ * off the design contract in every dimension that matters: `border-white/20`
+ * instead of `border-input`, `bg-white/[0.03]` instead of `bg-input/30`, an
+ * arbitrary `rounded-[5px]`, and a `ring-primary/40` focus ring that matched
+ * nothing else in the app. `design.md` is explicit — registry components live
+ * in `shadcn/` and `ui/` only adapts their prop names. Wrapping the registry
+ * component means the focus ring, border and radius track `Input` for free.
+ *
+ * The API is kept (`checked` / `onChange` / `label`) so call sites don't move.
  */
 export function Checkbox({
   checked,
@@ -28,48 +34,40 @@ export function Checkbox({
   align?: "center" | "start";
   className?: string;
 }) {
+  // The box is a <button>, so a wrapping <label> wouldn't toggle it. An id and
+  // htmlFor does, because <button> is a labelable element.
+  const id = useId();
+
   return (
-    <label
+    <div
       className={cn(
-        "group/cb inline-flex gap-2",
+        // inline-flex, not flex — the old root was a shrink-wrapped <label> and
+        // several call sites sit in text flow where a block would stretch.
+        "inline-flex gap-2",
         align === "start" ? "items-start" : "items-center",
-        disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer",
         className
       )}
     >
-      <span
-        className={cn(
-          "relative flex h-4 w-4 shrink-0 items-center justify-center",
-          align === "start" && "mt-0.5"
-        )}
-      >
-        <input
-          type="checkbox"
-          checked={checked}
-          disabled={disabled}
-          onChange={(e) => onChange(e.target.checked)}
-          className="peer absolute inset-0 h-full w-full cursor-[inherit] opacity-0"
-        />
-        <span
-          aria-hidden
+      <ShadCheckbox
+        id={id}
+        checked={checked}
+        disabled={disabled}
+        // Radix reports "indeterminate" as a third state; we never set it, but
+        // the union has to be narrowed rather than cast away.
+        onCheckedChange={(next) => onChange(next === true)}
+        className={cn("shrink-0", align === "start" && "mt-0.5")}
+      />
+      {label && (
+        <label
+          htmlFor={id}
           className={cn(
-            "flex h-4 w-4 items-center justify-center rounded-[5px] border transition-all duration-150",
-            "peer-focus-visible:ring-2 peer-focus-visible:ring-primary/40 peer-focus-visible:ring-offset-1 peer-focus-visible:ring-offset-background",
-            checked
-              ? "border-primary bg-primary text-primary-foreground"
-              : "border-white/20 bg-white/[0.03] group-hover/cb:border-white/35"
+            "min-w-0",
+            disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"
           )}
         >
-          <Check
-            className={cn(
-              "h-3 w-3 transition-transform duration-150",
-              checked ? "scale-100" : "scale-0"
-            )}
-            strokeWidth={3}
-          />
-        </span>
-      </span>
-      {label}
-    </label>
+          {label}
+        </label>
+      )}
+    </div>
   );
 }
