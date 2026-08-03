@@ -123,22 +123,37 @@ Settings → Default views. The rows are a fixed list; make them sortable.
 pattern. Order belongs in localStorage alongside the view preferences, which
 already live there deliberately (see the note under the card).
 
-### 7. Hover preview on calendar events
-Show a small card on hover: title, time, client, attendees, agenda snippet.
+### 7. Hover preview on calendar events ✅
+Title, date, time, location, client, attendees and an agenda snippet, on hover
+over a week-grid event.
 
-`Tooltip` exists (`components/ui/Tooltip.tsx`, Radix-backed, already has a
-provider mounted in the dashboard layout). Content is richer than a tooltip
-usually holds, so check whether it takes arbitrary children or needs a
-`HoverCard` instead. Do NOT portal it in a way that lands outside a modal's
-scroll lock — see the TimePicker note below.
+`Tooltip` was checked and rejected: it's styled as an inverted one-liner
+(`bg-foreground text-background`, `text-xs text-balance`) with a hardcoded
+arrow, so a titled card means fighting all of it. New
+`components/ui/HoverCard.tsx` wraps Radix HoverCard — already in the `radix-ui`
+umbrella, no new dependency — on the Popover's surface.
 
-### 9. Channel info button
-An "i" in the channel header opening details: topic, which team owns it, member
-count, created date, and probably an archive action for the creator.
+It **does** portal, which is correct here: the week grid is a
+`max-h-[640px] overflow-y-auto` scroller and an in-flow card gets clipped by
+it. The scroll-lock warning applies to Drawers, and this isn't in one. The
+component carries that note so it isn't reused blindly.
 
-Data is all present on `Channel` (`team_id`, `topic`, `created_by`,
-`created_at`) plus `channel_members`. Policies already allow reading members of
-any channel you can see.
+Forced shut while dragging — a card chasing the block you're moving sits right
+under the cursor.
+
+### 9. Channel info button ✅
+An "i" in the channel header opening topic, owning team, member count, created
+date and creator, plus Archive.
+
+Archive is shown to **admin or the creator**, not creator-only as guessed here.
+Checked `pg_policies` first: `channels_update` is
+`current_is_admin() OR created_by = auth.uid()`. A UI stricter than RLS hides a
+capability people actually have, the same way a UI looser than RLS ships a
+button that fails.
+
+`channel_members` is now loaded with `useSupabaseTable` for the count. That's
+safe because it's bounded by channels × staff — unlike `messages`, which is
+why that one paginates.
 
 ---
 

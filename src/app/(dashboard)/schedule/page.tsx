@@ -56,6 +56,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Avatar } from "@/components/ui/Avatar";
 import { packColumns } from "@/lib/calendarLayout";
 import { Checkbox } from "@/components/ui/Checkbox";
+import { HoverCard } from "@/components/ui/HoverCard";
 import { Drawer } from "@/components/ui/Drawer";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { Dropdown } from "@/components/ui/Dropdown";
@@ -148,6 +149,8 @@ export default function SchedulePage() {
 
   const clientName = (id: string | null) => clients.find((c) => c.id === id)?.company ?? "—";
   const assigneeName = (id: string | null) => profiles.find((p) => p.id === id)?.full_name ?? "Unassigned";
+  // Attendees are always real ids, so "Unassigned" would be a lie here.
+  const personName = (id: string) => profiles.find((p) => p.id === id)?.full_name ?? "Someone";
 
   // No cron: when a recurring schedule item's date has passed, spawn its next
   // occurrence once on load. nextActivityPayload de-dupes via parent id.
@@ -464,6 +467,7 @@ export default function SchedulePage() {
               dayProjects={dayProjects}
               projectName={projectName}
               clientName={clientName}
+              personName={personName}
               onEventClick={setEditing}
               onEventMove={moveActivity}
               onSlotClick={(dt) =>
@@ -698,6 +702,7 @@ function WeekGrid({
   dayProjects,
   projectName,
   clientName,
+  personName,
   onEventClick,
   onEventMove,
   onSlotClick,
@@ -708,6 +713,7 @@ function WeekGrid({
   dayProjects: (day: Date) => Project[];
   projectName: (id: string) => string;
   clientName: (id: string | null) => string;
+  personName: (id: string) => string;
   onEventClick: (a: Activity) => void;
   onEventMove: (a: Activity, newIso: string) => void;
   onSlotClick: (dt: Date) => void;
@@ -867,6 +873,7 @@ function WeekGrid({
                     col={col}
                     cols={cols}
                     clientName={clientName}
+                    personName={personName}
                     onClick={() => onEventClick(a)}
                   />
                 ))}
@@ -911,17 +918,80 @@ function WeekDayColumn({
   );
 }
 
+/**
+ * What you get on hover: enough to decide whether to open the thing.
+ *
+ * Deliberately not the whole record — notes are internal and long, and a
+ * preview that needs scrolling has failed at being a preview.
+ */
+function EventPreview({
+  a,
+  clientName,
+  personName,
+}: {
+  a: Activity;
+  clientName: (id: string | null) => string;
+  personName: (id: string) => string;
+}) {
+  const d = parseISO(a.activity_date);
+  const attendees = a.attendee_ids ?? [];
+  return (
+    <div className="flex flex-col gap-2">
+      <div>
+        <p className="text-[13px] font-semibold leading-snug text-foreground">
+          {a.description}
+        </p>
+        <p className="mt-0.5 text-[11px] tabular-nums text-muted-foreground">
+          {format(d, "EEE d MMM")} · {format(d, "H:mm")}
+          {a.location ? ` · ${a.location}` : ""}
+        </p>
+      </div>
+
+      {a.client_id && (
+        <div className="flex items-center gap-1.5 text-[11px] text-foreground-secondary">
+          <Building2 className="h-3 w-3 shrink-0 text-muted-foreground" />
+          <span className="truncate">{clientName(a.client_id)}</span>
+        </div>
+      )}
+
+      {attendees.length > 0 && (
+        <div className="flex items-start gap-1.5 text-[11px] text-foreground-secondary">
+          <User className="mt-[3px] h-3 w-3 shrink-0 text-muted-foreground" />
+          {/* Names, not avatars — at this size initials are a guessing game. */}
+          <span className="min-w-0">
+            {attendees.slice(0, 4).map(personName).join(", ")}
+            {attendees.length > 4 && ` +${attendees.length - 4} more`}
+          </span>
+        </div>
+      )}
+
+      {a.agenda?.trim() && (
+        <div className="border-t border-border-subtle pt-2">
+          <p className="text-[10px] font-medium uppercase tracking-wide text-muted-2">
+            Agenda
+          </p>
+          <p className="mt-0.5 line-clamp-3 text-[11px] leading-snug text-foreground-secondary">
+            {a.agenda.trim()}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function WeekEvent({
   a,
   col,
   cols,
   clientName,
+  personName,
   onClick,
 }: {
   a: Activity;
   col: number;
   cols: number;
   clientName: (id: string | null) => string;
+  personName: (id: string) => string;
   onClick: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
@@ -933,6 +1003,11 @@ function WeekEvent({
   const color = eventColor(a);
   const width = 100 / cols;
   return (
+    <HoverCard
+      // Forced shut mid-drag: a preview card chasing the block you're moving
+      // is noise, and it sits under the cursor you're dragging with.
+      open={isDragging ? false : undefined}
+      trigger={
     <button
       ref={setNodeRef}
       {...listeners}
@@ -965,6 +1040,10 @@ function WeekEvent({
         {clientName(a.client_id)}
       </p>
     </button>
+      }
+    >
+      <EventPreview a={a} clientName={clientName} personName={personName} />
+    </HoverCard>
   );
 }
 

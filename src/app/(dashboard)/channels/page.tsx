@@ -2,11 +2,14 @@
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Hash, MessageSquare, Plus, Trash2, Users } from "lucide-react";
+import { Archive, Hash, Info, MessageSquare, Plus, Trash2, Users } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { MenuItem, MenuSeparator, Popover } from "@/components/ui/Popover";
+import { formatDate } from "@/lib/format";
+import { isAdmin } from "@/lib/permissions";
 import { toast } from "@/components/Toaster";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -16,7 +19,7 @@ import { useAuth } from "@/lib/useAuth";
 import { useChannel } from "@/lib/useChannel";
 import { MentionInput, type MentionInputHandle } from "@/components/channels/MentionInput";
 import { MessageBody } from "@/components/channels/MessageBody";
-import type { Channel, Message, Team } from "@/lib/types";
+import type { Channel, ChannelMember, Message, Team } from "@/lib/types";
 
 /**
  * Channels — team chat.
@@ -27,6 +30,97 @@ import type { Channel, Message, Team } from "@/lib/types";
  * The channel list uses `useSupabaseTable` because channels are few and
  * long-lived. Messages emphatically do not — see `useChannel`.
  */
+
+/**
+ * The "i" in the channel header.
+ *
+ * Read-only apart from Archive, which is offered to exactly the people the
+ * `channels_update` policy lets through — admin or the creator. Anyone else
+ * doesn't see the button rather than seeing one that fails.
+ */
+function ChannelInfo({
+  channel,
+  teamName,
+  memberCount,
+  createdByName,
+  canArchive,
+  onArchive,
+}: {
+  channel: Channel;
+  teamName: string | null;
+  memberCount: number;
+  createdByName: string | null;
+  canArchive: boolean;
+  onArchive: () => void;
+}) {
+  return (
+    <Popover
+      align="right"
+      className="w-72"
+      trigger={
+        <button
+          title="Channel details"
+          className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+        >
+          <Info className="h-4 w-4" />
+        </button>
+      }
+    >
+      {(close) => (
+        <div className="flex flex-col">
+          <div className="px-2 pb-1.5 pt-1">
+            <p className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground">
+              <Hash className="h-3.5 w-3.5 shrink-0 text-muted-2" />
+              <span className="truncate">{channel.name}</span>
+            </p>
+            <p className="mt-1 text-[12px] leading-snug text-foreground-secondary">
+              {channel.topic?.trim() || (
+                <span className="text-muted-2">No topic set.</span>
+              )}
+            </p>
+          </div>
+
+          <MenuSeparator />
+
+          <dl className="flex flex-col gap-1.5 px-2 py-1.5 text-[12px]">
+            <InfoRow label="Team" value={teamName ?? "Not a team channel"} />
+            <InfoRow
+              label="Members"
+              value={`${memberCount} ${memberCount === 1 ? "person" : "people"}`}
+            />
+            <InfoRow label="Created" value={formatDate(channel.created_at)} />
+            {createdByName && <InfoRow label="Created by" value={createdByName} />}
+          </dl>
+
+          {canArchive && (
+            <>
+              <MenuSeparator />
+              <MenuItem
+                danger
+                icon={<Archive className="h-3.5 w-3.5" />}
+                onClick={() => {
+                  close();
+                  onArchive();
+                }}
+              >
+                Archive channel
+              </MenuItem>
+            </>
+          )}
+        </div>
+      )}
+    </Popover>
+  );
+}
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3">
+      <dt className="shrink-0 text-muted-foreground">{label}</dt>
+      <dd className="min-w-0 truncate text-right text-foreground-secondary">{value}</dd>
+    </div>
+  );
+}
 
 /** Same calendar day? Used to decide when a date separator is worth drawing. */
 function sameDay(a: string, b: string) {
@@ -57,7 +151,7 @@ export default function ChannelsPage() {
 }
 
 function Channels() {
-  const { profile } = useAuth();
+  const { profile, access } = useAuth();
   const searchParams = useSearchParams();
   const teamParam = searchParams.get("team");
 
@@ -67,6 +161,37 @@ function Channels() {
   );
   const { rows: teams } = useSupabaseTable<Team>("teams", { column: "name", ascending: true });
   const { rows: staff } = useStaffProfiles();
+  // Bounded by channels × staff, so whole-table is fine here — unlike
+  // `messages`, which is why that one paginates in useChannel.
+  const { rows: memberships } = useSupabaseTable<ChannelMember>("channel_members");
+
+  const memberCount = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const m of memberships) counts.set(m.channel_id, (counts.get(m.channel_id) ?? 0) + 1);
+    return (channelId: string) => counts.get(channelId) ?? 0;
+  }, [memberships]);
+
+  /*
+   * Mirrors the `channels_update` policy exactly: admin OR the creator. The
+   * punchlist guessed creator-only; the database is broader, and a UI that's
+   * stricter than RLS just hides a capability people actually have.
+   */
+  const canManage = (c: Channel) =>
+    isAdmin(access) || (!!c.created_by && c.created_by === profile?.id);
+
+  async function archiveChannel(c: Channel) {
+    if (!confirm(`Archive #${c.name}? It disappears from the list; messages are kept.`)) return;
+    const supabase = createClient();
+    if (!supabase) return;
+    const { error } = await supabase.from("channels").update({ archived: true }).eq("id", c.id);
+    if (error) {
+      toast.error(`Couldn't archive: ${error.message}`);
+      return;
+    }
+    setChannels((prev) => prev.map((x) => (x.id === c.id ? { ...x, archived: true } : x)));
+    setActiveId(null);
+    toast.success(`#${c.name} archived`);
+  }
 
 
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -255,10 +380,24 @@ function Channels() {
               <Hash className="h-4 w-4 text-muted-2" />
               <span className="text-[14px] font-semibold">{active.name}</span>
               {active.topic && (
-                <span className="min-w-0 truncate text-[12px] text-muted-foreground">
+                <span className="min-w-0 flex-1 truncate text-[12px] text-muted-foreground">
                   {active.topic}
                 </span>
               )}
+              <div className="ml-auto shrink-0">
+                <ChannelInfo
+                  channel={active}
+                  teamName={teamName(active)}
+                  memberCount={memberCount(active.id)}
+                  createdByName={
+                    active.created_by
+                      ? staff.find((p) => p.id === active.created_by)?.full_name ?? "Someone"
+                      : null
+                  }
+                  canArchive={canManage(active)}
+                  onArchive={() => void archiveChannel(active)}
+                />
+              </div>
             </header>
 
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
