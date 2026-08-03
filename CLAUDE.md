@@ -82,6 +82,15 @@ If something can't be verified from here, say which part is unverified.
 
 ## Standing gotchas
 
+- **Never run `npm audit fix --force`.** As of 3 Aug 2026 it proposes
+  installing `next@9.3.3` — a six-major-version downgrade from 16.2.12 —
+  because that's the only release whose ranges satisfy the postcss and sharp
+  advisories. It would destroy the app. Plain `npm audit fix` is safe.
+  The four current high-severity findings are all unreachable: `sharp` is only
+  invoked by `next/image` and there are zero `next/image` imports; `postcss`
+  runs at build time over CSS we wrote; `brace-expansion` sits inside
+  `@typescript-eslint`, a devDependency. postcss and sharp are Next's own
+  transitive deps — they clear when Next ships a patch, not from our manifest.
 - **Portals and modal scroll locks.** Radix portals to `<body>`, which is
   outside the scroll lock a modal dialog installs (`react-remove-scroll`). Wheel
   events get swallowed while pointer drags still work. Floating elements inside
