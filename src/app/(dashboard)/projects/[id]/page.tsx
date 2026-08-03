@@ -57,6 +57,7 @@ import { Badge, statusTone } from "@/components/ui/Badge";
 import { Avatar, AvatarStack } from "@/components/ui/Avatar";
 import { Card } from "@/components/ui/Card";
 import { Checkbox } from "@/components/ui/Checkbox";
+import { HoverCard } from "@/components/ui/HoverCard";
 import { StatusPicker } from "@/components/ui/StatusPicker";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { formatTimeRange } from "@/lib/taskTime";
@@ -1672,13 +1673,15 @@ function MiniCalendar({
           const hasDue = dueDays.has(key);
           const hasMeeting = meetingDays.has(key);
           const detail = byDay.get(key);
-          return (
+          // Same clipping problem as the month cells below: this Card is
+          // `overflow-hidden`, so an in-flow panel gets sliced at the card
+          // edge. Portalled via HoverCard instead.
+          const circle = (
             <span
-              key={day.toISOString()}
               className={cn(
                 // self-center keeps the circle vertically centred now that the
                 // week row can be taller than the circle itself.
-                "hover-reveal-host relative mx-auto flex h-8 w-8 shrink-0 items-center justify-center self-center rounded-full text-xs transition-[box-shadow,transform] duration-150",
+                "relative mx-auto flex h-8 w-8 shrink-0 items-center justify-center self-center rounded-full text-xs transition-[box-shadow,transform] duration-150",
                 isToday(day)
                   ? "bg-primary font-semibold text-primary-foreground"
                   : hasDue || hasMeeting
@@ -1697,28 +1700,39 @@ function MiniCalendar({
                   {hasMeeting && <span className="h-1 w-1 rounded-full bg-warning" />}
                 </span>
               )}
-              {detail && (
-                <span className="hover-reveal pointer-events-none absolute bottom-full left-1/2 z-30 mb-1 flex w-52 flex-col gap-1 rounded-lg border border-border bg-surface p-2.5 text-left shadow-xl">
-                  <span className="text-[11px] font-medium text-foreground">
-                    {format(day, "EEEE, MMM d")}
-                  </span>
-                  {detail.meetings.map((m) => (
-                    <span key={m.id} className="flex items-start gap-1.5 text-[11px]">
-                      <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-warning" />
-                      <span className="min-w-0 flex-1 text-foreground-secondary">
-                        {format(parseISO(m.activity_date), "HH:mm")} · {m.description}
-                      </span>
-                    </span>
-                  ))}
-                  {detail.tasks.map((t) => (
-                    <span key={t.id} className="flex items-start gap-1.5 text-[11px]">
-                      <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-                      <span className="min-w-0 flex-1 text-foreground-secondary">{t.name}</span>
-                    </span>
-                  ))}
-                </span>
-              )}
             </span>
+          );
+
+          if (!detail) return <span key={day.toISOString()}>{circle}</span>;
+
+          return (
+            <HoverCard
+              key={day.toISOString()}
+              side="top"
+              align="center"
+              className="w-52"
+              trigger={circle}
+            >
+              <div className="flex flex-col gap-1">
+                <p className="text-[11px] font-medium text-foreground">
+                  {format(day, "EEEE, MMM d")}
+                </p>
+                {detail.meetings.map((m) => (
+                  <span key={m.id} className="flex items-start gap-1.5 text-[11px]">
+                    <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-warning" />
+                    <span className="min-w-0 flex-1 text-foreground-secondary">
+                      {format(parseISO(m.activity_date), "HH:mm")} {"\u00b7"} {m.description}
+                    </span>
+                  </span>
+                ))}
+                {detail.tasks.map((t) => (
+                  <span key={t.id} className="flex items-start gap-1.5 text-[11px]">
+                    <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                    <span className="min-w-0 flex-1 text-foreground-secondary">{t.name}</span>
+                  </span>
+                ))}
+              </div>
+            </HoverCard>
           );
         })}
       </div>
@@ -1784,45 +1798,27 @@ function ProjectCalendar({
             const isSelected = !!selected && isSameDay(day, selected);
             const overflow = dayTasks.length + dayMeetings.length - 2;
             const busy = dayTasks.length + dayMeetings.length > 0;
-            return (
+            /*
+             * Portalled, not absolutely positioned inside the cell.
+             *
+             * This was a `.hover-reveal` panel anchored to the day button. The
+             * DashGrid cards are `overflow-hidden`, and no z-index escapes a
+             * clipping ancestor — so the panel was sliced by the card edge on
+             * the left column and by the card top on the first row. HoverCard
+             * portals to <body> and has collision padding, so it shifts itself
+             * to stay whole.
+             */
+            const cell = (
               <button
-                key={day.toISOString()}
                 onClick={() => setSelected(isSelected ? null : day)}
                 className={cn(
-                  // `hover-reveal-host` + `relative` anchor the hover card below.
-                  "hover-reveal-host relative flex h-20 flex-col items-stretch gap-0.5 rounded border p-1 text-left transition-colors",
+                  "flex h-20 flex-col items-stretch gap-0.5 rounded border p-1 text-left transition-colors",
                   isSelected
                     ? "border-primary bg-primary/10"
                     : "border-transparent hover:bg-white/5",
                   !isSameMonth(day, month) && "opacity-40"
                 )}
               >
-                {/* Hover detail. Only rendered for days that have something on
-                    them, so an empty cell doesn't flash an empty card. */}
-                {busy && (
-                  <span className="hover-reveal pointer-events-none absolute bottom-full left-1/2 z-30 mb-1 flex w-56 flex-col gap-1 rounded-lg border border-border bg-surface p-2.5 text-left shadow-xl">
-                    <span className="text-[11px] font-medium text-foreground">
-                      {format(day, "EEEE, MMM d")}
-                    </span>
-                    {dayMeetings.map((m) => (
-                      <span key={m.id} className="flex items-start gap-1.5 text-[11px]">
-                        <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-warning" />
-                        <span className="min-w-0 flex-1 text-foreground-secondary">
-                          {format(parseISO(m.activity_date), "HH:mm")} · {m.description}
-                        </span>
-                      </span>
-                    ))}
-                    {dayTasks.map((t) => (
-                      <span key={t.id} className="flex items-start gap-1.5 text-[11px]">
-                        <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-                        <span className="min-w-0 flex-1 text-foreground-secondary">
-                          {t.name}
-                          <span className="ml-1 text-muted-2">due</span>
-                        </span>
-                      </span>
-                    ))}
-                  </span>
-                )}
                 <span
                   className={cn(
                     "self-end text-xs",
@@ -1868,6 +1864,42 @@ function ProjectCalendar({
                   <span className="px-1 text-[10px] text-muted-foreground">+{overflow}</span>
                 )}
               </button>
+            );
+
+            // An empty day gets no card rather than an empty one.
+            if (!busy) return <div key={day.toISOString()}>{cell}</div>;
+
+            return (
+              <HoverCard
+                key={day.toISOString()}
+                side="top"
+                align="center"
+                className="w-56"
+                trigger={cell}
+              >
+                <div className="flex flex-col gap-1">
+                  <p className="text-[11px] font-medium text-foreground">
+                    {format(day, "EEEE, MMM d")}
+                  </p>
+                  {dayMeetings.map((m) => (
+                    <span key={m.id} className="flex items-start gap-1.5 text-[11px]">
+                      <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-warning" />
+                      <span className="min-w-0 flex-1 text-foreground-secondary">
+                        {format(parseISO(m.activity_date), "HH:mm")} {"\u00b7"} {m.description}
+                      </span>
+                    </span>
+                  ))}
+                  {dayTasks.map((t) => (
+                    <span key={t.id} className="flex items-start gap-1.5 text-[11px]">
+                      <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                      <span className="min-w-0 flex-1 text-foreground-secondary">
+                        {t.name}
+                        <span className="ml-1 text-muted-2">due</span>
+                      </span>
+                    </span>
+                  ))}
+                </div>
+              </HoverCard>
             );
           })}
         </div>
