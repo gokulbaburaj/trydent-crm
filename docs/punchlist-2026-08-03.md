@@ -49,9 +49,27 @@ two-line label (title plus help text) left it floating.
 
 ## Real bugs
 
-### 5. Overlapping events in the Schedule week grid
-Screenshot 7. Four meetings at 15:30 render as four side-by-side blocks that
-spill past the day column, and the 21:00 one overlaps the now-line.
+### 5. Overlapping events in the Schedule week grid — NOT A BUG ✅
+**Closed 4 Aug. There was never anything wrong here.** Queried production:
+the four blocks in screenshot 7 are four events on four *different* days —
+`ewrgwerg` Mon 3, `grg` Tue 4, `wrgerg` Wed 5, `grewrgwr` Thu 6, all at 10:00
+UTC (15:30 IST). Each is alone in its own day column, so each correctly gets
+the full column width. The screenshot was read as one day's column containing
+four spilling blocks; it's four columns containing one block each.
+
+`ergw` is the only genuinely Monday-only event (15:30 UTC = 21:00 IST), which
+is why it sits alone — same renderer, same code path, one event, correct.
+`activity_date` is `timestamptz` and round-trips properly; the apparent time
+shift is just UTC storage rendered in IST.
+
+The now-line "overlap" is also as designed: `NowLine` is `z-10` and events are
+`z-auto`, so the line paints over them deliberately.
+
+Two rounds of speculation, both wrong, before anyone queried the database.
+The original text is kept below as the record of what was assumed.
+
+~~Screenshot 7. Four meetings at 15:30 render as four side-by-side blocks that
+spill past the day column, and the 21:00 one overlaps the now-line.~~
 
 **The diagnosis above is wrong — don't act on it.** `layoutDay` (schedule
 page, line ~110) already does the clustering, and it does it correctly. Ported
