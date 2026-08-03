@@ -84,8 +84,26 @@ function Channels() {
     return (c: Channel) => (c.team_id ? byId.get(c.team_id) ?? null : null);
   }, [teams]);
 
-  const teamChannels = useMemo(() => live.filter((c) => c.team_id), [live]);
-  const generalChannels = useMemo(() => live.filter((c) => !c.team_id), [live]);
+  /*
+   * Arriving from a team's Channel link shows that team's channel alone.
+   *
+   * Every channel is readable by everyone, so listing all five was correct but
+   * unhelpful: clicking "Channel" under Admin and getting a directory of every
+   * team reads like the link went to the wrong place. Scoped when you came
+   * from a team, complete when you came from the nav item.
+   */
+  const teamChannels = useMemo(() => {
+    const all = live.filter((c) => c.team_id);
+    if (!teamParam) return all;
+    const team = teams.find((t) => t.name === teamParam);
+    return team ? all.filter((c) => c.team_id === team.id) : all;
+  }, [live, teamParam, teams]);
+
+  const generalChannels = useMemo(
+    // A team view is about that team; the general channels aren't part of it.
+    () => (teamParam ? [] : live.filter((c) => !c.team_id)),
+    [live, teamParam]
+  );
 
   /*
    * `?team=Design` from the sidebar wins over whatever was last clicked, so the

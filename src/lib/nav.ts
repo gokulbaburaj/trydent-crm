@@ -91,9 +91,18 @@ export function useNavState() {
     write({ ...cur, collapsed: { ...cur.collapsed, [id]: !cur.collapsed[id] } });
   }, []);
 
+  /**
+   * Accordion, not checkboxes: opening a team closes the others.
+   *
+   * Each team expands to three sub-links, so with five teams open the sidebar
+   * became twenty rows and the sections below it were pushed off screen. You
+   * are only ever looking at one team at a time, and the collapse is the thing
+   * that makes the rest of the nav reachable.
+   */
   const toggleTeam = useCallback((name: string) => {
     const cur = read();
-    write({ ...cur, teams: { ...cur.teams, [name]: !cur.teams[name] } });
+    const wasOpen = !!cur.teams[name];
+    write({ ...cur, teams: wasOpen ? {} : { [name]: true } });
   }, []);
 
   const setOrder = useCallback((sectionId: string, hrefs: string[]) => {

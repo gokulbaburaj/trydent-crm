@@ -48,7 +48,14 @@ export function TimePicker({
   return (
     <Popover
       align={align}
-      className="w-auto p-0"
+      /*
+       * The scroll container has to be the popover element itself, not a child.
+       * Radix owns wheel and focus handling on its content node; a nested
+       * scroller inside it clipped the list without ever receiving the wheel,
+       * so the times were visible but unreachable. `overscroll-contain` stops
+       * the page scrolling once the list hits its end.
+       */
+      className="max-h-64 w-40 overflow-y-auto overscroll-contain p-1"
       trigger={
         <button
           type="button"
@@ -76,7 +83,7 @@ export function TimePicker({
       }
     >
       {(close) => (
-        <div className="max-h-64 w-40 overflow-y-auto p-1">
+        <div>
           {SLOTS.map((slot) => {
             const mins = minutesOf(slot)!;
             const disabled = floor != null && mins <= floor;

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
   AlertTriangle,
-  ArrowLeft,
   CalendarDays,
   CheckCircle2,
   ClipboardList,
@@ -63,14 +62,10 @@ function TeamDashboardInner() {
   return (
     <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-5">
       <div>
-        <Link
-          href="/team"
-          className="inline-flex items-center gap-1.5 text-[12.5px] text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          Team
-        </Link>
-        <div className="mt-2 flex flex-wrap items-center gap-3">
+        {/* No back link. This is a destination reached from the sidebar tree,
+            not a drill-down from a list — "back" implied a stack that doesn't
+            exist, and the tabs already handle returning anywhere. */}
+        <div className="flex flex-wrap items-center gap-3">
           <h2 className="text-xl font-semibold tracking-tight">{d.team.name}</h2>
           <div className="flex items-center -space-x-1.5">
             {d.members.slice(0, 6).map((m) => (
