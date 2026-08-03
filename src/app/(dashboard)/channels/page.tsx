@@ -14,6 +14,10 @@ import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { useStaffProfiles } from "@/lib/useStaffProfiles";
 import { useAuth } from "@/lib/useAuth";
 import { useChannel } from "@/lib/useChannel";
+import { useMentionables } from "@/lib/useMentionables";
+import { resolveMentions } from "@/lib/mentions";
+import { MentionInput } from "@/components/channels/MentionInput";
+import { MessageBody } from "@/components/channels/MessageBody";
 import type { Channel, Message, Team } from "@/lib/types";
 
 /**
@@ -65,6 +69,7 @@ function Channels() {
   );
   const { rows: teams } = useSupabaseTable<Team>("teams", { column: "name", ascending: true });
   const { rows: staff } = useStaffProfiles();
+  const mentionables = useMentionables();
 
   const [activeId, setActiveId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -143,11 +148,12 @@ function Channels() {
     setCreating(false);
   }
 
-  function submit(e: React.FormEvent) {
-    e.preventDefault();
-    const text = draft;
+  /** Send button and Enter take the same path, so they can't disagree. */
+  function submit() {
+    const body = draft.trim();
+    if (!body) return;
     setDraft(""); // clear first so the input never lags the optimistic message
-    void send(text);
+    void send(body, resolveMentions(body, mentionables));
   }
 
   return (
@@ -288,6 +294,7 @@ function Channels() {
                       authorName={authorOf(m.author_id)?.full_name ?? "Unknown"}
                       authorAvatar={authorOf(m.author_id)?.avatar_url ?? null}
                       mine={m.author_id === profile?.id}
+                      meId={profile?.id ?? null}
                       onDelete={() => void remove(m.id)}
                     />
                   </div>
@@ -296,19 +303,20 @@ function Channels() {
               <div ref={endRef} />
             </div>
 
-            <form
-              onSubmit={submit}
-              className="flex shrink-0 items-center gap-2 border-t border-border-subtle p-2.5"
-            >
-              <Input
-                placeholder={`Message #${active.name}`}
+            <div className="flex shrink-0 items-end gap-2 border-t border-border-subtle p-2.5">
+              <MentionInput
                 value={draft}
-                onChange={(e) => setDraft(e.target.value)}
+                onChange={setDraft}
+                placeholder={`Message #${active.name} — @ for people, # for projects`}
+                onSubmit={(body, mentions) => {
+                  setDraft("");
+                  void send(body, mentions);
+                }}
               />
-              <Button type="submit" size="sm" disabled={!draft.trim()}>
+              <Button size="sm" disabled={!draft.trim()} onClick={submit}>
                 Send
               </Button>
-            </form>
+            </div>
           </>
         )}
       </section>
@@ -354,6 +362,7 @@ function MessageRow({
   authorName,
   authorAvatar,
   mine,
+  meId,
   onDelete,
 }: {
   message: Message;
@@ -361,6 +370,7 @@ function MessageRow({
   authorName: string;
   authorAvatar: string | null;
   mine: boolean;
+  meId: string | null;
   onDelete: () => void;
 }) {
   return (
@@ -380,8 +390,8 @@ function MessageRow({
             <span className="text-[11px] text-muted-2">{timeLabel(message.created_at)}</span>
           </p>
         )}
-        <p className="whitespace-pre-wrap break-words text-[13px] text-foreground-secondary">
-          {message.body}
+        <p className="text-[13px] text-foreground-secondary">
+          <MessageBody body={message.body} mentions={message.mentions} meId={meId} />
           {message.edited_at && <span className="ml-1 text-[11px] text-muted-2">(edited)</span>}
         </p>
       </div>
