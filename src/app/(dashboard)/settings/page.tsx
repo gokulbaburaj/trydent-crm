@@ -269,8 +269,15 @@ export default function SettingsPage() {
         </p>
       </Card>
 
-      {/* Roles is a table of rows, so it always wants the full width. */}
-      <div className="xl:col-span-2">
+      {/*
+        Roles is a table of rows, so it always wants the full width.
+
+        `flex flex-col gap-5`, not a bare div: wrapping these to span both
+        columns takes them out of the grid, and the grid's own `gap-5` stops
+        applying between them. Without it the three cards in here stack flush
+        while every card above is 20px apart.
+      */}
+      <div className="flex flex-col gap-5 xl:col-span-2">
         <DefaultViewsCard />
         <OrgSummaryCards />
       </div>
