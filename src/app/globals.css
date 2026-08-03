@@ -78,17 +78,36 @@
   --warning: #f2994a;
   --danger: var(--destructive);
 
-  /* Calendar event palette — pastel blocks with dark text */
-  --event-blue-bg: #c7e3f5;
+  /*
+    Calendar event palette — dark tint, saturated bar, text IN the colour.
+
+    This was a pastel palette with hardcoded `#16171b` text, which is a
+    light-mode card sitting inside a dark app: four bright blocks on a #0a0a0a
+    grid pull every bit of attention and read as a rendering fault. Apple
+    Calendar and Linear both solve it the same way — a low-alpha wash of the
+    hue over the surface, one saturated edge to carry the identity, and label
+    text in a bright tint of the same hue. The grid stays dark and the events
+    read as belonging to it.
+
+    `-bg` is deliberately rgba, not a hex: it composites over whatever is
+    underneath, so the hour lines and the now-line stay faintly visible through
+    a block instead of being covered by it.
+  */
+  --event-blue-bg: rgba(78, 167, 224, 0.16);
   --event-blue-bar: #4ea7e0;
-  --event-purple-bg: #d6d4f2;
-  --event-purple-bar: #5e6ad2;
-  --event-pink-bg: #f2d2dc;
+  --event-blue-fg: #9fd2f2;
+  --event-purple-bg: rgba(126, 135, 226, 0.18);
+  --event-purple-bar: #7e87e2;
+  --event-purple-fg: #b8bdf0;
+  --event-pink-bg: rgba(217, 92, 138, 0.16);
   --event-pink-bar: #d95c8a;
-  --event-yellow-bg: #f0e3c0;
+  --event-pink-fg: #f0a3bf;
+  --event-yellow-bg: rgba(217, 165, 63, 0.16);
   --event-yellow-bar: #d9a53f;
-  --event-indigo-bg: #6c74dd;
-  --event-indigo-bar: #4a52c4;
+  --event-yellow-fg: #eccb85;
+  --event-indigo-bg: rgba(108, 116, 221, 0.20);
+  --event-indigo-bar: #6c74dd;
+  --event-indigo-fg: #b3b8f2;
   /*
     Bklit chart chrome. The @bklit registry ships LIGHT defaults here, which in
     this dark-only app rendered a white chart background, near-white grid lines

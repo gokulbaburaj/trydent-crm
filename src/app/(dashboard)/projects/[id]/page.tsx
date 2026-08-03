@@ -1834,15 +1834,17 @@ function ProjectCalendar({
                   {format(day, "d")}
                 </span>
                 {/* Meetings lead: a fixed time matters more at a glance than a
-                    due date. The yellow token is a pale fill, so the text has
-                    to be dark — white on it was effectively invisible. */}
+                    due date. Colours come from the `-fg` tokens rather than
+                    being picked by hand — the event fills used to be pale and
+                    these were hardcoded dark to suit, which broke the moment
+                    the palette went dark-tinted. */}
                 {dayMeetings.slice(0, 2).map((m) => (
                   <span
                     key={m.id}
                     className="truncate rounded px-1 py-px text-[11px] font-semibold"
                     style={{
                       background: "var(--event-yellow-bg)",
-                      color: "#3d2c05",
+                      color: "var(--event-yellow-fg)",
                       boxShadow: "inset 2px 0 0 0 var(--event-yellow-bar)",
                     }}
                   >
@@ -1855,7 +1857,7 @@ function ProjectCalendar({
                     className="truncate rounded px-1 py-px text-[11px] font-semibold"
                     style={{
                       background: "var(--event-indigo-bg)",
-                      color: "#ffffff",
+                      color: "var(--event-indigo-fg)",
                       boxShadow: "inset 2px 0 0 0 var(--event-indigo-bar)",
                     }}
                   >

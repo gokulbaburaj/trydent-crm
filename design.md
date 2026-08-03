@@ -28,6 +28,12 @@ browser-style tab bar, content inside a rounded `--panel` canvas.
 | `--success` `--warning` `--destructive` | green/amber/red | semantic only |
 | `--radius` | `0.625rem` | drives the whole radius scale |
 
+**Calendar events** use `--event-<hue>-bg` (a low-alpha wash), `-bar` (one
+saturated left edge) and `-fg` (label text, a bright tint of the same hue).
+Never a pale fill with dark text — that reads as a light-mode card dropped into
+a dark app, which is exactly what shipped before 4 Aug. `-bg` is rgba on
+purpose so hour lines and the now-line stay visible through a block.
+
 Rules: brand color is always `primary` (never `accent`); green means "good"
 (Done/Won/Active), never decoration; interaction states are white-alpha
 (`bg-white/5` hover, `bg-white/10` active); text on `primary` uses

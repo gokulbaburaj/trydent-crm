@@ -93,12 +93,12 @@ const HOUR_HEIGHT = 56;
 /** Default event duration (minutes) — activities only store a start time. */
 const EVENT_MINUTES = 60;
 
-/** Pastel event palette lifted from Linear's calendar screenshots. */
+/** Dark-tinted event palette — see the token block in globals.css. */
 const EVENT_COLORS = [
-  { bg: "var(--event-blue-bg)", bar: "var(--event-blue-bar)" },
-  { bg: "var(--event-purple-bg)", bar: "var(--event-purple-bar)" },
-  { bg: "var(--event-yellow-bg)", bar: "var(--event-yellow-bar)" },
-  { bg: "var(--event-pink-bg)", bar: "var(--event-pink-bar)" },
+  { bg: "var(--event-blue-bg)", bar: "var(--event-blue-bar)", fg: "var(--event-blue-fg)" },
+  { bg: "var(--event-purple-bg)", bar: "var(--event-purple-bar)", fg: "var(--event-purple-fg)" },
+  { bg: "var(--event-yellow-bg)", bar: "var(--event-yellow-bar)", fg: "var(--event-yellow-fg)" },
+  { bg: "var(--event-pink-bg)", bar: "var(--event-pink-bar)", fg: "var(--event-pink-fg)" },
 ];
 
 function eventColor(a: Activity) {
@@ -811,9 +811,10 @@ function WeekGrid({
                       ? ` · ${formatTimeRange(t.due_time, t.end_time)}`
                       : ""
                   }`}
-                  className="truncate rounded px-1.5 py-0.5 text-[11px] font-medium text-white"
+                  className="truncate rounded px-1.5 py-0.5 text-[11px] font-medium"
                   style={{
                     background: "var(--event-indigo-bg)",
+                    color: "var(--event-indigo-fg)",
                     boxShadow: "inset 3px 0 0 0 var(--event-indigo-bar)",
                   }}
                 >
@@ -1015,8 +1016,12 @@ function WeekEvent({
       data-event
       onClick={onClick}
       className={cn(
-        "absolute overflow-hidden rounded px-1.5 py-1 text-left transition-[filter,box-shadow] duration-150 hover:brightness-105 hover:shadow-md hover:shadow-black/20",
-        isDragging && "z-30 opacity-90 shadow-xl shadow-black/50 brightness-110"
+        // brightness() on a translucent dark fill is almost invisible — the
+        // block is mostly the grid showing through. A white-alpha overlay is
+        // the app's standard hover anyway (see design.md), so use that.
+        "group/ev absolute overflow-hidden rounded px-1.5 py-1 text-left transition-[box-shadow,background-color] duration-150 hover:shadow-md hover:shadow-black/30",
+        "after:pointer-events-none after:absolute after:inset-0 after:bg-white/0 after:transition-colors hover:after:bg-white/5",
+        isDragging && "z-30 shadow-xl shadow-black/50 after:bg-white/10"
       )}
       style={{
         top: top + 1,
@@ -1030,13 +1035,18 @@ function WeekEvent({
           : undefined,
       }}
     >
-      <p className="flex items-center gap-1 truncate text-[11px] font-semibold leading-tight text-[#16171b]">
+      <p
+        className="flex items-center gap-1 truncate text-[11px] font-semibold leading-tight"
+        style={{ color: color.fg }}
+      >
         <span className="truncate">
           {format(d, "H:mm")} <span className="font-medium">{a.description}</span>
         </span>
         {a.recurrence !== "none" && <Repeat className="h-2.5 w-2.5 shrink-0 opacity-70" />}
       </p>
-      <p className="truncate text-[10px] leading-tight text-[#16171b]/70">
+      {/* The client line is secondary, so it's the same hue at lower opacity
+          rather than a second colour competing inside a 22px-tall block. */}
+      <p className="truncate text-[10px] leading-tight opacity-65" style={{ color: color.fg }}>
         {clientName(a.client_id)}
       </p>
     </button>
