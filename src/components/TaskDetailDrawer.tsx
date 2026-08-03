@@ -23,6 +23,7 @@ import { StatusPicker } from "@/components/ui/StatusPicker";
 import { PriorityPicker } from "@/components/ui/PriorityPicker";
 import { RecurrencePicker } from "@/components/ui/RecurrencePicker";
 import { DatePicker } from "@/components/ui/DatePicker";
+import { TimePicker } from "@/components/ui/TimePicker";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { Popover, MenuItem, MenuLabel } from "@/components/ui/Popover";
 import { createClient } from "@/lib/supabase/client";
@@ -318,9 +319,41 @@ export function TaskDetailDrawer({
             <DatePicker
               value={task.due_date}
               placeholder="Due date"
-              onChange={(d) => onUpdate(task.id, { due_date: d })}
+              onChange={(d) =>
+                // Times hang off the date. Clearing the date has to clear them
+                // too, or the row keeps a 3pm that belongs to no day and the
+                // check constraint has nothing to catch it.
+                onUpdate(task.id, d ? { due_date: d } : { due_date: null, due_time: null, end_time: null })
+              }
             />
           </div>
+          {/* Times only make sense once there's a day to hang them on. */}
+          {task.due_date && (
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label>Starts</Label>
+                <TimePicker
+                  value={task.due_time}
+                  placeholder="All day"
+                  onChange={(t) =>
+                    // Dropping the start must drop the end: the database
+                    // rejects an end with no start, so sending one would fail
+                    // the write rather than just look odd.
+                    onUpdate(task.id, t ? { due_time: t } : { due_time: null, end_time: null })
+                  }
+                />
+              </div>
+              <div>
+                <Label>Ends</Label>
+                <TimePicker
+                  value={task.end_time}
+                  placeholder={task.due_time ? "Optional" : "Set a start first"}
+                  minTime={task.due_time}
+                  onChange={(t) => onUpdate(task.id, { end_time: t })}
+                />
+              </div>
+            </div>
+          )}
           <div>
             <Label>Label</Label>
             <Input

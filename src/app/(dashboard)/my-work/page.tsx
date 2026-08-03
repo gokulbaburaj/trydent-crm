@@ -19,6 +19,7 @@ import { useAuth } from "@/lib/useAuth";
 import { useTabs } from "@/lib/tabs";
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/format";
+import { dayOrder, formatTime } from "@/lib/taskTime";
 import type { Project, ProjectTask } from "@/lib/types";
 import { PRIORITY_ORDER, TASK_STATUSES } from "@/lib/types";
 
@@ -66,7 +67,10 @@ export default function MyWorkPage() {
       map.get(b)!.sort(
         (a, b2) =>
           PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b2.priority] ||
-          (a.due_date ?? "9999").localeCompare(b2.due_date ?? "9999")
+          (a.due_date ?? "9999").localeCompare(b2.due_date ?? "9999") ||
+          // Same priority, same day: earliest start first. All-day work sorts
+          // above timed work, since it isn't waiting on a particular hour.
+          dayOrder(a) - dayOrder(b2)
       );
     }
     return map;
@@ -188,6 +192,7 @@ export default function MyWorkPage() {
                   {t.due_date && (
                     <Badge tone={bucket === "Overdue" ? "red" : "gray"}>
                       {formatDate(t.due_date)}
+                      {t.due_time ? ` · ${formatTime(t.due_time)}` : ""}
                     </Badge>
                   )}
                 </div>

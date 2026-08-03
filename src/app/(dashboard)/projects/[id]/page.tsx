@@ -58,6 +58,7 @@ import { Avatar, AvatarStack } from "@/components/ui/Avatar";
 import { Card } from "@/components/ui/Card";
 import { StatusPicker } from "@/components/ui/StatusPicker";
 import { DatePicker } from "@/components/ui/DatePicker";
+import { formatTimeRange } from "@/lib/taskTime";
 import { Popover, MenuItem, MenuLabel } from "@/components/ui/Popover";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { Drawer } from "@/components/ui/Drawer";
@@ -275,16 +276,34 @@ export default function ProjectDetailPage() {
       header: "Due",
       icon: CalendarDays,
       width: "180px",
-      // Undated last, not first — an empty date isn't the dawn of time.
-      sortKey: (t) => t.due_date ?? "9999-12-31",
+      // Undated last, not first — an empty date isn't the dawn of time. The
+      // time is appended so two tasks on the same day sort by when they start.
+      sortKey: (t) =>
+        t.due_date ? `${t.due_date}T${t.due_time ?? "00:00:00"}` : "9999-12-31",
       render: (t) => (
-        <span onClick={(e) => e.stopPropagation()}>
+        <span onClick={(e) => e.stopPropagation()} className="flex flex-col gap-0.5">
           <DatePicker
             align="right"
             value={t.due_date}
             placeholder="Due date"
-            onChange={(d) => updateTask(t.id, { due_date: d })}
+            onChange={(d) =>
+              updateTask(
+                t.id,
+                // Clearing the day has to clear the clock times with it — the
+                // check constraint would otherwise be satisfied by a time that
+                // belongs to no date.
+                d ? { due_date: d } : { due_date: null, due_time: null, end_time: null }
+              )
+            }
           />
+          {/* Read-only here: setting a time is a considered act and belongs in
+              the drawer, but hiding it from the table would mean the schedule
+              knows something this view doesn't. */}
+          {formatTimeRange(t.due_time, t.end_time) && (
+            <span className="pl-1 text-[11px] tabular-nums text-muted-foreground">
+              {formatTimeRange(t.due_time, t.end_time)}
+            </span>
+          )}
         </span>
       ),
     },

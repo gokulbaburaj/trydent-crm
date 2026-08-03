@@ -17,6 +17,7 @@ import { CheckCheck, ChevronLeft, ChevronRight } from "lucide-react";
 import { Badge, statusTone } from "@/components/ui/Badge";
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/format";
+import { dayOrder, formatTime, formatTimeRange } from "@/lib/taskTime";
 import { Avatar } from "@/components/ui/Avatar";
 import type { Project, ProjectTask, TaskStatus, TeamMember } from "@/lib/types";
 
@@ -84,6 +85,9 @@ export function PortalBoard({ tasks, projectName, teamById }: ViewProps) {
                   <p className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">
                     {projectName(t.project_id)}
                     {t.due_date ? ` · ${formatDate(t.due_date)}` : ""}
+                    {formatTimeRange(t.due_time, t.end_time)
+                      ? ` · ${formatTimeRange(t.due_time, t.end_time)}`
+                      : ""}
                   </p>
                   {t.assigned_to && teamById.get(t.assigned_to) && (
                     <div title={teamById.get(t.assigned_to)!.full_name}>
@@ -118,12 +122,21 @@ export function PortalCalendar({ tasks, projects, projectName }: ViewProps) {
 
   /** Task due dates and project deadlines, keyed nowhere — matched per day. */
   const events = useMemo(() => {
-    const out: { date: Date; label: string; kind: "task" | "deadline"; done: boolean }[] = [];
+    const out: {
+      date: Date;
+      label: string;
+      /** All-day sorts first (-1), then by minutes past midnight. */
+      sort: number;
+      kind: "task" | "deadline";
+      done: boolean;
+    }[] = [];
     for (const t of tasks) {
       if (!t.due_date) continue;
       out.push({
         date: parseISO(t.due_date),
-        label: t.name,
+        // Time leads the label so the day cell reads in order at a glance.
+        label: t.due_time ? `${formatTime(t.due_time)} ${t.name}` : t.name,
+        sort: dayOrder(t),
         kind: "task",
         done: t.status === "Done",
       });
@@ -133,11 +146,13 @@ export function PortalCalendar({ tasks, projects, projectName }: ViewProps) {
       out.push({
         date: parseISO(p.due_date),
         label: `${p.name} deadline`,
+        // A project deadline is a whole-day marker; it has no clock time.
+        sort: -1,
         kind: "deadline",
         done: p.status === "Delivered",
       });
     }
-    return out;
+    return out.sort((a, b) => a.date.getTime() - b.date.getTime() || a.sort - b.sort);
   }, [tasks, projects]);
 
   void projectName;

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { dayOrder, formatTime, formatTimeRange } from "@/lib/taskTime";
 import {
   addMonths,
   addWeeks,
@@ -318,6 +319,10 @@ export default function SchedulePage() {
       arr.push(t);
       map.set(key, arr);
     }
+    // Within a day: all-day work first, then by start time. Without this the
+    // order is whatever the query returned, which makes a 9am and a 5pm task
+    // read as unordered.
+    for (const arr of map.values()) arr.sort((a, b) => dayOrder(a) - dayOrder(b));
     return map;
   }, [projectTasks]);
 
@@ -809,13 +814,22 @@ function WeekGrid({
                 <Link
                   key={t.id}
                   href={`/projects/${t.project_id}`}
-                  title={`${t.name} — ${projectName(t.project_id)}`}
+                  title={`${t.name} — ${projectName(t.project_id)}${
+                    formatTimeRange(t.due_time, t.end_time)
+                      ? ` · ${formatTimeRange(t.due_time, t.end_time)}`
+                      : ""
+                  }`}
                   className="truncate rounded px-1.5 py-0.5 text-[11px] font-medium text-white"
                   style={{
                     background: "var(--event-indigo-bg)",
                     boxShadow: "inset 3px 0 0 0 var(--event-indigo-bar)",
                   }}
                 >
+                  {/* Time leads the label, the way it does in every calendar —
+                      it's what you scan for. All-day tasks just show the name. */}
+                  {t.due_time && (
+                    <span className="mr-1 opacity-80 tabular-nums">{formatTime(t.due_time)}</span>
+                  )}
                   {t.name}
                 </Link>
               ))}
@@ -1102,7 +1116,7 @@ function MonthGridPro({
                       key={t.id}
                       drag={{ kind: "task", id: t.id }}
                       color="#6c74dd"
-                      title={t.name}
+                      title={t.due_time ? `${formatTime(t.due_time)} ${t.name}` : t.name}
                       hint={projectName(t.project_id)}
                       past={false}
                       recurring={t.recurrence !== "none"}

@@ -224,6 +224,8 @@ export interface MeetingRequest {
   requested_by: string | null;
   topic: string;
   preferred_date: string | null;
+  /** "HH:MM:SS", or null when the client didn't mind when. */
+  preferred_time: string | null;
   note: string | null;
   status: MeetingRequestStatus;
   activity_id: string | null;
@@ -252,6 +254,15 @@ export interface ProjectTask {
   name: string;
   status: TaskStatus;
   due_date: string | null;
+  /**
+   * Optional clock time on `due_date`, as "HH:MM:SS". Null means all-day —
+   * a real state, not a missing value, and the reason this isn't a timestamp.
+   * See 2026-08-03d.
+   */
+  due_time: string | null;
+  /** Optional end, making the task a block rather than a moment. Requires
+   *  `due_time`; the database enforces both that and end > start. */
+  end_time: string | null;
   assigned_to: string | null;
   sort_order: number;
   description: string | null;
