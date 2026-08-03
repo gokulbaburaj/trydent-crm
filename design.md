@@ -28,11 +28,17 @@ browser-style tab bar, content inside a rounded `--panel` canvas.
 | `--success` `--warning` `--destructive` | green/amber/red | semantic only |
 | `--radius` | `0.625rem` | drives the whole radius scale |
 
-**Calendar events** use `--event-<hue>-bg` (a low-alpha wash), `-bar` (one
-saturated left edge) and `-fg` (label text, a bright tint of the same hue).
-Never a pale fill with dark text — that reads as a light-mode card dropped into
-a dark app, which is exactly what shipped before 4 Aug. `-bg` is rgba on
-purpose so hour lines and the now-line stay visible through a block.
+**Calendar blocks** are a wash + one saturated left edge + label text in the
+same hue. Never a pale fill with dark text — that's a light-mode card dropped
+into a dark app, which is what shipped before 4 Aug.
+
+Two axes, deliberately separate. *Category* ("this is a meeting" vs "this is a
+task") uses the fixed `--event-<hue>-bg` / `-bar` / `-fg` tokens. *Per-event*
+identity comes from `EVENT_HUES` + `eventHue()` in `schedule/page.tsx`, in TS
+because a user-chosen `activities.color` is an arbitrary hex. **Every view of
+the same activity must call `eventHue`** — week and month once had separate
+palettes hashed with different moduli, so one event was pink in one view and
+blue in the other.
 
 Rules: brand color is always `primary` (never `accent`); green means "good"
 (Done/Won/Active), never decoration; interaction states are white-alpha

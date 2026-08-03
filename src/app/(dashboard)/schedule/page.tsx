@@ -93,19 +93,47 @@ const HOUR_HEIGHT = 56;
 /** Default event duration (minutes) — activities only store a start time. */
 const EVENT_MINUTES = 60;
 
-/** Dark-tinted event palette — see the token block in globals.css. */
-const EVENT_COLORS = [
-  { bg: "var(--event-blue-bg)", bar: "var(--event-blue-bar)", fg: "var(--event-blue-fg)" },
-  { bg: "var(--event-purple-bg)", bar: "var(--event-purple-bar)", fg: "var(--event-purple-fg)" },
-  { bg: "var(--event-yellow-bg)", bar: "var(--event-yellow-bar)", fg: "var(--event-yellow-fg)" },
-  { bg: "var(--event-pink-bg)", bar: "var(--event-pink-bar)", fg: "var(--event-pink-fg)" },
+/**
+ * ONE palette, used by both the week grid and the month chips.
+ *
+ * These were two lists — a 4-colour one for the week and a 6-colour one for the
+ * month — hashed with the same key but a different modulus, so a single event
+ * came out pink in one view and blue in the other. Worse, the week grid didn't
+ * look at `a.color` at all, so right-click → recolour in the month view
+ * appeared to do nothing when you switched to Week.
+ *
+ * Kept in TS rather than as CSS tokens because both consumers need string
+ * arithmetic on the hue — the month chip builds `${hue}55` / `${hue}14`, and a
+ * user-chosen `activities.color` is an arbitrary hex that no fixed token set
+ * can name. `color-mix` does the tinting so one hue drives fill, bar and text.
+ */
+const EVENT_HUES = [
+  "#4ea7e0", // blue
+  "#7e87e2", // purple
+  "#d9a53f", // amber
+  "#d95c8a", // pink
+  "#4cb782", // green
+  "#eb5757", // red
 ];
 
-function eventColor(a: Activity) {
+/** The single source of truth for "what colour is this event". */
+function eventHue(a: Activity): string {
+  // An explicit choice always wins over the automatic one.
+  if (a.color) return a.color;
   const key = a.client_id ?? a.id;
   let hash = 0;
   for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) | 0;
-  return EVENT_COLORS[Math.abs(hash) % EVENT_COLORS.length];
+  return EVENT_HUES[Math.abs(hash) % EVENT_HUES.length];
+}
+
+/** Week-grid block: a wash, a saturated left edge, and text in the same hue. */
+function eventColor(a: Activity) {
+  const hue = eventHue(a);
+  return {
+    bg: `color-mix(in oklab, ${hue} 18%, transparent)`,
+    bar: hue,
+    fg: `color-mix(in oklab, ${hue} 60%, white)`,
+  };
 }
 
 /**
@@ -1075,15 +1103,12 @@ function NowLine() {
 
 /* ---------------------------------- Month view ---------------------------------- */
 
-const CHIP_COLORS = ["#eb5757", "#d9a53f", "#4cb782", "#4ea7e0", "#a855f7", "#d95c8a"];
+/** The recolour swatches. Same list the automatic hue is drawn from, so
+ *  "pick the colour it already is" is actually available. */
+const CHIP_COLORS = EVENT_HUES;
 
-function chipColor(a: Activity) {
-  if (a.color) return a.color;
-  const key = a.client_id ?? a.id;
-  let hash = 0;
-  for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) | 0;
-  return CHIP_COLORS[Math.abs(hash) % CHIP_COLORS.length];
-}
+/** Month chip and week block must agree — both go through `eventHue`. */
+const chipColor = eventHue;
 
 interface MonthDrag {
   kind: "act" | "task" | "proj";

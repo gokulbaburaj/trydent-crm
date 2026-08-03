@@ -79,29 +79,19 @@
   --danger: var(--destructive);
 
   /*
-    Calendar event palette — dark tint, saturated bar, text IN the colour.
+    CATEGORY colours for the two fixed kinds of block in the project
+    mini-calendar and the schedule's all-day strip: yellow means "meeting",
+    indigo means "task". These say what a thing IS, so they're fixed tokens.
 
-    This was a pastel palette with hardcoded `#16171b` text, which is a
-    light-mode card sitting inside a dark app: four bright blocks on a #0a0a0a
-    grid pull every bit of attention and read as a rendering fault. Apple
-    Calendar and Linear both solve it the same way — a low-alpha wash of the
-    hue over the surface, one saturated edge to carry the identity, and label
-    text in a bright tint of the same hue. The grid stays dark and the events
-    read as belonging to it.
+    Per-EVENT colour is a different axis and lives in
+    `(dashboard)/schedule/page.tsx` (`EVENT_HUES`), because a user-chosen
+    `activities.color` is an arbitrary hex that no fixed token can name.
 
-    `-bg` is deliberately rgba, not a hex: it composites over whatever is
-    underneath, so the hour lines and the now-line stay faintly visible through
-    a block instead of being covered by it.
+    Same shape either way: `-bg` a low-alpha wash, `-bar` one saturated edge,
+    `-fg` label text in a bright tint of the hue. Never a pale fill with dark
+    text — that's a light-mode card in a dark app, which is what shipped
+    before 4 Aug. `-bg` stays rgba so hour lines show through the block.
   */
-  --event-blue-bg: rgba(78, 167, 224, 0.16);
-  --event-blue-bar: #4ea7e0;
-  --event-blue-fg: #9fd2f2;
-  --event-purple-bg: rgba(126, 135, 226, 0.18);
-  --event-purple-bar: #7e87e2;
-  --event-purple-fg: #b8bdf0;
-  --event-pink-bg: rgba(217, 92, 138, 0.16);
-  --event-pink-bar: #d95c8a;
-  --event-pink-fg: #f0a3bf;
   --event-yellow-bg: rgba(217, 165, 63, 0.16);
   --event-yellow-bar: #d9a53f;
   --event-yellow-fg: #eccb85;
