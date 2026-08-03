@@ -357,6 +357,17 @@ export const INVOICE_STATUS_LABELS: Record<InvoiceDisplayStatus, string> = {
   overdue: "Overdue",
 };
 
+/** Badge colour per status. Lives here, not in a component, because invoices
+ *  are rendered in two places now — the client drawer and the Invoices page —
+ *  and a status that's blue in one and grey in the other is a bug you only
+ *  notice by flipping between them. */
+export const INVOICE_TONES: Record<InvoiceDisplayStatus, "gray" | "blue" | "green" | "red"> = {
+  draft: "gray",
+  sent: "blue",
+  paid: "green",
+  overdue: "red",
+};
+
 export interface Invoice {
   id: string;
   client_id: string;

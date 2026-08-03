@@ -197,6 +197,11 @@ const ROUTE_KEYS: [string, PageKey][] = [
   ["/my-work", "my-work"],
   ["/dashboard", "dashboard"],
   ["/clients", "clients"],
+  // Invoices ride on the Clients grant on purpose: the RLS policy on the
+  // `invoices` table is `current_can('clients')`, so a separate key here would
+  // hide the link from someone the database would still serve. Splitting them
+  // starts with a migration, not with this list.
+  ["/invoices", "clients"],
   ["/pipeline", "pipeline"],
   ["/projects", "projects"],
   ["/schedule", "schedule"],

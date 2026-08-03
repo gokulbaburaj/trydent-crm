@@ -66,7 +66,39 @@ Cheap and de-risking first, largest last.
   `package.json` — Vercel builds with `npm ci`, which fails when the manifest
   and lockfile disagree.
 
-### 2. Invoices as a first-class page
+### 2. Invoices as a first-class page — DONE 3 Aug
+
+Built at `/invoices`. Summary cards (Outstanding, Overdue, Draft, Paid), an
+aging panel that only appears once something is actually late, status and
+client filters, a display-currency toggle, and the shared `DataTable` with
+sortable headers and inline status editing.
+
+Three decisions worth keeping:
+
+- **Access rides on the `clients` page key, not a new one.** The RLS policy on
+  `invoices` is `current_can('clients')`. A separate `invoices` PageKey would
+  hide the nav link from someone the database would still serve rows to —
+  security theatre. Splitting them for real starts with a migration to repoint
+  the policy; the UI follows after. Noted in `ROUTE_KEYS`.
+- **Totals follow the client filter but not the status filter.** Filtering to
+  one client and reading everyone's balance is a trap. But the cards *are* the
+  status breakdown, so letting the status filter empty them would just restate
+  the filter back at you.
+- **`INVOICE_TONES` moved into `types.ts`.** Invoices now render in two places;
+  a status that's blue in one and grey in the other is a bug you only catch by
+  flipping between them.
+
+Caught in verification, not by eye: `daysOverdue` was measuring elapsed
+milliseconds from the due date's `23:59:59`, so an invoice due yesterday read
+"0d late" and a 31-day-old one landed in the 1–30 bucket. Now counts whole
+calendar days midnight to midnight. Boundary cases (1, 30, 31, 60, 61, 365)
+all verified.
+
+Still not built, deliberately: **create-invoice-from-deal.** Raising invoices
+still happens in the client's portal panel. Worth adding once the flow has been
+used enough to know what it should prefill.
+
+### 2b. Original scope, for reference
 
 The gap worth closing before launch, because it's money.
 

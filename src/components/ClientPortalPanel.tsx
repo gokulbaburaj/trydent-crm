@@ -48,7 +48,6 @@ import type {
   CurrencyCode,
   DocumentCategory,
   Invoice,
-  InvoiceDisplayStatus,
   InvoiceStatus,
   MeetingRequest,
   PortalMessage,
@@ -59,16 +58,10 @@ import {
   DOCUMENT_CATEGORY_LABELS,
   INVOICE_STATUSES,
   INVOICE_STATUS_LABELS,
+  INVOICE_TONES,
   PORTAL_STATUSES,
   effectiveInvoiceStatus,
 } from "@/lib/types";
-
-const INVOICE_TONES: Record<InvoiceDisplayStatus, "gray" | "blue" | "green" | "red"> = {
-  draft: "gray",
-  sent: "blue",
-  paid: "green",
-  overdue: "red",
-};
 
 /**
  * Portal management for a single client: status, login provisioning + reset,

@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
   ListChecks,
   Plus,
+  Receipt,
   Search,
   Settings,
   Target,
@@ -63,6 +64,9 @@ const TOP: NavItem[] = [
 const WORKSPACE: NavItem[] = [
   { href: "/clients", label: "Clients", icon: Users, page: "clients" },
   { href: "/pipeline", label: "Pipeline", icon: GitBranch, page: "pipeline" },
+  // Sits under Pipeline because that's the order the money moves: deal closes,
+  // invoice goes out. Shares the Clients grant — see ROUTE_KEYS in permissions.
+  { href: "/invoices", label: "Invoices", icon: Receipt, page: "clients" },
   { href: "/projects", label: "Projects", icon: FolderKanban, page: "projects" },
   { href: "/schedule", label: "Schedule", icon: Calendar, page: "schedule" },
 ];
