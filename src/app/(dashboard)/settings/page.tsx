@@ -414,16 +414,22 @@ function SummaryCard({
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border-subtle text-muted-foreground">
             <Icon className="h-4 w-4" />
           </span>
+          {/* truncate on both lines, not just min-w-0 on the wrapper. min-w-0
+              lets the column shrink below its content; without truncate the
+              text then overflows and runs under the stats on the right. */}
           <div className="min-w-0 flex-1">
-            <h3 className="text-sm font-semibold">{title}</h3>
-            <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+            <h3 className="truncate text-sm font-semibold">{title}</h3>
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">{description}</p>
           </div>
           <span className="hidden shrink-0 items-center gap-2 text-[11.5px] text-muted-2 sm:flex">
             {loading
               ? "\u2014"
               : stats.filter(Boolean).map((sIt, i) => (
                   <span key={i} className="whitespace-nowrap">
-                    {i > 0 && <span className="mr-2 text-muted-2">\u00b7</span>}
+                    {/* Wrapped in braces so this is a JS string literal. As a bare JSX
+                        text child, "\\u00b7" renders as six literal
+                        characters — which is exactly what shipped. */}
+                    {i > 0 && <span className="mr-2 text-muted-2">{"\u00b7"}</span>}
                     {sIt}
                   </span>
                 ))}
