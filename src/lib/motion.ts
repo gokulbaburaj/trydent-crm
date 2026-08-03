@@ -1,18 +1,22 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { animate } from "animejs";
+import { animate } from "motion/react";
 
 /**
- * The app's anime.js layer.
+ * The app's imperative animation layer.
  *
  * Deliberately small. Hover, press and entrance fades stay in CSS — those run
  * on the compositor and moving them to JS would cost frames rather than buy
- * them. anime.js is here for the things CSS genuinely can't do: interpolating
- * a *number* rather than a style, and staggering across a set.
+ * them. This exists for the one thing CSS genuinely can't do: interpolating a
+ * *number* rather than a style.
  *
- * Imported from the subpath entries so the bundle only picks up Timer +
- * Animation (~11KB) rather than Draggable, Scroll and SVG too.
+ * Uses `motion`, which the app already depends on in 44 other places. This was
+ * anime.js until 2026-08-03 — two animation libraries for one call site was
+ * not worth the bytes. Two things differ between them and both are silent if
+ * you get them wrong: motion measures duration in SECONDS where anime.js used
+ * milliseconds, and anime's `out(3)` easing has no built-in equivalent here,
+ * so the curve is written out below rather than approximated with `easeOut`.
  */
 
 function prefersReducedMotion() {
@@ -65,14 +69,14 @@ export function useCountUp(
       return;
     }
 
-    const state = { n: from };
-    const animation = animate(state, {
-      n: value,
-      duration: 700,
-      ease: "out(3)",
-      onUpdate: () => {
-        current.current = state.n;
-        el.textContent = formatRef.current(state.n);
+    const animation = animate(from, value, {
+      duration: 0.7, // seconds — this was 700 under anime.js
+      // anime.js `out(3)`: 1 - (1 - t)^3. Motion's "easeOut" is a shallower
+      // curve, so the counter would decelerate visibly differently.
+      ease: (t) => 1 - Math.pow(1 - t, 3),
+      onUpdate: (n) => {
+        current.current = n;
+        el.textContent = formatRef.current(n);
       },
       onComplete: () => {
         current.current = value;
@@ -81,7 +85,7 @@ export function useCountUp(
     });
 
     return () => {
-      animation.pause();
+      animation.stop();
     };
   }, [value]);
 
