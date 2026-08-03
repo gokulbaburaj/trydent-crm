@@ -154,6 +154,52 @@ export default function ProjectDetailPage() {
   const [meetingAttendees, setMeetingAttendees] = useState<string[]>([]);
   const [meetingVisible, setMeetingVisible] = useState(false);
   const [meetingBusy, setMeetingBusy] = useState(false);
+  /** Set while editing an existing meeting; null means the form creates one. */
+  const [editingMeetingId, setEditingMeetingId] = useState<string | null>(null);
+
+  /** Open the form blank, for a new meeting. */
+  function newMeeting() {
+    setEditingMeetingId(null);
+    setMeetingTitle("");
+    setMeetingDate(format(new Date(), "yyyy-MM-dd"));
+    setMeetingTime("10:00");
+    setMeetingAgenda("");
+    setMeetingAttendees([]);
+    setMeetingVisible(false);
+    setMeetingOpen(true);
+  }
+
+  /**
+   * Open the form on an existing meeting.
+   *
+   * The rows used to be inert divs — the card could schedule a meeting and then
+   * had no way to change or cancel one, which meant a typo in a client call
+   * lived forever. Same form, prefilled, saving by id.
+   */
+  function openMeeting(a: Activity) {
+    const at = parseISO(a.activity_date);
+    setEditingMeetingId(a.id);
+    setMeetingTitle(a.description ?? "");
+    setMeetingDate(format(at, "yyyy-MM-dd"));
+    setMeetingTime(format(at, "HH:mm"));
+    setMeetingAgenda(a.agenda ?? "");
+    setMeetingAttendees(a.attendee_ids ?? []);
+    setMeetingVisible(!!a.client_visible);
+    setMeetingOpen(true);
+  }
+
+  async function deleteMeeting() {
+    if (!editingMeetingId) return;
+    if (!confirm("Cancel this meeting?")) return;
+    const id = editingMeetingId;
+    setActivityRows((prev) => prev.filter((a) => a.id !== id));
+    setMeetingOpen(false);
+    const supabase = createClient();
+    if (!supabase) return;
+    const { error } = await supabase.from("activities").delete().eq("id", id);
+    if (error) toast.error(`Couldn't cancel: ${error.message}`);
+    else toast.success("Meeting cancelled");
+  }
 
   /** Resolved member profiles, in the order they were added. */
   const projectMembers = useMemo(
@@ -471,31 +517,50 @@ export default function ProjectDetailPage() {
       setMeetingBusy(false);
       return;
     }
-    const { data, error } = await supabase
-      .from("activities")
-      .insert({
-        description,
-        client_id: project.client_id,
-        assigned_to: project.owner,
-        activity_date: `${meetingDate}T${meetingTime}`,
-        agenda: meetingAgenda.trim() || null,
-        attendee_ids: meetingAttendees,
-        client_visible: meetingVisible,
-        recurrence: "none",
-        follow_up_required: false,
-      })
-      .select()
-      .single();
+    const fields = {
+      description,
+      activity_date: `${meetingDate}T${meetingTime}`,
+      agenda: meetingAgenda.trim() || null,
+      attendee_ids: meetingAttendees,
+      client_visible: meetingVisible,
+    };
+
+    // Editing keeps the same row so anything already pointing at this meeting
+    // (the calendar, the client's portal) follows the change instead of seeing
+    // a cancellation and a new booking.
+    const { data, error } = editingMeetingId
+      ? await supabase
+          .from("activities")
+          .update(fields)
+          .eq("id", editingMeetingId)
+          .select()
+          .single()
+      : await supabase
+          .from("activities")
+          .insert({
+            ...fields,
+            client_id: project.client_id,
+            assigned_to: project.owner,
+            recurrence: "none",
+            follow_up_required: false,
+          })
+          .select()
+          .single();
+
     setMeetingBusy(false);
     if (error || !data) {
-      toast.error(`Couldn't schedule: ${error?.message ?? "unknown error"}`);
+      toast.error(`Couldn't save: ${error?.message ?? "unknown error"}`);
       return;
     }
-    setActivityRows((prev) => [data as Activity, ...prev]);
+    const saved = data as Activity;
+    setActivityRows((prev) =>
+      editingMeetingId ? prev.map((a) => (a.id === saved.id ? saved : a)) : [saved, ...prev]
+    );
     setMeetingOpen(false);
     setMeetingTitle("");
     setMeetingAgenda("");
-    toast.success("Meeting scheduled");
+    toast.success(editingMeetingId ? "Meeting updated" : "Meeting scheduled");
+    setEditingMeetingId(null);
   }
 
   const migrationMissing =
@@ -1119,7 +1184,7 @@ export default function ProjectDetailPage() {
               </span>
               <button
                 type="button"
-                onClick={() => setMeetingOpen(true)}
+                onClick={newMeeting}
                 className="ml-auto flex items-center gap-1 rounded-md px-1.5 py-1 text-[11px] font-normal text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
               >
                 <Plus className="h-3 w-3" /> Schedule
@@ -1133,7 +1198,13 @@ export default function ProjectDetailPage() {
             <div className="-mr-1 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto pr-1">
               {upcomingSchedule.map((a, i) =>
                 i === 0 ? (
-                  <div key={a.id} className="rounded-md bg-primary p-3 text-primary-foreground">
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => openMeeting(a)}
+                    title="Edit this meeting"
+                    className="rounded-md bg-primary p-3 text-left text-primary-foreground transition-opacity hover:opacity-90"
+                  >
                     <p className="flex items-center gap-2 text-sm font-semibold">
                       {format(parseISO(a.activity_date), "HH:mm")}
                       <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-[10px] font-medium">
@@ -1141,11 +1212,14 @@ export default function ProjectDetailPage() {
                       </span>
                     </p>
                     <p className="mt-1 text-[13px] leading-snug opacity-90">{a.description}</p>
-                  </div>
+                  </button>
                 ) : (
-                  <div
+                  <button
                     key={a.id}
-                    className="border-t border-border-subtle px-1 py-2.5 first:border-0"
+                    type="button"
+                    onClick={() => openMeeting(a)}
+                    title="Edit this meeting"
+                    className="border-t border-border-subtle px-1 py-2.5 text-left transition-colors first:border-0 hover:bg-white/[0.03]"
                   >
                     <p className="text-sm font-medium text-foreground-secondary">
                       {format(parseISO(a.activity_date), "HH:mm")}
@@ -1154,7 +1228,7 @@ export default function ProjectDetailPage() {
                       </span>
                     </p>
                     <p className="truncate text-xs text-muted-foreground">{a.description}</p>
-                  </div>
+                  </button>
                 )
               )}
             </div>
@@ -1333,7 +1407,7 @@ export default function ProjectDetailPage() {
       <Drawer
         open={meetingOpen}
         onClose={() => setMeetingOpen(false)}
-        title="Schedule a meeting"
+        title={editingMeetingId ? "Edit meeting" : "Schedule a meeting"}
       >
         <form
           onSubmit={(e) => {
@@ -1433,9 +1507,25 @@ export default function ProjectDetailPage() {
               </span>
             </span>
           </label>
-          <Button type="submit" disabled={meetingBusy || !meetingTitle.trim()}>
-            {meetingBusy ? "Scheduling..." : "Schedule meeting"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button type="submit" disabled={meetingBusy || !meetingTitle.trim()}>
+              {meetingBusy
+                ? "Saving..."
+                : editingMeetingId
+                  ? "Save changes"
+                  : "Schedule meeting"}
+            </Button>
+            {/* Cancelling is only offered on something that exists. */}
+            {editingMeetingId && (
+              <button
+                type="button"
+                onClick={deleteMeeting}
+                className="rounded-md px-2.5 py-1.5 text-[12px] text-muted-foreground transition-colors hover:bg-danger/10 hover:text-danger"
+              >
+                Cancel meeting
+              </button>
+            )}
+          </div>
         </form>
       </Drawer>
     </div>
@@ -1947,7 +2037,15 @@ function TasksTimeline({
   });
 
   return (
-    <div className="relative pt-1">
+    /*
+     * Fills the card rather than sitting at its natural height.
+     *
+     * The card lives in the resizable overview grid, so its height is whatever
+     * you dragged it to. A fixed stack of six 28px rows left a dead band under
+     * the last bar at any size above the minimum — the same failure as the
+     * throughput chart. The rows now share the leftover space.
+     */
+    <div className="relative flex h-full min-h-[9rem] flex-col pt-1">
       {/* Today line */}
       {todayPct > 0 && todayPct < 100 && (
         <div
@@ -1958,7 +2056,7 @@ function TasksTimeline({
         </div>
       )}
 
-      <div className="flex flex-col gap-2.5">
+      <div className="flex min-h-0 flex-1 flex-col gap-2.5">
         {spans.map(({ task: t, start, end }, i) => {
           const dimmed = !!highlightId && highlightId !== t.id;
           const lit = highlightId === t.id;
@@ -1970,13 +2068,19 @@ function TasksTimeline({
           const overdue =
             t.status !== "Done" && t.status !== "Archived" && parseISO(t.due_date!) < today;
           return (
-            <div key={t.id} className="relative h-7 border-b border-dashed border-border-subtle">
+            <div
+              key={t.id}
+              // min-h keeps a bar readable when the card is short; flex-1 lets
+              // the rows grow together when it's tall.
+              className="relative min-h-7 flex-1 border-b border-dashed border-border-subtle"
+            >
               <div
                 onMouseEnter={() => onHoverTask?.(t.id)}
                 onMouseLeave={() => onHoverTask?.(null)}
                 title={`${t.name} — due ${formatDate(t.due_date)}${overdue ? " (overdue)" : ""}`}
                 className={cn(
-                  "absolute top-0 flex h-6 min-w-[3rem] items-center overflow-hidden rounded-full px-2.5 text-[11px] font-medium text-white shadow-sm transition-[opacity,box-shadow,transform] duration-150",
+                  // Centred in the row now that the row's height varies.
+                  "absolute top-1/2 flex h-6 min-w-[3rem] -translate-y-1/2 items-center overflow-hidden rounded-full px-2.5 text-[11px] font-medium text-white shadow-sm transition-[opacity,box-shadow,transform] duration-150",
                   t.status === "Done" && "opacity-60",
                   overdue && "ring-1 ring-danger",
                   // Fade the others rather than recolouring the target — the

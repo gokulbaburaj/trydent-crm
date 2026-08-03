@@ -1,9 +1,7 @@
 "use client";
 
 import { Suspense, useMemo, useState } from "react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { X } from "lucide-react";
 import { Briefcase, Building2, CalendarDays, CreditCard, Eye, Network, Plus, Trash2, User, UserPlus, Users } from "lucide-react";
 import { toast } from "@/components/Toaster";
 import { DataTable, Column } from "@/components/DataTable";
@@ -412,23 +410,22 @@ function TeamPageInner() {
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
+          {/*
+            Scope is stated, not offered as a toggle.
+
+            This used to be a removable "Team: Admin" pill. It looked like a
+            label and behaved like a filter, so clicking its X — which reads as
+            "dismiss" — silently swapped a team roster for the whole company.
+            The sub-link says Members under a team, so that's what it shows.
+            Everyone lives behind the Team nav item, one click away.
+          */}
           <p className="truncate text-sm text-muted-foreground">
-            {isAdmin
-              ? "Set roles, teams, and reporting lines for your team."
-              : "Your team, their roles, and who reports to whom."}
+            {teamFilter
+              ? `${teamFilter} — team members and reporting lines.`
+              : isAdmin
+                ? "Set roles, teams, and reporting lines for your team."
+                : "Your team, their roles, and who reports to whom."}
           </p>
-          {teamFilter && (
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-primary/40 bg-primary/10 py-0.5 pl-2.5 pr-1 text-[11px] font-medium text-primary">
-              Team: {teamFilter}
-              <Link
-                href="/team"
-                title="Clear team filter"
-                className="rounded-full p-0.5 hover:bg-white/10"
-              >
-                <X className="h-3 w-3" />
-              </Link>
-            </span>
-          )}
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-0.5 rounded-md border border-border bg-surface p-1">

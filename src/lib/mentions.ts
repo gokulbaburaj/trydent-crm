@@ -35,10 +35,48 @@ function triggerFor(type: MentionType): string {
   return type === "profile" ? PERSON_TRIGGER : OBJECT_TRIGGER;
 }
 
-/** The marker that goes in the body for a chosen item. */
+/** The marker that goes in the STORED body for a chosen item. */
 export function markerFor(item: Mentionable): string {
   const [, id] = item.key.split(":");
   return `${triggerFor(toMentionType(item.kind))}[${toMentionType(item.kind)}:${id}]`;
+}
+
+/** What the person sees while typing: `#Social Media`, never the uuid. */
+export function displayFor(item: Mentionable): string {
+  return `${triggerFor(toMentionType(item.kind))}${item.text}`;
+}
+
+/**
+ * Turn readable draft text into stored markers at send time.
+ *
+ * The composer holds `#Social Media`; the database holds
+ * `#[project:f60e…]`. Doing the swap here means the input never shows a uuid,
+ * which is the whole point — a chat box that displays raw identifiers looks
+ * broken no matter how correct it is underneath.
+ *
+ * `picked` maps the exact inserted text to its reference. Longest labels are
+ * replaced first so "#Branding Rice" can't be eaten by "#Branding". Anything
+ * the person edited by hand simply stops matching and stays plain text, which
+ * is the honest outcome: half a label is not a reference.
+ */
+export function toStored(
+  draft: string,
+  picked: Map<string, Mention>
+): { body: string; mentions: Mention[] } {
+  const keys = [...picked.keys()].sort((a, b) => b.length - a.length);
+  let body = draft;
+  const used: Mention[] = [];
+
+  for (const key of keys) {
+    const mention = picked.get(key)!;
+    if (!body.includes(key)) continue;
+    const marker = `${mention.type === "profile" ? PERSON_TRIGGER : OBJECT_TRIGGER}[${mention.type}:${mention.id}]`;
+    body = body.split(key).join(marker);
+    if (!used.some((m) => m.id === mention.id && m.type === mention.type)) {
+      used.push(mention);
+    }
+  }
+  return { body, mentions: used };
 }
 
 export function mentionFor(item: Mentionable): Mention {

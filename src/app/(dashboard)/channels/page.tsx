@@ -14,9 +14,7 @@ import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { useStaffProfiles } from "@/lib/useStaffProfiles";
 import { useAuth } from "@/lib/useAuth";
 import { useChannel } from "@/lib/useChannel";
-import { useMentionables } from "@/lib/useMentionables";
-import { resolveMentions } from "@/lib/mentions";
-import { MentionInput } from "@/components/channels/MentionInput";
+import { MentionInput, type MentionInputHandle } from "@/components/channels/MentionInput";
 import { MessageBody } from "@/components/channels/MessageBody";
 import type { Channel, Message, Team } from "@/lib/types";
 
@@ -69,7 +67,7 @@ function Channels() {
   );
   const { rows: teams } = useSupabaseTable<Team>("teams", { column: "name", ascending: true });
   const { rows: staff } = useStaffProfiles();
-  const mentionables = useMentionables();
+
 
   const [activeId, setActiveId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -166,13 +164,12 @@ function Channels() {
     setCreating(false);
   }
 
-  /** Send button and Enter take the same path, so they can't disagree. */
-  function submit() {
-    const body = draft.trim();
-    if (!body) return;
-    setDraft(""); // clear first so the input never lags the optimistic message
-    void send(body, resolveMentions(body, mentionables));
-  }
+  /**
+   * The composer owns submission because it owns the label-to-marker mapping.
+   * The Send button just pokes it, so the button and Enter cannot disagree
+   * about what gets stored.
+   */
+  const composer = useRef<MentionInputHandle>(null);
 
   return (
     <div className="flex h-full min-h-0 gap-3">
@@ -323,6 +320,7 @@ function Channels() {
 
             <div className="flex shrink-0 items-end gap-2 border-t border-border-subtle p-2.5">
               <MentionInput
+                ref={composer}
                 value={draft}
                 onChange={setDraft}
                 placeholder={`Message #${active.name} — @ for people, # for projects`}
@@ -331,7 +329,11 @@ function Channels() {
                   void send(body, mentions);
                 }}
               />
-              <Button size="sm" disabled={!draft.trim()} onClick={submit}>
+              <Button
+                size="sm"
+                disabled={!draft.trim()}
+                onClick={() => composer.current?.submit()}
+              >
                 Send
               </Button>
             </div>

@@ -1,13 +1,14 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { forwardRef, useImperativeHandle, useRef, useState } from "react";
 import { AtSign, Building2, Hash } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   activeTrigger,
   candidatesFor,
-  markerFor,
-  resolveMentions,
+  displayFor,
+  mentionFor,
+  toStored,
   PERSON_TRIGGER,
 } from "@/lib/mentions";
 import { useMentionables } from "@/lib/useMentionables";
@@ -18,29 +19,40 @@ import type { Mention } from "@/lib/types";
  *
  * A textarea, not a rich editor. The last attempt at a block editor in this
  * codebase cost a week and got deleted; a chat composer needs to accept a line
- * of text and get out of the way. The markers stay visible while typing, which
- * is honestly a little raw — but it's unambiguous, it survives copy-paste, and
- * it never disagrees with what gets stored.
+ * of text and get out of the way.
+ *
+ * What you see while typing is the label — `#Social Media`. The uuid only
+ * exists in the stored body, substituted on submit. The first version put the
+ * raw marker in the input on the theory that it was unambiguous; it was, and it
+ * also looked like the app was broken. Legibility wins.
  */
 
-export function MentionInput({
-  value,
-  onChange,
-  onSubmit,
-  placeholder,
-  disabled,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  /** Called with the body and the references resolved from it. */
-  onSubmit: (body: string, mentions: Mention[]) => void;
-  placeholder?: string;
-  disabled?: boolean;
-}) {
+export interface MentionInputHandle {
+  submit: () => void;
+}
+
+export const MentionInput = forwardRef<
+  MentionInputHandle,
+  {
+    value: string;
+    onChange: (value: string) => void;
+    /** Called with the stored body and its references. */
+    onSubmit: (body: string, mentions: Mention[]) => void;
+    placeholder?: string;
+    disabled?: boolean;
+  }
+>(function MentionInput({ value, onChange, onSubmit, placeholder, disabled }, handleRef) {
   const items = useMentionables();
   const ref = useRef<HTMLTextAreaElement>(null);
   const [caret, setCaret] = useState(0);
   const [highlight, setHighlight] = useState(0);
+  /**
+   * Readable text -> reference, for everything picked this message.
+   *
+   * A ref, not state: it's only ever read at submit time, and re-rendering the
+   * composer on every pick would fight the caret restore below.
+   */
+  const picked = useRef<Map<string, Mention>>(new Map());
 
   const trigger = activeTrigger(value, caret);
   const options = trigger ? candidatesFor(items, trigger.trigger, trigger.query) : [];
@@ -51,14 +63,18 @@ export function MentionInput({
     const item = options[index];
     if (!item) return;
 
-    const marker = markerFor(item);
-    const next = value.slice(0, trigger.from) + marker + " " + value.slice(caret);
+    // The visible text is the label. The uuid never reaches the input — it's
+    // substituted at submit, so what you type is what you read back.
+    const shown = displayFor(item);
+    picked.current.set(shown, mentionFor(item));
+
+    const next = value.slice(0, trigger.from) + shown + " " + value.slice(caret);
     onChange(next);
     setHighlight(0);
 
-    // Put the caret after the inserted marker rather than leaving it wherever
+    // Put the caret after the inserted label rather than leaving it wherever
     // React lands it, or the next keystroke reopens the picker.
-    const pos = trigger.from + marker.length + 1;
+    const pos = trigger.from + shown.length + 1;
     requestAnimationFrame(() => {
       ref.current?.focus();
       ref.current?.setSelectionRange(pos, pos);
@@ -67,13 +83,18 @@ export function MentionInput({
   }
 
   function submit() {
-    const body = value.trim();
-    if (!body) return;
-    // Read straight from the text: whatever markers survived editing are the
-    // references, so deleting one un-mentions that person exactly as it looks.
-    onSubmit(body, resolveMentions(body, items));
+    const draft = value.trim();
+    if (!draft) return;
+    // Swap readable labels for stored markers here, at the last possible
+    // moment. Anything edited by hand no longer matches and stays plain text.
+    const { body, mentions } = toStored(draft, picked.current);
+    onSubmit(body, mentions);
+    picked.current = new Map();
     setHighlight(0);
   }
+
+  // The Send button drives the same function, so button and Enter can't drift.
+  useImperativeHandle(handleRef, () => ({ submit }));
 
   return (
     <div className="relative flex-1">
@@ -158,4 +179,4 @@ export function MentionInput({
       />
     </div>
   );
-}
+});
