@@ -105,6 +105,20 @@ export function useNavState() {
     write({ ...cur, teams: wasOpen ? {} : { [name]: true } });
   }, []);
 
+  /**
+   * Open a team without the toggle behaviour.
+   *
+   * Clicking a team's NAME navigates to its dashboard, and the sidebar should
+   * follow you there — expanded, with the others closed. `toggleTeam` would be
+   * wrong for that: clicking the name of the team you're already looking at
+   * would collapse it out from under you.
+   */
+  const openTeam = useCallback((name: string) => {
+    const cur = read();
+    if (cur.teams[name] && Object.keys(cur.teams).length === 1) return;
+    write({ ...cur, teams: { [name]: true } });
+  }, []);
+
   const setOrder = useCallback((sectionId: string, hrefs: string[]) => {
     const cur = read();
     write({ ...cur, order: { ...cur.order, [sectionId]: hrefs } });
@@ -112,7 +126,7 @@ export function useNavState() {
 
   const resetLayout = useCallback(() => write(EMPTY), []);
 
-  return { state, toggleSection, toggleTeam, setOrder, resetLayout };
+  return { state, toggleSection, toggleTeam, openTeam, setOrder, resetLayout };
 }
 
 /**

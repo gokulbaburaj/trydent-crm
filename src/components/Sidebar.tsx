@@ -111,7 +111,7 @@ export function Sidebar({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const activeTeam = searchParams.get("team");
-  const { state, toggleSection, toggleTeam, setOrder } = useNavState();
+  const { state, toggleSection, toggleTeam, openTeam, setOrder } = useNavState();
 
   const { profile: me, access } = useAuth();
   const isAdmin = me?.role === "admin";
@@ -236,7 +236,13 @@ export function Sidebar({
               </button>
             )}
           </div>
-          {!state.collapsed.teams && (
+          <div
+            className={cn(
+              "grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none",
+              state.collapsed.teams ? "grid-rows-[0fr]" : "grid-rows-[1fr]"
+            )}
+          >
+            <div className="overflow-hidden">
             <div className="flex flex-col gap-px">
               {teams.length === 0 && (
                 <p className="px-2 py-1.5 text-[11px] leading-snug text-muted-2">
@@ -275,7 +281,12 @@ export function Sidebar({
                       {teamId ? (
                         <Link
                           href={`/team/${teamId}`}
-                          onClick={onNavigate}
+                          onClick={() => {
+                            // Opening a team's dashboard expands it and closes
+                            // the rest, so the sidebar shows where you are.
+                            openTeam(team);
+                            onNavigate?.();
+                          }}
                           className={cn(
                             "flex min-w-0 flex-1 items-center gap-1.5 py-[7px] text-[13px] font-medium transition-colors",
                             pathname === `/team/${teamId}`
@@ -300,7 +311,24 @@ export function Sidebar({
                         {profiles.filter((p) => p.team === team && p.role !== "client").length}
                       </span>
                     </div>
-                    {expanded && (
+                    {/*
+                      Animated with grid-template-rows, 0fr to 1fr.
+
+                      Height can't be transitioned from `auto`, and the usual
+                      workarounds mean measuring the content and writing a pixel
+                      value — which breaks the moment a team gains a sub-link.
+                      A single-row grid interpolates the track size for us, so
+                      the content stays unmeasured and the row is always the
+                      right height. The inner div carries overflow-hidden;
+                      without it the links spill out during the collapse.
+                    */}
+                    <div
+                      className={cn(
+                        "grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none",
+                        expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+                      )}
+                    >
+                      <div className="overflow-hidden">
                       <div className="ml-[15px] flex flex-col gap-px border-l border-border-subtle pl-2">
                         <SubLink
                           href={`/team?team=${encodeURIComponent(team)}`}
@@ -329,12 +357,14 @@ export function Sidebar({
                           />
                         )}
                       </div>
-                    )}
+                      </div>
+                    </div>
                   </div>
                 );
               })}
             </div>
-          )}
+            </div>
+          </div>
         </div>
 
         <Section
@@ -417,22 +447,32 @@ function Section({
   return (
     <div className="flex flex-col gap-px">
       <SectionHeader label={label} collapsed={collapsed} onToggle={() => onToggle(id)} />
-      {!collapsed && (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={ordered.map((i) => i.href)} strategy={verticalListSortingStrategy}>
-            <div className="flex flex-col gap-px">
-              {ordered.map((item) => (
-                <SortableNavLink
-                  key={item.href}
-                  item={item}
-                  active={!!isActive(item.href)}
-                  onNavigate={onNavigate}
-                />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
-      )}
+      {/* Same 0fr/1fr grid as the team rows, so every collapse in the sidebar
+          moves the same way. Kept mounted rather than conditionally rendered —
+          unmounting would snap the section shut with nothing to animate. */}
+      <div
+        className={cn(
+          "grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none",
+          collapsed ? "grid-rows-[0fr]" : "grid-rows-[1fr]"
+        )}
+      >
+        <div className="overflow-hidden">
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={ordered.map((i) => i.href)} strategy={verticalListSortingStrategy}>
+              <div className="flex flex-col gap-px">
+                {ordered.map((item) => (
+                  <SortableNavLink
+                    key={item.href}
+                    item={item}
+                    active={!!isActive(item.href)}
+                    onNavigate={onNavigate}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        </div>
+      </div>
     </div>
   );
 }
