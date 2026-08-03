@@ -64,7 +64,7 @@ export default function LoginPage() {
       return;
     }
 
-    // Where they land is decided by middleware from their role, so send them to
+    // Where they land is decided by the proxy from their role, so send them to
     // the root and let it route. Hardcoding /dashboard sent portal users on a
     // pointless redirect through a page they can't open.
     router.push("/");

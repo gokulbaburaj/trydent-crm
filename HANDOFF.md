@@ -185,7 +185,7 @@ backlog mirrors this (TRY-35…39 for Sprints B/C ≈ prompts Sprints 3–4).
   section where each team expands to Members (`/team?team=`) and Projects
   (`/projects?team=`). Sidebar uses `useSearchParams`, so it's wrapped in
   `Suspense` in the dashboard layout — same for the Team and Projects pages.
-- Portal redirect flash fixed: middleware routes portal users by their JWT role
+- Portal redirect flash fixed: `src/proxy.ts` routes portal users by their JWT role
   metadata before any app route renders; the layout also refuses to paint a page
   it's about to navigate away from.
 

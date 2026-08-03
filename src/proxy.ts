@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
 
   // If Supabase isn't configured yet, skip session refresh entirely.
@@ -52,7 +52,7 @@ export async function middleware(request: NextRequest) {
   //
   // Staff are deliberately NOT routed here any more. Which surface a staff
   // member sees now falls out of their role's page grants, and those live in
-  // the database — middleware can't read them without a query on every single
+  // the database — proxy can't read them without a query on every single
   // request. The dashboard layout does it instead, and its `redirectPending`
   // guard shows a loading state rather than painting a page they'll be moved
   // off. Inferring it from employment type (the old `role === 'contract'`
