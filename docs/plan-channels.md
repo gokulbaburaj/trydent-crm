@@ -131,6 +131,43 @@ it survives across devices.
   points above are the only reason to switch, so they ship in v1 or the
   feature doesn't.
 
+### Progress — 3 Aug
+
+**Steps 1–3 done.** Schema, RLS, types, `useChannel`, and the `/channels` shell
+(channel list, message list, composer) are in and deployed-ready.
+
+Two decisions overrode the plan above:
+
+- **No private channels, no DMs.** Every channel is open to everyone holding
+  the `channels` grant. This deleted the membership-gating apparatus entirely —
+  the SECURITY DEFINER helpers existed only to stop `channels` and
+  `channel_members` policies recursing into each other, and the "can the
+  founder read a private channel he isn't in" question had no good answer.
+  `channel_members` now means sidebar + unread + mute, never access.
+  Migration `2026-08-03b`.
+- **Freelancers get chat without leaving the portal.** `isPortalOnly` is
+  derived, so an ordinary page grant would have promoted them into the full
+  CRM. `channels` instead joins `settings` in `PORTAL_COMPATIBLE` — pages that
+  everyone needs and that don't imply app access.
+
+RLS was tested with forged JWTs per role, not by clicking. It caught one real
+bug: the first draft let a creator lock themselves out of their own channel.
+That policy is gone now along with the rest of the private-channel machinery,
+but the test is the reason it never shipped. Verified blocked: clients reading
+or posting anything, posting under another person's name, editing someone
+else's message.
+
+### Still to build
+
+4. Mention parser, picker, chip renderer — `useMentionables` is already there
+5. Message actions: create task from message, react, reply in thread
+6. Project channels and the project-page Discussion tab
+7. Unread counts, notification trigger, nav badge
+8. A chat surface inside the staff portal, so freelancers can actually reach it
+
+Item 4 is the one that matters. The bar set below still holds: the object
+linking is the whole justification. Without it this is a worse Slack.
+
 ### Rough sequence
 
 1. Migration + types + RLS, tested against each role

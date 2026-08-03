@@ -31,6 +31,7 @@ export type PageKey =
   | "pipeline"
   | "projects"
   | "schedule"
+  | "channels"
   | "organization"
   | "accounts"
   | "goals"
@@ -49,6 +50,7 @@ export const ALL_STAFF_PAGES: PageKey[] = [
   "pipeline",
   "projects",
   "schedule",
+  "channels",
   "organization",
   "accounts",
   "goals",
@@ -84,6 +86,7 @@ export const PAGE_LABELS: Record<PageKey, string> = {
   pipeline: "Pipeline",
   projects: "Projects",
   schedule: "Schedule",
+  channels: "Channels",
   organization: "Organisation",
   accounts: "Accounts",
   goals: "Goals",
@@ -105,6 +108,9 @@ export const ENFORCED_PAGES: PageKey[] = [
   "recruiting",
   "onboarding",
   "goals",
+  // Every channels policy is `private.current_can('channels')`, so revoking
+  // this genuinely cuts someone off from chat rather than only hiding the link.
+  "channels",
 ];
 
 /**
@@ -149,12 +155,26 @@ export function isAdmin(ctx: AccessContext): boolean {
  * Derived, not stored: it's what "granted the portal and no real staff pages"
  * means. So there's nothing to keep in sync and nothing that can disagree.
  */
+/**
+ * Pages that don't imply "this person works in the full app".
+ *
+ * Everyone gets Settings, and now everyone gets Channels — a freelancer parked
+ * on the staff portal still needs to be reachable in chat. Neither is a reason
+ * to move someone off the portal, so neither counts when deriving portal-only.
+ *
+ * This list is load-bearing. Without `channels` on it, granting chat to the
+ * Freelancer role would silently stop that role being portal-only and drop
+ * those people into the whole CRM.
+ */
+const PORTAL_COMPATIBLE: PageKey[] = ["settings", "channels"];
+
 export function isPortalOnly(ctx: AccessContext): boolean {
   if (isAdmin(ctx) || ctx.role === "client") return false;
   const grants = ctx.grants ?? [];
   if (!grants.includes(PORTAL_PAGE)) return false;
-  // Settings is on everyone and doesn't count as a reason to leave the portal.
-  return !grants.some((g) => g !== PORTAL_PAGE && g !== "settings");
+  return !grants.some(
+    (g) => g !== PORTAL_PAGE && !PORTAL_COMPATIBLE.includes(g as PageKey)
+  );
 }
 
 export function canAccess(ctx: AccessContext, page: PageKey): boolean {
@@ -166,8 +186,12 @@ export function canAccess(ctx: AccessContext, page: PageKey): boolean {
 
   const grants = ctx.grants ?? [];
   // Someone parked on the portal doesn't also get My Work — that floor exists
-  // so a person isn't stranded, and the portal already does that job.
-  if (isPortalOnly(ctx)) return page === PORTAL_PAGE || page === "settings";
+  // so a person isn't stranded, and the portal already does that job. They do
+  // keep Settings and Channels: the first so they can change their password,
+  // the second so the team can actually reach them.
+  if (isPortalOnly(ctx)) {
+    return page === PORTAL_PAGE || PORTAL_COMPATIBLE.includes(page);
+  }
 
   if (ACCOUNT_FLOOR[ctx.role]?.includes(page)) return true;
   return grants.includes(page);
@@ -206,6 +230,7 @@ const ROUTE_KEYS: [string, PageKey][] = [
   ["/projects", "projects"],
   ["/schedule", "schedule"],
   ["/activities", "schedule"],
+  ["/channels", "channels"],
   ["/organization", "organization"],
   ["/accounts", "accounts"],
   ["/goals", "goals"],

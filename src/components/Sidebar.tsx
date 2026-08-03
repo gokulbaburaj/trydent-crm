@@ -13,6 +13,7 @@ import {
   GitBranch,
   LayoutDashboard,
   ListChecks,
+  MessageSquare,
   Plus,
   Receipt,
   Search,
@@ -69,6 +70,7 @@ const WORKSPACE: NavItem[] = [
   { href: "/invoices", label: "Invoices", icon: Receipt, page: "clients" },
   { href: "/projects", label: "Projects", icon: FolderKanban, page: "projects" },
   { href: "/schedule", label: "Schedule", icon: Calendar, page: "schedule" },
+  { href: "/channels", label: "Channels", icon: MessageSquare, page: "channels" },
 ];
 
 const ORGANIZATION: NavItem[] = [

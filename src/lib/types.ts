@@ -402,6 +402,70 @@ export interface TeamMember {
   role: UserRole;
 }
 
+/* ============ CHANNELS ============ */
+
+/**
+ * Every channel is visible to everyone who holds the `channels` grant. There
+ * are no private channels and no DMs — see 2026-08-03b for why that's a
+ * feature. `ChannelMember` is therefore a personal bookmark (sidebar, unread,
+ * mute), never a permission.
+ */
+export interface Channel {
+  id: string;
+  name: string;
+  topic: string | null;
+  project_id: string | null;
+  client_id: string | null;
+  archived: boolean;
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface ChannelMember {
+  channel_id: string;
+  profile_id: string;
+  last_read_at: string;
+  muted: boolean;
+}
+
+/** What a `#` or `@` chip in a message body points at. */
+export type MentionType = "profile" | "project" | "client" | "deal" | "task";
+
+/**
+ * A resolved reference, stored alongside the body.
+ *
+ * `label` is a deliberate snapshot, not a join. Rename the project and the chip
+ * still links to the live record, but the sentence keeps saying what was
+ * actually said at the time. A message that silently rewrites itself is worse
+ * than a stale label.
+ */
+export interface Mention {
+  type: MentionType;
+  id: string;
+  label: string;
+}
+
+export interface Message {
+  id: string;
+  channel_id: string;
+  /** Thread replies point at their root. */
+  parent_id: string | null;
+  author_id: string | null;
+  body: string;
+  mentions: Mention[];
+  edited_at: string | null;
+  /** Soft delete — hard-deleting a thread root would take its replies too. */
+  deleted_at: string | null;
+  created_at: string;
+}
+
+export interface MessageReaction {
+  message_id: string;
+  profile_id: string;
+  emoji: string;
+  created_at: string;
+}
+
 /* ============ GOALS / OKRs ============ */
 
 export type GoalStatus = "on_track" | "at_risk" | "off_track" | "achieved";
@@ -655,6 +719,10 @@ export interface Database {
       onboarding_tasks: { Row: OnboardingTask; Insert: Partial<OnboardingTask>; Update: Partial<OnboardingTask> };
       project_allocations: { Row: ProjectAllocation; Insert: Partial<ProjectAllocation>; Update: Partial<ProjectAllocation> };
       notifications: { Row: Notification; Insert: Partial<Notification>; Update: Partial<Notification> };
+      channels: { Row: Channel; Insert: Partial<Channel>; Update: Partial<Channel> };
+      channel_members: { Row: ChannelMember; Insert: Partial<ChannelMember>; Update: Partial<ChannelMember> };
+      messages: { Row: Message; Insert: Partial<Message>; Update: Partial<Message> };
+      message_reactions: { Row: MessageReaction; Insert: Partial<MessageReaction>; Update: Partial<MessageReaction> };
     };
   };
 }
