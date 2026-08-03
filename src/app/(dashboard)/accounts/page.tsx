@@ -15,6 +15,7 @@ import { BarRow } from "@/components/ui/BarRow";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/ui/Avatar";
+import { Checkbox } from "@/components/ui/Checkbox";
 import { Input, Label } from "@/components/ui/Input";
 import { Dropdown } from "@/components/ui/Dropdown";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -517,15 +518,12 @@ function AccountsInner() {
                           </div>
                         )}
 
-                        <label className="flex shrink-0 cursor-pointer items-center gap-1.5 text-[11px] text-muted-foreground">
-                          <input
-                            type="checkbox"
-                            checked={a.paid}
-                            onChange={() => updateAllocation(a.id, { paid: !a.paid })}
-                            className="h-3.5 w-3.5 rounded accent-primary"
-                          />
-                          Paid
-                        </label>
+                        <Checkbox
+                          className="shrink-0 text-[11px] text-muted-foreground"
+                          checked={a.paid}
+                          onChange={() => updateAllocation(a.id, { paid: !a.paid })}
+                          label="Paid"
+                        />
                         <button
                           type="button"
                           aria-label="Remove allocation"

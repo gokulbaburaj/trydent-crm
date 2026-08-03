@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { useTabs } from "@/lib/tabs";
 import { Tip } from "@/components/ui/Tooltip";
+import { MenuItem, MenuLabel, MenuSeparator, Popover } from "@/components/ui/Popover";
 import { cn } from "@/lib/utils";
 
 const TAB_ICONS: [string, React.ComponentType<{ className?: string }>][] = [
@@ -52,15 +53,74 @@ function iconFor(href: string) {
 
 export function TabBar() {
   const router = useRouter();
-  const { tabs, activeId, activate, close, newTab } = useTabs();
+  const { tabs, activeId, activate, close, newTab, recentlyClosed, reopen, clearRecentlyClosed } =
+    useTabs();
+
+  /*
+    No ⌘⇧T binding here on purpose. It's the obvious shortcut and it's also
+    reserved by every browser for reopening a browser tab — Chrome and Safari
+    never deliver the keydown to the page, so the handler would be dead code
+    that silently competes with the real shortcut. The button is the affordance.
+  */
 
   return (
     <div className="flex h-11 shrink-0 items-center gap-1 px-2">
-      <Tip label="History">
-        <button className="rounded p-1.5 text-muted-2 hover:bg-white/5 hover:text-foreground">
-          <History className="h-3.5 w-3.5" />
-        </button>
-      </Tip>
+      <Popover
+        className="w-64"
+        trigger={
+          <Tip label="Recently closed">
+            {/* Dimmed when empty, but still opens — `disabled` here would only
+                look disabled, since Popover's trigger wrapper takes the click
+                either way. Better it opens and says so. */}
+            <button
+              className={cn(
+                "rounded p-1.5 text-muted-2 hover:bg-white/5 hover:text-foreground",
+                recentlyClosed.length === 0 && "opacity-40"
+              )}
+            >
+              <History className="h-3.5 w-3.5" />
+            </button>
+          </Tip>
+        }
+      >
+        {/* `closeMenu`, not `close` — `close` in this scope is the tab closer. */}
+        {(closeMenu) => (
+          <>
+            <MenuLabel>Recently closed</MenuLabel>
+            {recentlyClosed.length === 0 && (
+              <p className="px-2 py-1.5 text-[13px] text-muted-2">Nothing closed yet.</p>
+            )}
+            {recentlyClosed.map((tab) => {
+              const Icon = iconFor(tab.href);
+              return (
+                <MenuItem
+                  key={tab.id}
+                  icon={<Icon className="h-3.5 w-3.5" />}
+                  onClick={() => {
+                    reopen(tab.id);
+                    closeMenu();
+                  }}
+                >
+                  {tab.title}
+                </MenuItem>
+              );
+            })}
+            {recentlyClosed.length > 0 && (
+              <>
+                <MenuSeparator />
+                <MenuItem
+                  onClick={() => {
+                    clearRecentlyClosed();
+                    closeMenu();
+                  }}
+                >
+                  Clear list
+                </MenuItem>
+              </>
+            )}
+          </>
+        )}
+      </Popover>
       <Tip label="Back">
         <button
           onClick={() => router.back()}

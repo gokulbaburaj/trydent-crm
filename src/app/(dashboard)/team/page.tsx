@@ -21,6 +21,7 @@ import { useAuth } from "@/lib/useAuth";
 import { canSeeContractorPay } from "@/lib/permissions";
 import { useCurrency } from "@/lib/currency";
 import { useTabs } from "@/lib/tabs";
+import { usePageTitle } from "@/lib/pageTitle";
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/format";
 import { generatePassword } from "@/lib/password";
@@ -101,6 +102,10 @@ function TeamPageInner() {
   const [payFor, setPayFor] = useState<Profile | null>(null);
 
   const isAdmin = me?.role === "admin";
+
+  // "Team" is the right topbar title for the whole roster and wrong for one
+  // team's. The layout only sees the pathname, so name the scope from here.
+  usePageTitle(teamFilter ? `${teamFilter} team` : null);
 
   // The Team page is for staff — clients are managed on the Clients page.
   const allStaff = useMemo(() => profiles.filter((p) => p.role !== "client"), [profiles]);
@@ -434,10 +439,22 @@ function TeamPageInner() {
           </div>
           {isAdmin && (
             <>
-              <Button size="sm" variant="secondary" onClick={createTeam}>
-                <Building2 className="h-4 w-4" /> New team
-              </Button>
-              <Button size="sm" onClick={() => { setAddError(null); setAdding({ ...emptyMember }); }}>
+              {/* Creating a team from inside one team's roster is a non
+                  sequitur — the button belongs on the unscoped page. */}
+              {!teamFilter && (
+                <Button size="sm" variant="secondary" onClick={createTeam}>
+                  <Building2 className="h-4 w-4" /> New team
+                </Button>
+              )}
+              <Button
+                size="sm"
+                onClick={() => {
+                  setAddError(null);
+                  // Adding someone while scoped to a team means adding them to
+                  // that team. Still editable in the drawer.
+                  setAdding({ ...emptyMember, team: teamFilter ?? "" });
+                }}
+              >
                 <UserPlus className="h-4 w-4" /> Add member
               </Button>
             </>

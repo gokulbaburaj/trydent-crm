@@ -18,6 +18,9 @@ export interface AppTab {
 
 const STORAGE_KEY = "trydent-tabs";
 
+/** How many closed tabs the History list remembers. */
+const CLOSED_LIMIT = 12;
+
 const PAGE_TITLES: [string, string][] = [
   ["/my-work", "My Work"],
   ["/dashboard", "Dashboard"],
@@ -59,6 +62,11 @@ interface TabsContextValue {
   go: (href: string) => boolean;
   newTab: () => void;
   setTitle: (href: string, title: string) => void;
+  /** Tabs you closed, most recent first. Capped — see CLOSED_LIMIT. */
+  recentlyClosed: AppTab[];
+  /** Reopen a closed tab. With no argument, reopens the most recent one. */
+  reopen: (id?: string) => void;
+  clearRecentlyClosed: () => void;
 }
 
 const TabsContext = createContext<TabsContextValue | null>(null);
@@ -68,6 +76,7 @@ export function TabsProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [tabs, setTabs] = useState<AppTab[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [recentlyClosed, setRecentlyClosed] = useState<AppTab[]>([]);
   const hydrated = useRef(false);
   const activeIdRef = useRef<string | null>(null);
   const prevPath = useRef(pathname);
@@ -85,7 +94,9 @@ export function TabsProvider({ children }: { children: React.ReactNode }) {
         const saved = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "null") as {
           tabs: AppTab[];
           activeId: string;
+          closed?: AppTab[];
         } | null;
+        if (saved?.closed?.length) setRecentlyClosed(saved.closed.slice(0, CLOSED_LIMIT));
         if (saved?.tabs?.length) {
           const active = saved.tabs.find((t) => t.id === saved.activeId) ?? saved.tabs[0];
           const synced = saved.tabs.map((t) =>
@@ -125,8 +136,11 @@ export function TabsProvider({ children }: { children: React.ReactNode }) {
   // Persist.
   useEffect(() => {
     if (!hydrated.current || tabs.length === 0) return;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ tabs, activeId }));
-  }, [tabs, activeId]);
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ tabs, activeId, closed: recentlyClosed })
+    );
+  }, [tabs, activeId, recentlyClosed]);
 
   const activate = useCallback(
     (id: string) => {
@@ -201,6 +215,12 @@ export function TabsProvider({ children }: { children: React.ReactNode }) {
       setTabs((prev) => {
         const idx = prev.findIndex((t) => t.id === id);
         if (idx === -1) return prev;
+        // Remember it so History can put it back. Same href twice in the list
+        // is noise, so the older entry drops out.
+        const gone = prev[idx];
+        setRecentlyClosed((seen) =>
+          [gone, ...seen.filter((t) => t.href !== gone.href)].slice(0, CLOSED_LIMIT)
+        );
         const next = prev.filter((t) => t.id !== id);
         if (next.length === 0) {
           const fresh = { id: rid(), href: "/dashboard", title: "Dashboard" };
@@ -221,13 +241,42 @@ export function TabsProvider({ children }: { children: React.ReactNode }) {
     [router]
   );
 
+  /**
+   * Put a closed tab back. Goes through openInNewTab, so reopening something
+   * that's since been opened again focuses the existing tab rather than
+   * duplicating it.
+   */
+  const reopen = useCallback(
+    (id?: string) => {
+      const tab = id ? recentlyClosed.find((t) => t.id === id) : recentlyClosed[0];
+      if (!tab) return;
+      setRecentlyClosed((prev) => prev.filter((t) => t.id !== tab.id));
+      openInNewTab(tab.href, tab.title);
+    },
+    [recentlyClosed, openInNewTab]
+  );
+
+  const clearRecentlyClosed = useCallback(() => setRecentlyClosed([]), []);
+
   const setTitle = useCallback((href: string, title: string) => {
     setTabs((prev) => prev.map((t) => (t.href === href ? { ...t, title } : t)));
   }, []);
 
   return (
     <TabsContext.Provider
-      value={{ tabs, activeId, activate, close, openInNewTab, go, newTab, setTitle }}
+      value={{
+        tabs,
+        activeId,
+        activate,
+        close,
+        openInNewTab,
+        go,
+        newTab,
+        setTitle,
+        recentlyClosed,
+        reopen,
+        clearRecentlyClosed,
+      }}
     >
       {children}
     </TabsContext.Provider>

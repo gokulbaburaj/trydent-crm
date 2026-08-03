@@ -56,6 +56,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge, statusTone } from "@/components/ui/Badge";
 import { Avatar, AvatarStack } from "@/components/ui/Avatar";
 import { Card } from "@/components/ui/Card";
+import { Checkbox } from "@/components/ui/Checkbox";
 import { StatusPicker } from "@/components/ui/StatusPicker";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { formatTimeRange } from "@/lib/taskTime";
@@ -1493,20 +1494,20 @@ export default function ProjectDetailPage() {
               </button>
             )}
           </div>
-          <label className="flex items-start gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={meetingVisible}
-              onChange={(e) => setMeetingVisible(e.target.checked)}
-              className="mt-0.5 h-4 w-4 rounded accent-primary"
-            />
-            <span>
-              Show in the client portal
-              <span className="block text-xs text-muted-foreground">
-                {clientName(project.client_id)} will see the time, agenda and attendees.
+          <Checkbox
+            align="start"
+            className="text-sm"
+            checked={meetingVisible}
+            onChange={setMeetingVisible}
+            label={
+              <span>
+                Show in the client portal
+                <span className="block text-xs text-muted-foreground">
+                  {clientName(project.client_id)} will see the time, agenda and attendees.
+                </span>
               </span>
-            </span>
-          </label>
+            }
+          />
           <div className="flex items-center gap-2">
             <Button type="submit" disabled={meetingBusy || !meetingTitle.trim()}>
               {meetingBusy

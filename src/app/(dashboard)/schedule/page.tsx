@@ -54,6 +54,7 @@ import { nextActivityPayload } from "@/lib/recurrence";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Avatar } from "@/components/ui/Avatar";
+import { Checkbox } from "@/components/ui/Checkbox";
 import { Drawer } from "@/components/ui/Drawer";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { Dropdown } from "@/components/ui/Dropdown";
@@ -660,29 +661,26 @@ export default function SchedulePage() {
                 </p>
               )}
             </div>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={!!editing.follow_up_required}
-                onChange={(e) => setEditing({ ...editing, follow_up_required: e.target.checked })}
-                className="h-4 w-4 rounded accent-primary"
-              />
-              Follow-up required
-            </label>
-            <label className="flex items-start gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={!!editing.client_visible}
-                onChange={(e) => setEditing({ ...editing, client_visible: e.target.checked })}
-                className="mt-0.5 h-4 w-4 rounded accent-primary"
-              />
-              <span>
-                Show in the client portal
-                <span className="block text-xs text-muted-foreground">
-                  The client sees the date, agenda and attendees. Notes stay internal.
+            <Checkbox
+              className="text-sm"
+              checked={!!editing.follow_up_required}
+              onChange={(follow_up_required) => setEditing({ ...editing, follow_up_required })}
+              label="Follow-up required"
+            />
+            <Checkbox
+              align="start"
+              className="text-sm"
+              checked={!!editing.client_visible}
+              onChange={(client_visible) => setEditing({ ...editing, client_visible })}
+              label={
+                <span>
+                  Show in the client portal
+                  <span className="block text-xs text-muted-foreground">
+                    The client sees the date, agenda and attendees. Notes stay internal.
+                  </span>
                 </span>
-              </span>
-            </label>
+              }
+            />
             <div className="flex gap-2 pt-2">
               <Button type="submit" disabled={saving} className="flex-1">
                 {saving ? "Saving..." : "Save"}

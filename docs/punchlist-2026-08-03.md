@@ -5,33 +5,45 @@ about each so the next session doesn't re-derive it.
 
 ---
 
-## Quick fixes (small, well understood)
+## Quick fixes (small, well understood) — DONE
 
-### 1. Team page header is wrong when scoped
-`/team?team=Admin` shows the topbar title "Team" and offers a **New team**
-button. Neither fits a page that is showing one team's roster.
+### 1. Team page header is wrong when scoped ✅
+`/team?team=Admin` showed the topbar title "Team" and offered a **New team**
+button. Neither fitted a page showing one team's roster.
 
-- Topbar title comes from `PAGE_TITLES` in `(dashboard)/layout.tsx`, which
-  matches on pathname only and can't see `?team=`. Either thread the scope in
-  or set the title from the page.
-- Hide **New team** while `teamFilter` is set — creating a team from inside one
-  team's roster is a non sequitur. **Add member** should stay, and should
-  probably default the new person's team to the one you're looking at.
+Fixed by letting a page set the title, rather than threading search params into
+the layout — reading `useSearchParams` in `(dashboard)/layout.tsx` would opt the
+whole shell into a CSR bailout. New `lib/pageTitle.tsx` holds the context and a
+`usePageTitle()` hook; the layout owns the state and Team calls
+`usePageTitle(teamFilter ? \`${teamFilter} team\` : null)`. The override carries
+the path it was set on, because child effects run before parent cleanup and a
+stale title would otherwise flash on navigation.
 
-### 6. The History button in the tab bar
-Screenshot 6. Question was whether it earns its place. Worth checking what it
-actually does before deleting — if it opens recently-closed tabs it's useful and
-under-labelled; if it's vestigial it should go. Decide, then act.
+**New team** is hidden while `teamFilter` is set. **Add member** stays and now
+pre-fills the drawer's team with the one you're looking at.
 
-### 4 + 8. Checkboxes are off-brand
-Two places: the Accounts paid toggles (green tick, reads as an emoji) and the
-Edit Schedule Item modal ("Follow-up required", "Show in the client portal").
+### 6. The History button in the tab bar ✅
+It was wired to nothing — no `onClick` at all. Rather than delete it, it now
+does the useful thing: `close()` in `lib/tabs.tsx` pushes the tab onto a
+`recentlyClosed` stack (capped at 12, deduped by href, persisted alongside the
+tabs), and the button opens a popover that reopens them. Reopening routes
+through `openInNewTab`, so a tab that's since been reopened gets focused
+instead of duplicated.
 
-There is no shared Checkbox component — that's the root cause, and why they
-drifted. Build one in `components/ui/`, using the accent token and the same
-focus ring as `Input`, then replace both call sites. `DataTable`'s `SelectBox`
-is the closest existing thing and is a reasonable visual reference, but it's
-private to that file.
+No ⌘⇧T binding — it's the obvious shortcut and browsers reserve it, so the
+keydown never reaches the page. Left a comment saying so, otherwise someone
+will add it again.
+
+### 4 + 8. Checkboxes are off-brand ✅
+`components/ui/Checkbox.tsx` already existed (built for Settings → roles,
+recruiting and onboarding) — the three call sites in this punchlist had just
+never been migrated. Replaced the raw `accent-primary` inputs in
+`accounts/page.tsx` (paid toggles), `schedule/page.tsx` (Follow-up required,
+Show in the client portal) and `projects/[id]/page.tsx` (the same portal toggle
+on the meeting form). There are now no native checkboxes left in the app.
+
+Checkbox gained an `align="start"` prop — centring a 16px box against a
+two-line label (title plus help text) left it floating.
 
 ---
 
@@ -41,10 +53,32 @@ private to that file.
 Screenshot 7. Four meetings at 15:30 render as four side-by-side blocks that
 spill past the day column, and the 21:00 one overlaps the now-line.
 
-This is the classic calendar layout problem: events at the same time need to be
-grouped into collision clusters, then each cluster split into columns with
-width `1/n` and offset `i/n`. Currently they appear to be laid out without any
-clustering. Fix in the week view of `(dashboard)/schedule/page.tsx`.
+**The diagnosis above is wrong — don't act on it.** `layoutDay` (schedule
+page, line ~110) already does the clustering, and it does it correctly. Ported
+it out and exercised it (four at 15:30, a 30-minute staircase, a pile followed
+by a gap, a 15-event chain, exactly-adjacent events): no two overlapping events
+ever share a column, and no block's `left + width` exceeds 100%. Four at 15:30
+comes out as four clean 25% columns. So whatever the screenshot shows, it isn't
+the columns being unclustered.
+
+Still to work out — what's actually wrong. Leads, in order of suspicion:
+
+1. **Width, not overflow.** A day column is roughly (680 − 56) / 7 ≈ 89px, so
+   at `cols=4` each block is ~22px wide, of which `px-1.5` eats 12px. That's
+   unreadable and could easily read as "broken" in a screenshot even though the
+   geometry is right. If so the fix is a minimum width with overlap (blocks
+   shingled, later ones inset and stacked) rather than strict `1/n` division.
+2. **The 21:00 / now-line complaint doesn't reproduce from reading either.**
+   `NowLine` is `z-10`, `WeekEvent` has no z-index, so the line should already
+   paint on top. Worth checking against the real screenshot before assuming.
+3. **`EVENT_MINUTES = 60` is a fiction** — activities store only a start time,
+   so every event is assumed an hour long. Two events 15 minutes apart are
+   treated as overlapping. That's the honest thing to do without an end time,
+   but it inflates cluster sizes and therefore column counts.
+
+Next session: get the actual screenshot (7) side by side with the live grid
+before writing any code. The probe script is trivial to recreate — it's ~40
+lines and only needs `layoutDay` plus fake `{t}` events.
 
 Note this is now more visible because tasks gained times (2026-08-03d) — more
 things land on the grid.

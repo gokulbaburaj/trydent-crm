@@ -16,23 +16,33 @@ export function Checkbox({
   onChange,
   label,
   disabled,
+  align = "center",
   className,
 }: {
   checked: boolean;
   onChange: (checked: boolean) => void;
   label?: React.ReactNode;
   disabled?: boolean;
+  /** "start" when the label runs to a second line (a title plus help text) —
+   *  centring the box against a two-line label leaves it floating. */
+  align?: "center" | "start";
   className?: string;
 }) {
   return (
     <label
       className={cn(
-        "group/cb inline-flex items-center gap-2",
+        "group/cb inline-flex gap-2",
+        align === "start" ? "items-start" : "items-center",
         disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer",
         className
       )}
     >
-      <span className="relative flex h-4 w-4 shrink-0 items-center justify-center">
+      <span
+        className={cn(
+          "relative flex h-4 w-4 shrink-0 items-center justify-center",
+          align === "start" && "mt-0.5"
+        )}
+      >
         <input
           type="checkbox"
           checked={checked}

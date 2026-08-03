@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Sidebar } from "@/components/Sidebar";
 import { Topbar } from "@/components/Topbar";
@@ -8,6 +8,7 @@ import { TabBar } from "@/components/TabBar";
 import { Toaster } from "@/components/Toaster";
 import { CommandMenu } from "@/components/CommandMenu";
 import { TabsProvider } from "@/lib/tabs";
+import { PageTitleContext, type PageTitleOverride } from "@/lib/pageTitle";
 import { TooltipProvider } from "@/components/ui/Tooltip";
 import { useAuth } from "@/lib/useAuth";
 import { isPortalOnly } from "@/lib/permissions";
@@ -49,6 +50,18 @@ export default function DashboardLayout({
   const { profile, email, access, loading, signOut, isSupabaseConfigured } = useAuth();
   const portalOnly = isPortalOnly(access);
   const [mobileNav, setMobileNav] = useState(false);
+  // A page can override the topbar title — see lib/pageTitle.tsx for why the
+  // layout can't work this out on its own.
+  const [titleOverride, setTitleOverride] = useState<PageTitleOverride | null>(null);
+  const setPageTitle = useCallback(
+    (next: PageTitleOverride | null) =>
+      setTitleOverride((prev) => (next === null && prev === null ? prev : next)),
+    []
+  );
+  const title =
+    titleOverride && titleOverride.path === pathname
+      ? titleOverride.title
+      : pageTitleFor(pathname);
 
   useEffect(() => {
     if (loading) return;
@@ -94,6 +107,7 @@ export default function DashboardLayout({
 
   return (
     <TabsProvider>
+      <PageTitleContext.Provider value={setPageTitle}>
       <TooltipProvider delayDuration={350}>
       <div className="flex h-screen overflow-hidden bg-background">
         <Suspense fallback={<div className="hidden w-[220px] shrink-0 md:block" />}>
@@ -123,7 +137,7 @@ export default function DashboardLayout({
                 profile={profile}
                 email={email}
                 onSignOut={signOut}
-                title={pageTitleFor(pathname)}
+                title={title}
                 onMenuClick={() => setMobileNav(true)}
               />
               <main
@@ -140,6 +154,7 @@ export default function DashboardLayout({
         <CommandMenu />
       </div>
       </TooltipProvider>
+      </PageTitleContext.Provider>
     </TabsProvider>
   );
 }
