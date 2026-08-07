@@ -56,6 +56,12 @@ Concretely:
   `tailwind-scrollbar-hide`).
 - Before "fixing" a UI element, read it. Several roadmap items dissolved on
   inspection because the thing described didn't exist or was deliberate.
+- **Reproduce from the source data before writing code for a visual bug.** Get
+  the screenshot next to the live view, and query the rows behind it. Punchlist
+  item 5 read as "four meetings at 15:30 overflowing one day column"; the
+  database said four events on four consecutive days, each correctly full
+  width. Two rounds of speculation, both wrong, before anyone ran a `select`.
+  A screenshot shows what rendered, never what it rendered *from*.
 - Test RLS with forged JWTs per role, not by clicking around. The pattern is in
   `docs/plan-channels.md` and it has caught real bugs.
 - Pure logic (date maths, parsers) gets a test, not a throwaway script. There
@@ -123,5 +129,9 @@ If something can't be verified from here, say which part is unverified.
 - `docs/punchlist-2026-08-03.md` — current open items
 - `docs/plan-channels.md` — chat feature, what's built and what isn't
 - `docs/plan-next.md` — roadmap and the reasoning behind each call
-- `docs/portal-walkthrough.md` — client portal test script, needs a browser
+- `docs/portal-walkthrough.md` — client portal test script. Runnable from the
+  agent side when the Claude in Chrome extension is connected: reset the portal
+  password on the admin side, sign in as the client in another tab, walk the
+  paths. Blocked only when no browser is connected — which is a setup gap, not
+  a capability one.
 - `AUDIT.md` — dated 27 July, historical; don't edit it to match the present

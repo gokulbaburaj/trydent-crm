@@ -7,11 +7,20 @@ so none of these paths has been exercised against real data.
 **Test client:** Mixlabs Creative (`mixlabscreative`) — 3 projects, 1 update,
 2 messages. The only portal with enough content to be worth testing.
 
+## Who can run this
+
+Either side. It does **not** require a human at a keyboard — with the Claude in
+Chrome extension connected, the agent can reset the password on the admin side,
+sign in as the client in a second tab and walk every path below. The only thing
+that blocks it is no browser being connected, which is a setup gap rather than
+a capability limit. Don't record this as "can't be done from this side".
+
 ## Setup
 
 1. Clients → Mixlabs Creative → portal panel → reset the portal password.
    It's shown once and never stored, so copy it before closing.
-2. Open a private window (so your admin session stays live in the other one).
+2. Open a second tab or a private window, so the admin session stays live in
+   the first one.
 3. Sign in at traid3nt.xyz with the username, not an email.
 
 ## Paths to walk

@@ -101,14 +101,36 @@ lines and only needs `layoutDay` plus fake `{t}` events.
 Note this is now more visible because tasks gained times (2026-08-03d) — more
 things land on the grid.
 
-### 3. Lag collapsing the project rows
-Screenshot 3, the Projects list accordion. Feels slow to collapse.
+### 3. Lag collapsing the project rows ✅
+Screenshot 3, the Projects list accordion. Felt slow to collapse.
 
-Suspect, unverified: the rows re-render the whole list on toggle, or the
-collapse animates a property that forces layout. Profile before changing
-anything — the sidebar collapse was fixed with a `grid-rows` transition and the
-same trick may apply, but guessing at a perf problem is how you end up
-optimising the wrong thing.
+**It was never a performance problem.** Counted the rows first: 11 active
+tasks, 9 live projects, 7 groups. `completionOf` rescanning every task per card
+is ~99 comparisons per toggle, so the "rows re-render the whole list" theory is
+ruled out at this size — worth revisiting only if tasks reach the thousands.
+
+The actual cause was an asymmetric interaction:
+
+- **Collapsing had no animation at all.** `{!isCollapsed && ...}` unmounts in
+  one frame, so the content vanished instantly while the chevron kept turning
+  for its `duration-200`.
+- **Expanding took 480ms.** Each card carried `animate-row`
+  (`fade-up 280ms … both`) plus `staggerDelay(cardIndex, 22, 200)`, and `both`
+  holds a card at `opacity: 0` through its delay.
+
+Instant out, half a second in, is what reads as lag.
+
+Fixed with the standing-gotcha pattern the sidebar already uses — a single-row
+grid transitioning `grid-rows-[0fr]` → `grid-rows-[1fr]` with `overflow-hidden`
+inside. Height can't transition from `auto`, which is why it's a grid and not a
+max-height guess. Content stays mounted now; fine at 9 projects, and it's what
+makes the transition possible. Dropped the per-card `animate-row` and stagger —
+the group wrapper still staggers on page mount, which is the only place that
+entrance was doing any work.
+
+**Unverified:** whether this matches the perceived slowness. No browser was
+connected to profile against, so the diagnosis is from the code and the row
+counts, not from a flame chart.
 
 ---
 
@@ -169,7 +191,8 @@ normal flow instead. `components/ui/TimePicker.tsx` has the full explanation.
 
 ## Still open from before
 
-- **Portal end-to-end walkthrough** (`docs/portal-walkthrough.md`) — needs a
-  browser signed in as a client; can't be done from this side.
+- **Portal end-to-end walkthrough** (`docs/portal-walkthrough.md`) — runnable
+  from the agent side once a browser is connected via the Claude in Chrome
+  extension. Waiting on the connection, not on a human.
 - **Thekkan Revolution figures** — 900 AUD / 350 paid in the CRM, doesn't
   reconcile with ₹30,000 in Notion. Owner to confirm which is right.

@@ -448,16 +448,34 @@ function ProjectsPageInner() {
                   </Button>
                 </div>
 
-                {!isCollapsed && (
+                {/*
+                  Single-row grid, 0fr → 1fr, per the standing gotcha. This was
+                  `{!isCollapsed && ...}`, which unmounts in one frame — so
+                  there was no collapse animation, while the chevron kept
+                  turning for 200ms and, on the way back, the cards staggered in
+                  over 480ms (`animate-row` 280ms + up to 200ms delay, held at
+                  opacity 0 by `both`). Instant out, half a second in, is what
+                  read as lag. Height can't transition from `auto`, hence the
+                  grid rather than a max-height guess.
+
+                  Content stays mounted now. That's fine at this size — 9 live
+                  projects — and it's what makes the transition possible at all.
+                */}
+                <div
+                  className={cn(
+                    "grid transition-[grid-template-rows] duration-200 ease-out",
+                    isCollapsed ? "grid-rows-[0fr]" : "grid-rows-[1fr]"
+                  )}
+                >
+                  <div className="overflow-hidden">
                   <div className="grid grid-cols-1 gap-2.5 border-t border-border p-3 sm:grid-cols-2 sm:p-4 lg:grid-cols-3">
-                    {items.map((p, cardIndex) => {
+                    {items.map((p) => {
                       const pct = completionOf(p.id);
                       return (
                         <button
                           key={p.id}
                           onClick={() => openInNewTab(`/projects/${p.id}`, p.name)}
-                          style={staggerDelay(cardIndex, 22, 200)}
-                          className="animate-row rounded border border-border bg-white/[0.02] p-3 text-left transition-[border-color,background-color,box-shadow,translate] duration-150 hover:-translate-y-px hover:border-white/15 hover:bg-white/5 hover:shadow-lg hover:shadow-black/20"
+                          className="rounded border border-border bg-white/[0.02] p-3 text-left transition-[border-color,background-color,box-shadow,translate] duration-150 hover:-translate-y-px hover:border-white/15 hover:bg-white/5 hover:shadow-lg hover:shadow-black/20"
                         >
                           <div className="flex items-center justify-between gap-2">
                             <span className="truncate text-sm font-medium">{p.name}</span>
@@ -510,7 +528,8 @@ function ProjectsPageInner() {
                       );
                     })}
                   </div>
-                )}
+                  </div>
+                </div>
               </div>
             );
           })}
