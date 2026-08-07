@@ -3,17 +3,20 @@
 import { useCallback, useSyncExternalStore } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { CurrencyCode } from "@/lib/types";
+import {
+  type Rates,
+  canConvertTo,
+  convertAmount as convert,
+  formatConverted,
+  isCode,
+  toBaseAmount,
+} from "@/lib/fx";
 
+/* The maths lives in `lib/fx.ts` — pure, and therefore testable. This module
+   owns the parts that can't be: the store, the fetch and the hook. Re-exported
+   here so call sites keep importing from "@/lib/currency". */
 export type { CurrencyCode };
-
-export const CURRENCIES: { code: CurrencyCode; label: string; symbol: string }[] = [
-  { code: "USD", label: "US Dollar", symbol: "$" },
-  { code: "INR", label: "Indian Rupee", symbol: "₹" },
-  { code: "EUR", label: "Euro", symbol: "€" },
-  { code: "CAD", label: "Canadian Dollar", symbol: "CA$" },
-  { code: "AUD", label: "Australian Dollar", symbol: "A$" },
-  { code: "AED", label: "UAE Dirham", symbol: "AED" },
-];
+export { CURRENCIES, formatMoney } from "@/lib/fx";
 
 const DISPLAY_KEY = "trydent-currency";
 const BASE_KEY = "trydent-base-currency";
@@ -22,12 +25,6 @@ const EVENT = "trydent-currency-change";
 
 /** Refetch rates when the cache is older than this. */
 const RATE_TTL = 6 * 60 * 60 * 1000;
-
-interface Rates {
-  base: CurrencyCode;
-  rates: Record<string, number>;
-  fetchedAt: number;
-}
 
 interface Snapshot {
   /** What the viewer wants to see money in. */
@@ -41,10 +38,6 @@ const SERVER_SNAPSHOT: Snapshot = { display: "USD", base: "USD", rates: null };
 
 let snapshot: Snapshot = SERVER_SNAPSHOT;
 let started = false;
-
-function isCode(v: unknown): v is CurrencyCode {
-  return typeof v === "string" && CURRENCIES.some((c) => c.code === v);
-}
 
 function emit() {
   window.dispatchEvent(new Event(EVENT));
@@ -134,15 +127,6 @@ function getSnapshot(): Snapshot {
   return snapshot;
 }
 
-export function formatMoney(value: number, currency: CurrencyCode) {
-  const locale = currency === "INR" ? "en-IN" : "en-US";
-  return new Intl.NumberFormat(locale, {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 0,
-  }).format(value || 0);
-}
-
 /** Change the app-wide base currency that money is stored in (admin action). */
 export async function setBaseCurrency(code: CurrencyCode) {
   const supabase = createClient();
@@ -173,69 +157,37 @@ export function useCurrency() {
   };
 
   /*
-   * These are memoised on purpose, and it is load-bearing rather than
-   * micro-optimisation.
+   * Memoised, and that is load-bearing rather than micro-optimisation.
    *
-   * Rates arrive asynchronously — `/api/fx` resolves after first paint — and
-   * until they do, `toBase` falls back to returning the amount unconverted.
-   * Callers wrap their sums in `useMemo`, so if `toBase` is a fresh closure on
-   * every render there is no honest dependency to list: adding it recomputes
-   * every render, omitting it means the sum is computed once with no rates and
-   * never corrected. Dashboard and Pipeline both took the second option and
-   * silenced the lint, which is why multi-currency totals were being added up
-   * at 1:1 and never revisited once the real rates landed.
+   * Rates arrive after first paint, and until they do `toBase` returns amounts
+   * unconverted. Callers wrap their sums in `useMemo`, so a fresh closure every
+   * render leaves no honest dependency to list: include it and you recompute
+   * every render, omit it and the sum is computed once with no rates and never
+   * corrected. Dashboard and Pipeline took the second option behind an
+   * `exhaustive-deps` suppression, and multi-currency totals were added at 1:1
+   * forever.
    *
    * `getSnapshot` returns a module-level cached object, so `base`, `rates` and
-   * `display` are stable references between genuine changes. That makes these
-   * identities stable too, and a caller can list them in a dependency array and
-   * get exactly one recompute when the FX data or the setting actually moves.
+   * `display` are stable between real changes — which makes these stable too,
+   * and a caller gets exactly one recompute when the FX data actually moves.
+   *
+   * The maths itself is in `lib/fx.ts`; these are just the bindings.
    */
-
-  // Rates are fetched relative to `base`: rate(code) = units of `code` per 1
-  // base. rate(base) is always 1. Returns null when we don't have it.
-  const rateOf = useCallback(
-    (code: CurrencyCode): number | null => {
-      if (code === base) return 1;
-      if (!rates || rates.base !== base) return null;
-      const r = rates.rates[code];
-      return typeof r === "number" && r > 0 ? r : null;
-    },
-    [base, rates]
-  );
-
-  /** Convert an amount from one currency to another via the base-relative table. */
   const convertAmount = useCallback(
-    (value: number, from: CurrencyCode, to: CurrencyCode): number | null => {
-      if (from === to) return value;
-      const rf = rateOf(from);
-      const rt = rateOf(to);
-      if (rf == null || rt == null) return null;
-      return (value / rf) * rt;
-    },
-    [rateOf]
+    (value: number, from: CurrencyCode, to: CurrencyCode) =>
+      convert(rates, base, value, from, to),
+    [rates, base]
   );
 
-  /** Bring an amount into the base currency for summing (falls back to as-is). */
   const toBase = useCallback(
-    (value: number, from: CurrencyCode = base): number => {
-      const c = convertAmount(value, from, base);
-      return c == null ? value : c;
-    },
-    [convertAmount, base]
+    (value: number, from: CurrencyCode = base) => toBaseAmount(rates, base, value, from),
+    [rates, base]
   );
 
-  /**
-   * Format an amount that is stored in `from` (defaults to the base currency),
-   * converted to the viewer's display currency. If we can't convert (rates
-   * missing), we show it in its own currency rather than faking a number.
-   */
   const format = useCallback(
-    (value: number, from: CurrencyCode = base): string => {
-      const c = convertAmount(value, from, display);
-      if (c == null) return formatMoney(value, from);
-      return formatMoney(c, display);
-    },
-    [convertAmount, base, display]
+    (value: number, from: CurrencyCode = base) =>
+      formatConverted(rates, base, value, from, display),
+    [rates, base, display]
   );
 
   return {
@@ -245,7 +197,7 @@ export function useCurrency() {
     /** Default currency for new amounts (set in Settings). */
     base,
     /** True when the chosen display currency can be converted to. */
-    converted: display === base || rateOf(display) != null,
+    converted: canConvertTo(rates, base, display),
     ratesFetchedAt: rates?.fetchedAt ?? null,
     convertAmount,
     toBase,
