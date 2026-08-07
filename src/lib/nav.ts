@@ -132,12 +132,24 @@ export function useNavState() {
 /**
  * Apply a saved drag order to a section's items: saved ones first in their
  * chosen order, then anything new that didn't exist when the order was saved.
+ *
+ * Deduped as it's read. This order lives in localStorage, which is
+ * user-editable and outlives any given release, so a repeated href is a real
+ * possibility — and the naive map/filter version rendered that nav item twice
+ * under the same React key. Found by the test on the equivalent function in
+ * `lib/useViewPreference.ts`; the same shape had the same hole here.
  */
 export function applyOrder<T extends { href: string }>(items: T[], saved: string[] | undefined): T[] {
   if (!saved || saved.length === 0) return items;
-  const ranked = saved
-    .map((href) => items.find((i) => i.href === href))
-    .filter((i): i is T => !!i);
-  const rest = items.filter((i) => !saved.includes(i.href));
+  const seen = new Set<string>();
+  const ranked: T[] = [];
+  for (const href of saved) {
+    if (seen.has(href)) continue;
+    const found = items.find((i) => i.href === href);
+    if (!found) continue; // an item that no longer exists in this section
+    seen.add(href);
+    ranked.push(found);
+  }
+  const rest = items.filter((i) => !seen.has(i.href));
   return [...ranked, ...rest];
 }

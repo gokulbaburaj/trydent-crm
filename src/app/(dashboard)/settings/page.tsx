@@ -1,8 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  DndContext,
+  DragEndEvent,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
-import { Check, ChevronRight, ShieldCheck, Users } from "lucide-react";
+import { Check, ChevronRight, GripVertical, ShieldCheck, Users } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "@/components/Toaster";
 import { Card } from "@/components/ui/Card";
@@ -14,7 +29,10 @@ import { Dropdown } from "@/components/ui/Dropdown";
 import { isAdmin as hasAdminRights } from "@/lib/permissions";
 import {
   VIEW_PREFERENCES,
+  orderedViewPreferences,
+  readViewOrder,
   readViewPreference,
+  writeViewOrder,
   writeViewPreference,
 } from "@/lib/useViewPreference";
 import { useOrgAdmin } from "@/lib/useOrgAdmin";
@@ -308,6 +326,28 @@ function DefaultViewsCard() {
       VIEW_PREFERENCES.map((p) => [p.key, readViewPreference(p.key, p.fallback)])
     )
   );
+  // Read once in the initialiser, same as the preferences above — reading it in
+  // an effect renders the default order and then reshuffles.
+  const [order, setOrderState] = useState<string[]>(() => readViewOrder());
+  const ordered = useMemo(() => orderedViewPreferences(order), [order]);
+
+  // Distance constraint so a click on the row still reaches the dropdown.
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+
+  function handleDragEnd(e: DragEndEvent) {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    // VIEW_PREFERENCES is `as const`, so `.key` is a literal union and
+    // indexOf(string) won't typecheck against it. The dnd ids are plain
+    // strings, so widen here rather than casting at every call.
+    const keys: string[] = ordered.map((p) => p.key);
+    const from = keys.indexOf(String(active.id));
+    const to = keys.indexOf(String(over.id));
+    if (from === -1 || to === -1) return;
+    const next = arrayMove(keys, from, to);
+    setOrderState(next);
+    writeViewOrder(next);
+  }
 
   return (
     <Card>
@@ -317,33 +357,92 @@ function DefaultViewsCard() {
         temporary — this is the one that sticks.
       </p>
 
-      <div className="mt-3.5 flex flex-col gap-2">
-        {VIEW_PREFERENCES.map((pref) => (
-          <div
-            key={pref.key}
-            className="grid grid-cols-1 items-center gap-2 rounded-md border border-border-subtle px-2.5 py-2 sm:grid-cols-[1fr_11rem]"
-          >
-            <span className="text-[13px] font-medium">{pref.label}</span>
-            <Dropdown
-              value={prefs[pref.key]}
-              options={pref.options.map((o) => ({ value: o.id, label: o.label }))}
-              onChange={(v) => {
-                writeViewPreference(pref.key, v);
-                setPrefs((prev) => ({ ...prev, [pref.key]: v }));
-                toast.success(`${pref.label} opens in ${
-                  pref.options.find((o) => o.id === v)?.label ?? v
-                }`);
-              }}
-            />
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={ordered.map((p) => p.key)} strategy={verticalListSortingStrategy}>
+          <div className="mt-3.5 flex flex-col gap-2">
+            {ordered.map((pref) => (
+              <SortableViewRow
+                key={pref.key}
+                id={pref.key}
+                label={pref.label}
+                value={prefs[pref.key]}
+                options={pref.options.map((o) => ({ value: o.id, label: o.label }))}
+                onChange={(v) => {
+                  writeViewPreference(pref.key, v);
+                  setPrefs((prev) => ({ ...prev, [pref.key]: v }));
+                  toast.success(
+                    `${pref.label} opens in ${
+                      pref.options.find((o) => o.id === v)?.label ?? v
+                    }`
+                  );
+                }}
+              />
+            ))}
           </div>
-        ))}
-      </div>
+        </SortableContext>
+      </DndContext>
 
       <p className="mt-3 text-[11px] text-muted-2">
-        Saved on this device. Preferences like this stay out of the database so
-        a page never waits on the network to know what to draw.
+        Saved on this device, order included. Preferences like this stay out of
+        the database so a page never waits on the network to know what to draw.
       </p>
     </Card>
+  );
+}
+
+/**
+ * One draggable preference row.
+ *
+ * Listeners go on the grip only, not the whole row. The Sidebar spreads them
+ * across the entire item because the item is a link and a 5px distance
+ * threshold is enough to tell a click from a drag — but this row contains a
+ * Radix dropdown, and a pointerdown captured by dnd-kit before Radix sees it
+ * means the menu never opens.
+ */
+function SortableViewRow({
+  id,
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  options: { value: string; label: string }[];
+  onChange: (v: string) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      className={cn(
+        "grid grid-cols-[auto_1fr] items-center gap-2 rounded-md border border-border-subtle px-2.5 py-2 sm:grid-cols-[auto_1fr_11rem]",
+        isDragging && "relative z-10 border-border bg-surface opacity-90 shadow-lg shadow-black/30"
+      )}
+    >
+      <button
+        ref={setActivatorNodeRef}
+        {...attributes}
+        {...listeners}
+        aria-label={`Reorder ${label}`}
+        className="touch-none cursor-grab rounded p-0.5 text-muted-2 transition-colors hover:text-foreground active:cursor-grabbing"
+      >
+        <GripVertical className="h-3.5 w-3.5" />
+      </button>
+      <span className="text-[13px] font-medium">{label}</span>
+      <Dropdown value={value} options={options} onChange={onChange} />
+    </div>
   );
 }
 

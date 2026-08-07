@@ -136,14 +136,29 @@ counts, not from a flame chart.
 
 ## Features
 
-### 2. Drag to reorder Default views
-Settings → Default views. The rows are a fixed list; make them sortable.
+### 2. Drag to reorder Default views ✅
+Settings → Default views is sortable, copying the `Sidebar.tsx` shape —
+`DndContext`, `SortableContext`, `verticalListSortingStrategy`. Order is a list
+of preference **keys** in localStorage next to the preferences themselves (an
+index list silently reshuffles everything the day a new preference is added).
 
-`Sidebar.tsx` already does exactly this with `@dnd-kit` — `DndContext`,
-`SortableContext`, `verticalListSortingStrategy`, order persisted through
-`setOrder` in `lib/nav.ts`. Copy that shape rather than inventing a second
-pattern. Order belongs in localStorage alongside the view preferences, which
-already live there deliberately (see the note under the card).
+Two deliberate departures from the Sidebar:
+
+- **Listeners on the grip handle only**, not the whole row. The Sidebar spreads
+  them across the entire item because that item is a link and a 5px distance
+  threshold separates click from drag. These rows contain a Radix dropdown, and
+  a pointerdown captured by dnd-kit before Radix sees it means the menu never
+  opens.
+- `orderedViewPreferences` **dedupes as it reads**. Which found a bug:
+
+**`applyOrder` in `lib/nav.ts` had the same hole** and drives every reorderable
+sidebar section. A repeated href in the saved order rendered that nav item
+twice under the same React key. localStorage is user-editable and outlives
+releases, so this isn't hypothetical. Both functions fixed, both now tested —
+`nav.test.ts` and `useViewPreference.test.ts`, 12 tests between them covering
+stale keys, duplicates, and items added since the order was saved.
+
+**Unverified:** how the drag feels. No browser connected.
 
 ### 7. Hover preview on calendar events ✅
 Title, date, time, location, client, attendees and an agenda snippet, on hover

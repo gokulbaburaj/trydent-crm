@@ -88,6 +88,64 @@ export const VIEW_PREFERENCES = [
   },
 ] as const;
 
+/**
+ * The order the Settings picker lists these in, when someone has dragged them.
+ *
+ * Same storage story as the preferences themselves — it's a per-device UI
+ * choice, so it sits in localStorage next to them rather than in Postgres.
+ * Stored as keys, not indexes: an index list silently reorders everything the
+ * day a new preference is added to VIEW_PREFERENCES.
+ */
+const ORDER_KEY = "trydent-view-order";
+
+export function readViewOrder(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(ORDER_KEY);
+    const parsed = raw ? (JSON.parse(raw) as unknown) : null;
+    return Array.isArray(parsed) ? parsed.filter((k): k is string => typeof k === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+export function writeViewOrder(keys: string[]) {
+  try {
+    window.localStorage.setItem(ORDER_KEY, JSON.stringify(keys));
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * VIEW_PREFERENCES in the saved order: known keys first as arranged, then
+ * anything added to the list since the order was saved.
+ *
+ * Mirrors `applyOrder` in lib/nav.ts deliberately — an unknown key must never
+ * drop a row, it just lands at the end.
+ */
+export function orderedViewPreferences(saved: string[]) {
+  const all = [...VIEW_PREFERENCES];
+  if (saved.length === 0) return all;
+
+  // Deduped as it's read. localStorage is user-editable and survives across
+  // versions, so a repeated key is a real possibility — and a naive map/filter
+  // renders that preference twice, which is a duplicate React key, not just a
+  // cosmetic repeat. `lib/nav.ts` applyOrder has the same shape and the same
+  // fix.
+  const seen = new Set<string>();
+  const ranked: (typeof all)[number][] = [];
+  for (const key of saved) {
+    if (seen.has(key)) continue;
+    const found = all.find((p) => p.key === key);
+    if (!found) continue; // a preference that no longer exists
+    seen.add(key);
+    ranked.push(found);
+  }
+  const rest = all.filter((p) => !seen.has(p.key));
+  return [...ranked, ...rest];
+}
+
 export function readViewPreference<T extends string>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
   try {
