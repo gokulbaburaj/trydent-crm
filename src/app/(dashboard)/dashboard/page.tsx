@@ -19,7 +19,10 @@ import { TooltipContent } from "@/components/charts/tooltip/tooltip-content";
 import { cn } from "@/lib/utils";
 import { ArrowRight } from "lucide-react";
 import { Card } from "@/components/ui/Card";
+import { BlockCard } from "@/components/ui/BlockCard";
+import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
+import { useTabs } from "@/lib/tabs";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { useCurrency } from "@/lib/currency";
 import { useAuth } from "@/lib/useAuth";
@@ -60,6 +63,7 @@ export default function DashboardPage() {
   const { format: formatCurrency, toBase, base } = useCurrency();
   const [revenueChart, setRevenueChart] = useState<RevenueChart>("bar");
   const { profile } = useAuth();
+  const { openInNewTab } = useTabs();
   const { rows: deals, loading: dealsLoading } = useSupabaseTable<Deal>("deals");
   // Stable so the sums below can depend on it honestly. `toBase` changes
   // identity only when the rates or the base currency change, so this does too.
@@ -99,9 +103,18 @@ export default function DashboardPage() {
     (c) => c.status === "Active Customer"
   ).length;
 
-  const openDeals = deals.filter(
-    (d) => d.deal_stage !== "Closed Won" && d.deal_stage !== "Closed Lost"
-  ).length;
+  const openDealList = useMemo(
+    () => deals.filter((d) => d.deal_stage !== "Closed Won" && d.deal_stage !== "Closed Lost"),
+    [deals]
+  );
+  const openDeals = openDealList.length;
+
+  /* Top four by value — blocking the biggest two puts the emphasis where the
+     money is rather than wherever the query happened to return. */
+  const topOpenDeals = useMemo(
+    () => [...openDealList].sort((a, b) => dealBase(b) - dealBase(a)).slice(0, 4),
+    [openDealList, dealBase]
+  );
 
   const wonThisYearCount = useMemo(() => {
     const year = new Date().getFullYear();
@@ -299,6 +312,43 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/*
+        Open deals, as blocked cards — the reference's "Interaction History".
+
+        Only the top two are colour-blocked. The point of blocking is emphasis:
+        block everything and it's a colour chart, block nothing and it's the
+        admin panel we started with. Ranked by value so the blocks land on the
+        deals that matter rather than at random.
+      */}
+      {topOpenDeals.length > 0 && (
+        <section>
+          <div className="mb-3 flex items-baseline justify-between">
+            <h3 className="text-sm font-semibold">Open deals</h3>
+            <Link href="/pipeline" className="text-xs font-medium text-primary hover:underline">
+              View pipeline
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {topOpenDeals.map((d, i) => (
+                <BlockCard
+                  key={d.id}
+                  tone={i === 0 ? "blue" : i === 1 ? "yellow" : "plain"}
+                  eyebrow={d.close_date ? formatDateFns(parseISO(d.close_date), "MMM d") : "No close date"}
+                  title={d.deal_name}
+                  value={formatCurrency(dealBase(d))}
+                  onOpen={() => openInNewTab("/pipeline", "Pipeline")}
+                  avatars={
+                    <Avatar
+                      name={clients.find((c) => c.id === d.client_id)?.company ?? "Client"}
+                      size="sm"
+                    />
+                  }
+                />
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* h-full + flex so the donut centres in whatever height the row takes,

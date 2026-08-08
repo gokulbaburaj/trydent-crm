@@ -17,7 +17,13 @@
   this change would have silently killed every hover state in the app.
 */
 :root {
-  --radius: 0.625rem;
+  /*
+    1.25rem, not 0.625rem. This single value drives every corner in the app via
+    the shadcn radius ramp below. The Salesforce reference runs ~24px on cards,
+    and radius turns out to be most of what separates "designed product" from
+    "admin panel" — more than the palette did.
+  */
+  --radius: 1.25rem;
 
   /*
     Elevation ramp — four distinct steps, read off the reference dashboard.
@@ -93,6 +99,23 @@
   --raise: rgba(0, 0, 0, 0.02);
   --edge: rgba(0, 0, 0, 0.14);
   --surface: rgba(0, 0, 0, 0.03);
+
+  /*
+    Colour-blocked cards — the reference's signature move.
+
+    Not tints or washes: the colour IS the card, with its own foreground. Used
+    to make one card in a group carry the eye rather than to categorise, so the
+    palette is deliberately small. `-fg` is chosen for contrast on that exact
+    fill, not derived, because a derived tint gets it wrong on yellow.
+  */
+  --block-blue: #3d5afe;
+  --block-blue-fg: #ffffff;
+  --block-yellow: #f5e050;
+  --block-yellow-fg: #16171b;
+  --block-teal: #5b93a8;
+  --block-teal-fg: #ffffff;
+  --block-ink: #16171b;
+  --block-ink-fg: #ffffff;
 
   /* ---- Trydent extras (kept alongside the shadcn set) ---- */
   --panel: #f4f5f2;                          /* main canvas between sidebar and cards */
@@ -227,6 +250,15 @@
   --color-raise: var(--raise);
   --color-edge: var(--edge);
   --color-surface-fill: var(--surface);
+
+  --color-block-blue: var(--block-blue);
+  --color-block-blue-fg: var(--block-blue-fg);
+  --color-block-yellow: var(--block-yellow);
+  --color-block-yellow-fg: var(--block-yellow-fg);
+  --color-block-teal: var(--block-teal);
+  --color-block-teal-fg: var(--block-teal-fg);
+  --color-block-ink: var(--block-ink);
+  --color-block-ink-fg: var(--block-ink-fg);
 
   /* Trydent aliases so existing markup keeps working */
   --color-panel: var(--panel);
