@@ -1,7 +1,8 @@
 "use client";
 
 import { ReactNode, useMemo, useState } from "react";
-import { Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ChevronsUpDown } from "lucide-react";
+import { ArrowUpDown, Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, ChevronsUpDown } from "lucide-react";
+import { MenuItem, MenuLabel, MenuSeparator, Popover } from "@/components/ui/Popover";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +29,19 @@ export interface Column<T> {
    * single row, which matters most on the columns you scroll past.
    */
   icon?: LucideIcon;
+  /**
+   * Where this column goes when the table becomes a card list below `sm`.
+   *
+   * Opt-in on purpose. Nine columns stacked into a card is the same bug as
+   * nine columns squeezed into 390px — measured on device 7 Aug, Clients was
+   * clipping email addresses mid-address with more columns off-screen right.
+   * Columns with no hint are dropped on mobile.
+   *
+   * If NO column on a table declares a hint, the first three are used as
+   * title / meta / meta so every existing table degrades sensibly without a
+   * migration. Declare hints to do better than that default.
+   */
+  mobile?: "title" | "subtitle" | "meta" | "trailing" | "hidden";
 }
 
 export interface TableSelection {
@@ -142,8 +156,231 @@ export function DataTable<T>({
   const allSelected =
     anySelected && sortedIds.length > 0 && sortedIds.every((id) => selection!.selected.has(id));
 
+  /*
+   * Which columns land where on a card.
+   *
+   * The shape is lifted from the LeadIQ reference: a prominent title with a
+   * quieter subtitle under it, a trailing value on the right of the same row,
+   * then a two-column grid of icon+value pairs. It reads at a glance and it
+   * maps onto what these tables already carry.
+   */
+  const slots = useMemo(() => {
+    const declared = columns.some((c) => c.mobile);
+    if (!declared) {
+      // No hints yet: first column titles the card, next two become meta.
+      // Deliberately conservative — better a thin card than a wall of fields.
+      return {
+        title: columns[0],
+        subtitle: undefined as Column<T> | undefined,
+        trailing: undefined as Column<T> | undefined,
+        meta: columns.slice(1, 3),
+      };
+    }
+    return {
+      title: columns.find((c) => c.mobile === "title") ?? columns[0],
+      subtitle: columns.find((c) => c.mobile === "subtitle"),
+      trailing: columns.find((c) => c.mobile === "trailing"),
+      meta: columns.filter((c) => c.mobile === "meta"),
+    };
+  }, [columns]);
+
+  const sortable = useMemo(
+    () => columns.map((c, i) => ({ col: c, i })).filter((x) => x.col.sortKey),
+    [columns]
+  );
+
+  /* Shared by both layouts — mobile lost paging entirely when the cards were
+     added, which on a 50-row table is a worse regression than the table was. */
+  const pager =
+    pageSize && sorted.length > pageSize ? (
+      <div
+        className={cn(
+          "flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-xs",
+          // Its own bordered box under the cards; a plain footer rule inside
+          // the table box on desktop.
+          "mt-2 rounded-md border border-border",
+          "sm:mt-0 sm:rounded-none sm:border-0 sm:border-t sm:border-border-subtle"
+        )}
+      >
+          <span className="text-muted-foreground">
+            {safePage * pageSize + 1}–{Math.min((safePage + 1) * pageSize, sorted.length)} of{" "}
+            {sorted.length}
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              disabled={safePage === 0}
+              aria-label="Previous page"
+              className="rounded-md border border-border p-1 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground disabled:pointer-events-none disabled:opacity-35"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </button>
+  
+            {/* Numbered, not just arrows — jumping to page 4 is a real thing
+                you want to do, and "Page 2 of 5" alone doesn't let you. Capped
+                at seven buttons with an ellipsis so a long list can't turn the
+                footer into its own paragraph. */}
+            {pageNumbers(safePage, totalPages).map((n, i) =>
+              n === null ? (
+                <span key={`gap-${i}`} className="px-1 text-muted-2">
+                  …
+                </span>
+              ) : (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setPage(n)}
+                  className={cn(
+                    "min-w-[1.75rem] rounded-md px-1.5 py-1 tabular-nums transition-colors",
+                    n === safePage
+                      ? "bg-white/10 font-medium text-foreground"
+                      : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
+                  )}
+                >
+                  {n + 1}
+                </button>
+              )
+            )}
+  
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+              disabled={safePage >= totalPages - 1}
+              aria-label="Next page"
+              className="rounded-md border border-border p-1 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground disabled:pointer-events-none disabled:opacity-35"
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+    ) : null;
+
   return (
-    <div className="overflow-x-auto rounded-md border border-border">
+    <>
+    {/* ── Cards, below sm ─────────────────────────────────────────────── */}
+    <div className="sm:hidden">
+      {sortable.length > 0 && (
+        /*
+         * One control, not a chip per column.
+         *
+         * This started as a row of six chips — Company, Status, Email, Owner,
+         * Portal, Last Contact — which was a whole row of chrome competing
+         * with the data for a job you do occasionally. The references all use
+         * a single "Sort by". Fewer things on screen is the point.
+         */
+        <div className="-mt-1 mb-2 flex justify-end">
+          <Popover
+            align="right"
+            className="w-48"
+            trigger={
+              <button className="flex min-h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground active:bg-white/5">
+                <ArrowUpDown className="h-3.5 w-3.5" />
+                {sort ? columns[sort.index]?.header || "Sorted" : "Sort"}
+                {sort && (sort.dir === 1 ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />)}
+              </button>
+            }
+          >
+            {(close) => (
+              <>
+                <MenuLabel>Sort by</MenuLabel>
+                {sortable.map(({ col, i }) => (
+                  <MenuItem
+                    key={i}
+                    selected={sort?.index === i}
+                    onClick={() => {
+                      cycleSort(i);
+                      close();
+                    }}
+                  >
+                    {col.header}
+                  </MenuItem>
+                ))}
+                {sort && (
+                  <>
+                    <MenuSeparator />
+                    <MenuItem
+                      onClick={() => {
+                        setSort(null);
+                        close();
+                      }}
+                    >
+                      Clear sort
+                    </MenuItem>
+                  </>
+                )}
+              </>
+            )}
+          </Popover>
+        </div>
+      )}
+
+      {/* The empty state is a div, not a p. `emptyMessage` is a ReactNode and
+          every caller passes a whole <EmptyState>, so a p here nests a div
+          inside a p — invalid HTML, and React reports it as a hydration error.
+          Caught in the browser; tsc and eslint were both clean. */}
+      {visible.length === 0 ? (
+        <div className="rounded-md border border-border px-4 py-10 text-center text-sm text-muted-foreground">
+          {emptyMessage}
+        </div>
+      ) : (
+        <ul className="flex flex-col gap-2.5">
+          {visible.map((row) => {
+            const id = rowKey(row);
+            return (
+              <li key={id}>
+                <div
+                  onClick={onRowClick ? () => onRowClick(row) : undefined}
+                  className={cn(
+                    "flex flex-col gap-3 rounded-xl border border-border bg-surface p-3.5 transition-colors",
+                    onRowClick && "cursor-pointer active:bg-white/5",
+                    isDimmed?.(row) && "opacity-45"
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="min-w-0 text-[13px] font-medium">
+                        {slots.title?.render(row)}
+                      </div>
+                      {slots.subtitle && (
+                        <div className="mt-0.5 min-w-0 text-xs text-muted-foreground">
+                          {slots.subtitle.render(row)}
+                        </div>
+                      )}
+                    </div>
+                    {slots.trailing && (
+                      <div className="shrink-0 text-right text-[13px]">
+                        {slots.trailing.render(row)}
+                      </div>
+                    )}
+                  </div>
+
+                  {slots.meta.length > 0 && (
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+                      {slots.meta.map((col, i) => (
+                        <div key={i} className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+                          {col.icon ? (
+                            <col.icon className="h-3 w-3 shrink-0" />
+                          ) : (
+                            <span className="shrink-0 text-[10px] uppercase tracking-wide text-muted-2">
+                              {col.header}
+                            </span>
+                          )}
+                          <span className="min-w-0 truncate">{col.render(row)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+
+    {/* ── Table, sm and up ────────────────────────────────────────────── */}
+    <div className="hidden overflow-x-auto rounded-md border border-border sm:block">
       {/*
        * table-fixed, not the browser default.
        *
@@ -267,63 +504,10 @@ export function DataTable<T>({
           })}
         </tbody>
       </table>
-
-      {pageSize && sorted.length > pageSize && (
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border-subtle px-4 py-2.5 text-xs">
-          <span className="text-muted-foreground">
-            {safePage * pageSize + 1}–{Math.min((safePage + 1) * pageSize, sorted.length)} of{" "}
-            {sorted.length}
-          </span>
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => setPage((p) => Math.max(0, p - 1))}
-              disabled={safePage === 0}
-              aria-label="Previous page"
-              className="rounded-md border border-border p-1 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground disabled:pointer-events-none disabled:opacity-35"
-            >
-              <ChevronLeft className="h-3.5 w-3.5" />
-            </button>
-
-            {/* Numbered, not just arrows — jumping to page 4 is a real thing
-                you want to do, and "Page 2 of 5" alone doesn't let you. Capped
-                at seven buttons with an ellipsis so a long list can't turn the
-                footer into its own paragraph. */}
-            {pageNumbers(safePage, totalPages).map((n, i) =>
-              n === null ? (
-                <span key={`gap-${i}`} className="px-1 text-muted-2">
-                  …
-                </span>
-              ) : (
-                <button
-                  key={n}
-                  type="button"
-                  onClick={() => setPage(n)}
-                  className={cn(
-                    "min-w-[1.75rem] rounded-md px-1.5 py-1 tabular-nums transition-colors",
-                    n === safePage
-                      ? "bg-white/10 font-medium text-foreground"
-                      : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
-                  )}
-                >
-                  {n + 1}
-                </button>
-              )
-            )}
-
-            <button
-              type="button"
-              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-              disabled={safePage >= totalPages - 1}
-              aria-label="Next page"
-              className="rounded-md border border-border p-1 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground disabled:pointer-events-none disabled:opacity-35"
-            >
-              <ChevronRight className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        </div>
-      )}
     </div>
+
+    {pager}
+    </>
   );
 }
 

@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { Sidebar } from "@/components/Sidebar";
 import { Topbar } from "@/components/Topbar";
 import { TabBar } from "@/components/TabBar";
+import { MobileTabBar } from "@/components/MobileTabBar";
 import { Toaster } from "@/components/Toaster";
 import { CommandMenu } from "@/components/CommandMenu";
 import { TabsProvider } from "@/lib/tabs";
@@ -130,9 +131,18 @@ export default function DashboardLayout({
         )}
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <TabBar />
-          <div className="min-h-0 min-w-0 flex-1 px-1.5 pb-1.5 sm:px-2 sm:pb-2 md:pl-0">
-            <div className="flex h-full min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-panel">
+          {/* Desktop metaphor. Nobody manages browser tabs on a phone, and
+              it cost ~55px at the top of every screen. State is untouched —
+              this is display only, so switching to a wider window restores
+              whatever was open. */}
+          <div className="hidden md:block">
+            <TabBar />
+          </div>
+          {/* The rounded panel inset is a desktop flourish: at 390px it spends ~24px
+              of width and the border reads as a box around the whole app. Edge to
+              edge on phones, inset from `md`. */}
+          <div className="min-h-0 min-w-0 flex-1 md:px-2 md:pb-2 md:pl-0">
+            <div className="flex h-full min-w-0 flex-col overflow-hidden border-border bg-panel md:rounded-lg md:border">
               <Topbar
                 profile={profile}
                 email={email}
@@ -142,13 +152,17 @@ export default function DashboardLayout({
               />
               <main
                 key={pathname}
-                className="animate-page min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 md:p-6"
+                // pb-20 clears the fixed bottom bar; without it the last row of every
+                // list is permanently behind it.
+                className="animate-page min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 pb-24 sm:p-4 sm:pb-24 md:p-6 md:pb-6"
               >
                 {children}
               </main>
             </div>
           </div>
         </div>
+
+        <MobileTabBar access={access} onOpenMenu={() => setMobileNav(true)} />
 
         <Toaster />
         <CommandMenu />

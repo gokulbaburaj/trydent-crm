@@ -134,16 +134,25 @@ export function FilterBar({
       : undefined;
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-col gap-2.5">
+      {/*
+        Two ragged wrapped rows on a phone read as clutter rather than
+        controls. Search gets its own full-width row; the facets scroll on one
+        line beneath it.
+
+        The facet wrapper is `sm:contents` so it dissolves back into this flex
+        container from `sm` up — desktop keeps its original wrapping layout and
+        only the phone gets the scroller.
+      */}
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
         {/* Free-text filter */}
-        <div className="relative">
+        <div className="relative w-full sm:w-auto">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <input
             value={filters.text}
             onChange={(e) => set({ text: e.target.value })}
             placeholder={placeholder}
-            className="h-8 w-52 rounded-md border border-white/15 bg-transparent pl-8 pr-7 text-[13px] text-foreground shadow-sm placeholder:text-muted-2 focus:border-primary/60 focus:outline-none focus:ring-[3px] focus:ring-primary/20"
+            className="h-9 w-full rounded-md border border-white/15 sm:h-8 sm:w-52 bg-transparent pl-8 pr-7 text-[13px] text-foreground shadow-sm placeholder:text-muted-2 focus:border-primary/60 focus:outline-none focus:ring-[3px] focus:ring-primary/20"
           />
           {filters.text && (
             <button
@@ -156,6 +165,7 @@ export function FilterBar({
           )}
         </div>
 
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 [&>*]:shrink-0 sm:contents sm:overflow-visible sm:pb-0">
         {statuses && (
           <Facet label={statusLabel} count={filters.status.length}>
             <MenuLabel>{statusLabel}</MenuLabel>
@@ -326,6 +336,7 @@ export function FilterBar({
             )}
           </Popover>
           {trailing}
+        </div>
         </div>
       </div>
 

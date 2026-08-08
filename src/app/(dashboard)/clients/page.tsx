@@ -131,6 +131,7 @@ export default function ClientsPage() {
     {
       header: "Company",
       icon: Building2,
+      mobile: "title" as const,
       width: "24%",
       render: (c) => <PersonCell name={c.company} subtitle={c.point_person} />,
       sortKey: (c) => c.company.toLowerCase(),
@@ -138,6 +139,7 @@ export default function ClientsPage() {
     {
       header: "Status",
       icon: CircleDot,
+      mobile: "trailing" as const,
       width: "180px",
       render: (c) => (
         <StatusPicker
@@ -158,6 +160,7 @@ export default function ClientsPage() {
     {
       header: "Owner",
       icon: User,
+      mobile: "meta" as const,
       width: "150px",
       render: (c) => ownerName(c.account_owner),
       sortKey: (c) =>
@@ -184,6 +187,7 @@ export default function ClientsPage() {
     {
       header: "Last Contact",
       icon: CalendarDays,
+      mobile: "meta" as const,
       width: "140px",
       render: (c) => formatDate(c.last_contact),
       sortKey: (c) => c.last_contact,
