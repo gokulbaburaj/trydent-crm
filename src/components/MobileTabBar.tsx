@@ -16,10 +16,10 @@ import { cn } from "@/lib/utils";
  *
  * ── Shape ────────────────────────────────────────────────────────────────
  * A floating pill rather than an edge-attached bar, which is what the BizLink
- * and Fishbowl references use. Worth noting *why* it ports so cleanly: both
- * render that pill DARK on a light app. We're dark already, so it needs to sit
- * a step lighter than the page (`--elevated` over `--background`) with a border
- * and a shadow, and it reads as floating for free.
+ * and Fishbowl references use — and they render it DARK on a light app, which
+ * is now exactly our situation too. `--foreground` as the pill surface with
+ * `--background` icons, so it reads as a solid object floating over the page
+ * rather than a panel cut out of it.
  *
  * Inactive items are icon-only; the active one expands to show its label. Pure
  * icon nav fails here specifically — Clients and Channels are both
@@ -63,8 +63,8 @@ export function MobileTabBar({
         aria-label="Primary"
         className={cn(
           "pointer-events-auto flex max-w-full items-center gap-1 rounded-full p-1.5",
-          "border border-white/10 bg-elevated/90 backdrop-blur-xl",
-          "shadow-xl shadow-black/50"
+          "bg-foreground/95 backdrop-blur-xl",
+          "shadow-xl shadow-black/20"
         )}
       >
         {visible.map((tab) => {
@@ -84,7 +84,7 @@ export function MobileTabBar({
                 "flex min-h-11 items-center justify-center gap-1.5 rounded-full px-3 transition-colors",
                 active
                   ? "bg-primary text-primary-foreground"
-                  : "min-w-11 text-muted-foreground active:bg-hover active:text-foreground"
+                  : "min-w-11 text-background/60 active:bg-background/10 active:text-background"
               )}
             >
               <tab.icon className="h-[18px] w-[18px] shrink-0" />
@@ -99,7 +99,7 @@ export function MobileTabBar({
         <button
           onClick={onOpenMenu}
           aria-label="More"
-          className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-hover active:text-foreground"
+          className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-background/60 transition-colors active:bg-background/10 active:text-background"
         >
           <Menu className="h-[18px] w-[18px] shrink-0" />
         </button>

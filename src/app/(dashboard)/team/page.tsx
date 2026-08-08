@@ -712,7 +712,7 @@ function TeamPicker({
     <div onClick={(e) => e.stopPropagation()}>
       <Popover
         trigger={
-          <button className="inline-flex items-center gap-1.5 rounded-md border border-white/5 bg-hover px-2 py-1 text-xs font-medium text-foreground-secondary hover:bg-active">
+          <button className="inline-flex items-center gap-1.5 rounded-md border border-border bg-hover px-2 py-1 text-xs font-medium text-foreground-secondary hover:bg-active">
             <Building2 className="h-3 w-3 text-muted-foreground" />
             {value || <span className="text-muted-2">No team</span>}
           </button>
@@ -779,7 +779,7 @@ function ManagerPicker({
     <div onClick={(e) => e.stopPropagation()}>
       <Popover
         trigger={
-          <button className="inline-flex items-center gap-1.5 rounded-md border border-white/5 bg-hover px-2 py-1 text-xs font-medium text-foreground-secondary hover:bg-active">
+          <button className="inline-flex items-center gap-1.5 rounded-md border border-border bg-hover px-2 py-1 text-xs font-medium text-foreground-secondary hover:bg-active">
             <User className="h-3 w-3 text-muted-foreground" />
             {current ? current.full_name : <span className="text-muted-2">No manager</span>}
           </button>

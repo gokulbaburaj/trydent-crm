@@ -407,7 +407,7 @@ function AccountsInner() {
                       split but hopeless for seeing one — you can't compare two
                       numbers that live in text fields. Bars sort themselves. */}
                   {lines.length > 1 && (
-                    <div className="mb-1 flex flex-col gap-1 rounded-lg border border-border-subtle bg-white/[0.015] p-2.5">
+                    <div className="mb-1 flex flex-col gap-1 rounded-lg border border-border-subtle bg-raise p-2.5">
                       <p className="px-2 pb-0.5 text-[11px] font-medium text-muted-2">
                         Split of {formatMoney(budget, ccy(project))}
                       </p>

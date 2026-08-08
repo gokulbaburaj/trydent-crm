@@ -164,7 +164,7 @@ function WorkloadCard({ workload }: { workload: MemberLoad[] }) {
           <div
             key={w.profile.id}
             style={staggerDelay(i)}
-            className="animate-row -mx-1.5 rounded-md px-1.5 py-0.5 transition-colors hover:bg-white/[0.03]"
+            className="animate-row -mx-1.5 rounded-md px-1.5 py-0.5 transition-colors hover:bg-surface-fill"
           >
             <BarRow
               label={w.profile.full_name}
@@ -220,7 +220,7 @@ function NeedsAttentionCard({
                 key={t.id}
                 href={`/projects/${t.project_id}`}
                 style={staggerDelay(i)}
-                className="animate-row flex items-center gap-2.5 rounded-md border border-border-subtle px-2.5 py-2 transition-colors hover:bg-white/[0.03]"
+                className="animate-row flex items-center gap-2.5 rounded-md border border-border-subtle px-2.5 py-2 transition-colors hover:bg-surface-fill"
               >
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[13px]">{t.name}</span>
@@ -361,7 +361,7 @@ function AwaitingApprovalCard({ d }: { d: Dash }) {
               key={t.id}
               href={`/projects/${t.project_id}`}
               style={staggerDelay(i)}
-              className="animate-row flex items-center gap-2.5 rounded-md border border-border-subtle px-2.5 py-2 transition-colors hover:bg-white/[0.03]"
+              className="animate-row flex items-center gap-2.5 rounded-md border border-border-subtle px-2.5 py-2 transition-colors hover:bg-surface-fill"
             >
               <span className="min-w-0 flex-1 truncate text-[13px]">{t.name}</span>
               <span className="truncate text-[11px] text-muted-2">
@@ -499,7 +499,7 @@ function QuietClientsCard({ d }: { d: Dash }) {
                 key={c.id}
                 href={`/clients/${c.id}`}
                 style={staggerDelay(i)}
-                className="animate-row flex items-center gap-2.5 rounded-md border border-border-subtle px-2.5 py-2 transition-colors hover:bg-white/[0.03]"
+                className="animate-row flex items-center gap-2.5 rounded-md border border-border-subtle px-2.5 py-2 transition-colors hover:bg-surface-fill"
               >
                 <span className="min-w-0 flex-1 truncate text-[13px]">{c.company}</span>
                 <span
@@ -537,7 +537,7 @@ function MeetingsCard({ d }: { d: Dash }) {
               key={a.id}
               href="/schedule"
               style={staggerDelay(i)}
-              className="animate-row flex items-center gap-2.5 rounded-md border border-border-subtle px-2.5 py-2 transition-colors hover:bg-white/[0.03]"
+              className="animate-row flex items-center gap-2.5 rounded-md border border-border-subtle px-2.5 py-2 transition-colors hover:bg-surface-fill"
             >
               <CalendarDays className="h-3.5 w-3.5 shrink-0 text-muted-2" />
               <span className="min-w-0 flex-1 truncate text-[13px]">{a.description}</span>

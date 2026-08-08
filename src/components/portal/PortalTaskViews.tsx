@@ -299,7 +299,7 @@ export function PortalTimeline({ tasks, projects }: ViewProps) {
                 {p.due_date ? `Due ${formatDate(p.due_date)}` : "No deadline"}
               </span>
             </div>
-            <div className="relative h-6 overflow-hidden rounded-md bg-white/[0.03]">
+            <div className="relative h-6 overflow-hidden rounded-md bg-surface-fill">
               {todayPct >= 0 && todayPct <= 100 && (
                 <span
                   aria-hidden

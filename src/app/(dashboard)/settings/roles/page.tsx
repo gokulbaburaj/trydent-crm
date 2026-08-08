@@ -74,7 +74,7 @@ function RolesInner() {
                   key={r.id}
                   href={`/settings/roles/${r.id}`}
                   style={staggerDelay(i)}
-                  className="animate-row group flex items-center gap-2.5 rounded-lg border border-border-subtle px-3 py-2.5 transition-colors hover:border-border hover:bg-white/[0.03]"
+                  className="animate-row group flex items-center gap-2.5 rounded-lg border border-border-subtle px-3 py-2.5 transition-colors hover:border-border hover:bg-surface-fill"
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">

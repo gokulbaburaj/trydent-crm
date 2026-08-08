@@ -215,7 +215,7 @@ export default function ClientDetailPage() {
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
           <Popover
             trigger={
-              <button className="flex h-9 items-center gap-2 rounded-md border border-white/5 bg-hover px-2.5 text-xs font-medium text-foreground-secondary hover:bg-active">
+              <button className="flex h-9 items-center gap-2 rounded-md border border-border bg-hover px-2.5 text-xs font-medium text-foreground-secondary hover:bg-active">
                 {client.account_owner ? (
                   <>
                     <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary/15 text-[8px] font-semibold text-primary">
@@ -250,7 +250,7 @@ export default function ClientDetailPage() {
             )}
           </Popover>
           {portal && (
-            <span className="inline-flex items-center gap-1.5 rounded border border-white/5 bg-hover px-2 py-1 text-xs font-medium text-foreground-secondary">
+            <span className="inline-flex items-center gap-1.5 rounded border border-border bg-hover px-2 py-1 text-xs font-medium text-foreground-secondary">
               <MonitorSmartphone className="h-3 w-3 text-muted-foreground" /> Portal: {portal.status}
             </span>
           )}

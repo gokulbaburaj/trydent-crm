@@ -265,13 +265,13 @@ export default function DashboardPage() {
             </div>
             <Link
               href="/pipeline"
-              className="flex items-center gap-1.5 rounded-md border border-white/10 bg-hover px-2.5 py-1.5 text-xs text-foreground-secondary transition-colors hover:bg-active hover:text-foreground"
+              className="flex items-center gap-1.5 rounded-md border border-input bg-hover px-2.5 py-1.5 text-xs text-foreground-secondary transition-colors hover:bg-active hover:text-foreground"
             >
               Open pipeline <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
 
-          <div className="mt-6 grid grid-cols-1 gap-x-8 gap-y-6 border-t border-white/10 pt-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-6 grid grid-cols-1 gap-x-8 gap-y-6 border-t border-input pt-5 sm:grid-cols-2 lg:grid-cols-4">
             <HeroStat
               label="Total pipeline value"
               value={formatCurrency(totalPipeline)}

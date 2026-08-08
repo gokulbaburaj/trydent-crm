@@ -263,7 +263,7 @@ export function Sidebar({
                     <div
                       className={cn(
                         "group/team flex items-center rounded pr-2 transition-colors hover:bg-hover",
-                        pathname === `/team/${teamId}` && "bg-white/[0.07]"
+                        pathname === `/team/${teamId}` && "bg-hover"
                       )}
                     >
                       <button

@@ -236,7 +236,7 @@ function RoleDetailInner() {
               <Link
                 key={p.id}
                 href="/team"
-                className="flex items-center gap-2.5 rounded-md border border-border-subtle px-2.5 py-2 transition-colors hover:bg-white/[0.03]"
+                className="flex items-center gap-2.5 rounded-md border border-border-subtle px-2.5 py-2 transition-colors hover:bg-surface-fill"
               >
                 <Avatar name={p.full_name} size="sm" />
                 <span className="min-w-0 flex-1 truncate text-[13px]">{p.full_name}</span>

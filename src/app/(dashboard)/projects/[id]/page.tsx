@@ -891,7 +891,7 @@ export default function ProjectDetailPage() {
             <Label>Client</Label>
           <Popover
             trigger={
-              <button className="flex h-9 max-w-full items-center gap-1.5 overflow-hidden rounded-md border border-white/5 bg-hover px-2.5 text-xs font-medium text-foreground-secondary hover:bg-active">
+              <button className="flex h-9 max-w-full items-center gap-1.5 overflow-hidden rounded-md border border-border bg-hover px-2.5 text-xs font-medium text-foreground-secondary hover:bg-active">
                 <Building2 className="h-3 w-3 shrink-0 text-muted-foreground" />
                 <span className="truncate">{clientName(project.client_id)}</span>
               </button>
@@ -928,7 +928,7 @@ export default function ProjectDetailPage() {
                   <button
                     type="button"
                     onClick={markContacted}
-                    className="flex items-center gap-1.5 rounded-md border border-white/5 bg-hover px-2.5 py-2 text-xs font-medium text-foreground-secondary transition-colors hover:border-primary/40 hover:bg-primary/10 hover:text-foreground"
+                    className="flex items-center gap-1.5 rounded-md border border-border bg-hover px-2.5 py-2 text-xs font-medium text-foreground-secondary transition-colors hover:border-primary/40 hover:bg-primary/10 hover:text-foreground"
                   >
                     <PhoneCall className="h-3 w-3" /> Contacted today
                   </button>
@@ -947,7 +947,7 @@ export default function ProjectDetailPage() {
             <Label>Lead</Label>
           <Popover
             trigger={
-              <button className="flex h-9 max-w-full items-center gap-2 overflow-hidden rounded-md border border-white/5 bg-hover px-2.5 text-xs font-medium text-foreground-secondary hover:bg-active">
+              <button className="flex h-9 max-w-full items-center gap-2 overflow-hidden rounded-md border border-border bg-hover px-2.5 text-xs font-medium text-foreground-secondary hover:bg-active">
                 {project.owner ? (
                   <>
                     <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[8px] font-semibold text-primary">
@@ -986,7 +986,7 @@ export default function ProjectDetailPage() {
             <Label>Team</Label>
             <Popover
               trigger={
-                <button className="flex h-9 max-w-full items-center gap-2 overflow-hidden rounded-md border border-white/5 bg-hover px-2.5 text-xs font-medium text-foreground-secondary hover:bg-active">
+                <button className="flex h-9 max-w-full items-center gap-2 overflow-hidden rounded-md border border-border bg-hover px-2.5 text-xs font-medium text-foreground-secondary hover:bg-active">
                   {projectMembers.length > 0 ? (
                     <>
                       <AvatarStack people={projectMembers} />
@@ -1131,7 +1131,7 @@ export default function ProjectDetailPage() {
                   onMouseLeave={() => setHoverTask(null)}
                   className={cn(
                     "group flex items-center gap-2.5 rounded px-1.5 py-1.5 transition-colors",
-                    hoverTask === t.id ? "bg-white/[0.07]" : "hover:bg-hover"
+                    hoverTask === t.id ? "bg-hover" : "hover:bg-hover"
                   )}
                 >
                   <button
@@ -1221,7 +1221,7 @@ export default function ProjectDetailPage() {
                     type="button"
                     onClick={() => openMeeting(a)}
                     title="Edit this meeting"
-                    className="border-t border-border-subtle px-1 py-2.5 text-left transition-colors first:border-0 hover:bg-white/[0.03]"
+                    className="border-t border-border-subtle px-1 py-2.5 text-left transition-colors first:border-0 hover:bg-surface-fill"
                   >
                     <p className="text-sm font-medium text-foreground-secondary">
                       {format(parseISO(a.activity_date), "HH:mm")}
@@ -1476,7 +1476,7 @@ export default function ProjectDetailPage() {
                       "flex items-center gap-1.5 rounded-full border px-2 py-1 text-xs transition-colors",
                       on
                         ? "border-primary/40 bg-primary/15 text-foreground"
-                        : "border-white/10 text-muted-foreground hover:bg-hover"
+                        : "border-input text-muted-foreground hover:bg-hover"
                     )}
                   >
                     <Avatar name={p.full_name} url={p.avatar_url} size="xs" />

@@ -568,7 +568,7 @@ function PortalInner() {
                               ?.scrollIntoView({ behavior: "smooth", block: "start" })
                           );
                         }}
-                        className="group rounded-xl border border-border bg-surface p-4 text-left lift shadow-sm hover:border-primary/30 hover:bg-white/[0.04]"
+                        className="group rounded-xl border border-border bg-surface p-4 text-left lift shadow-sm hover:border-primary/30 hover:bg-surface-fill"
                       >
                         <div className="flex items-center justify-between gap-2">
                           <span className="truncate text-sm font-medium">{p.name}</span>
@@ -657,7 +657,7 @@ function PortalInner() {
                       <div key={p.id} className="border-b border-border-subtle last:border-0">
                         <button
                           onClick={() => setOpenProject(open ? null : p.id)}
-                          className="flex w-full items-center gap-2 px-3.5 py-2.5 text-left hover:bg-white/[0.03]"
+                          className="flex w-full items-center gap-2 px-3.5 py-2.5 text-left hover:bg-surface-fill"
                         >
                           {open ? (
                             <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
@@ -749,7 +749,7 @@ function PortalInner() {
                                           href={l.url}
                                           target="_blank"
                                           rel="noreferrer"
-                                          className="flex items-center gap-1 rounded-md border border-border-subtle bg-white/[0.03] px-2 py-0.5 text-[11px] text-foreground-secondary transition-colors hover:border-primary/30 hover:text-primary"
+                                          className="flex items-center gap-1 rounded-md border border-border-subtle bg-surface-fill px-2 py-0.5 text-[11px] text-foreground-secondary transition-colors hover:border-primary/30 hover:text-primary"
                                         >
                                           <FileText className="h-3 w-3" />
                                           <span className="max-w-[14rem] truncate">{l.title}</span>
@@ -864,7 +864,7 @@ function PortalInner() {
                       href={link.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="group flex items-center gap-3 rounded-xl border border-border bg-surface p-3.5 lift shadow-sm hover:border-primary/30 hover:bg-white/[0.04]"
+                      className="group flex items-center gap-3 rounded-xl border border-border bg-surface p-3.5 lift shadow-sm hover:border-primary/30 hover:bg-surface-fill"
                     >
                       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/15 text-primary">
                         <FileText className="h-4 w-4" />
@@ -1012,7 +1012,7 @@ function PortalInner() {
                             key={d.id}
                             type="button"
                             onClick={() => openDocument(d)}
-                            className="group flex items-center gap-3 rounded-xl border border-border bg-surface p-3.5 text-left lift shadow-sm hover:border-primary/30 hover:bg-white/[0.04]"
+                            className="group flex items-center gap-3 rounded-xl border border-border bg-surface p-3.5 text-left lift shadow-sm hover:border-primary/30 hover:bg-surface-fill"
                           >
                             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/15 text-primary">
                               <FileText className="h-4 w-4" />
@@ -1211,7 +1211,7 @@ function PortalInner() {
                             "max-w-[85%] rounded-lg px-2.5 py-1.5",
                             mine
                               ? "self-end bg-primary/15 text-foreground"
-                              : "self-start border border-border-subtle bg-white/[0.03]"
+                              : "self-start border border-border-subtle bg-surface-fill"
                           )}
                         >
                           <p className="text-[13px] leading-snug">{m.body}</p>

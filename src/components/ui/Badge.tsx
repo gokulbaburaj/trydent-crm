@@ -84,7 +84,7 @@ export function Badge({
   return (
     <ShadBadge
       variant="outline"
-      className={cn("gap-1.5 border-white/5 px-2.5 py-0.5", toneClasses[tone], className)}
+      className={cn("gap-1.5 border-border px-2.5 py-0.5", toneClasses[tone], className)}
     >
       {dot && <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", dotClasses[tone])} />}
       {children}

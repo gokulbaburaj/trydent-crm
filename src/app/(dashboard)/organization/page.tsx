@@ -399,7 +399,7 @@ export default function OrganizationPage() {
           <button
             key={card.label}
             onClick={() => openInNewTab(card.href, card.label)}
-            className="group rounded-xl border border-border bg-surface p-4 text-left lift shadow-sm hover:border-primary/30 hover:bg-white/[0.04]"
+            className="group rounded-xl border border-border bg-surface p-4 text-left lift shadow-sm hover:border-primary/30 hover:bg-surface-fill"
           >
             <div className="flex items-center gap-2">
               <card.icon className="h-4 w-4 text-muted-foreground" />

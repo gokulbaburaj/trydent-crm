@@ -289,7 +289,7 @@ function HireForm({
         <div>
           <Label>Team</Label>
           {/* Read-only: the role decides it, so the two can't disagree. */}
-          <div className="flex h-9 items-center rounded-md border border-white/10 bg-raise px-3 text-sm text-foreground-secondary">
+          <div className="flex h-9 items-center rounded-md border border-input bg-raise px-3 text-sm text-foreground-secondary">
             {chosenRole?.team ?? "Set by the role"}
           </div>
         </div>
@@ -664,7 +664,7 @@ function Applicants({ onHired }: { onHired: (a: Applicant) => void }) {
                 style={staggerDelay(i)}
                 className={cn(
                   "animate-row group flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-2",
-                  "rounded-lg border border-border bg-surface px-4 py-3 transition-colors hover:bg-white/[0.03]",
+                  "rounded-lg border border-border bg-surface px-4 py-3 transition-colors hover:bg-surface-fill",
                   a.stage === "rejected" && "opacity-45 hover:opacity-90"
                 )}
               >

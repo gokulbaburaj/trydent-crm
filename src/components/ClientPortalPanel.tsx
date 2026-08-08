@@ -605,7 +605,7 @@ export function ClientPortalPanel({
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <Label>Username (auto-generated)</Label>
-                <div className="flex h-9 items-center rounded-md border border-edge bg-white/[0.03] px-3 text-sm text-foreground-secondary">
+                <div className="flex h-9 items-center rounded-md border border-edge bg-surface-fill px-3 text-sm text-foreground-secondary">
                   {loginUsername}
                 </div>
               </div>
@@ -706,7 +706,7 @@ export function ClientPortalPanel({
                   "max-w-[85%] rounded-lg px-2.5 py-1.5",
                   mine
                     ? "self-end bg-primary/15 text-foreground"
-                    : "self-start border border-border-subtle bg-white/[0.03]"
+                    : "self-start border border-border-subtle bg-surface-fill"
                 )}
               >
                 <p className="text-[13px] leading-snug">{m.body}</p>

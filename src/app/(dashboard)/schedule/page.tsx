@@ -126,13 +126,19 @@ function eventHue(a: Activity): string {
   return EVENT_HUES[Math.abs(hash) % EVENT_HUES.length];
 }
 
-/** Week-grid block: a wash, a saturated left edge, and text in the same hue. */
+/**
+ * Week-grid block: a wash, a saturated left edge, and text in the same hue.
+ *
+ * The label mixes toward BLACK. It mixed toward white while the app was dark —
+ * a light tint on a dark block. On a pale block that same tint is invisible,
+ * so the direction flips with the theme.
+ */
 function eventColor(a: Activity) {
   const hue = eventHue(a);
   return {
-    bg: `color-mix(in oklab, ${hue} 18%, transparent)`,
+    bg: `color-mix(in oklab, ${hue} 16%, transparent)`,
     bar: hue,
-    fg: `color-mix(in oklab, ${hue} 60%, white)`,
+    fg: `color-mix(in oklab, ${hue} 55%, black)`,
   };
 }
 
@@ -596,7 +602,7 @@ export default function SchedulePage() {
                         "flex items-center gap-1.5 rounded-full border px-2 py-1 text-xs transition-colors",
                         selected
                           ? "border-primary/40 bg-primary/15 text-foreground"
-                          : "border-white/10 text-muted-foreground hover:bg-hover"
+                          : "border-input text-muted-foreground hover:bg-hover"
                       )}
                     >
                       <Avatar name={p.full_name} url={p.avatar_url} size="xs" />

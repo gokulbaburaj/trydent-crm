@@ -58,7 +58,7 @@ function TeamsInner() {
                   key={t.id}
                   href={`/settings/teams/${t.id}`}
                   style={staggerDelay(i)}
-                  className="animate-row group flex items-center gap-2.5 rounded-lg border border-border-subtle px-3 py-2.5 transition-colors hover:border-border hover:bg-white/[0.03]"
+                  className="animate-row group flex items-center gap-2.5 rounded-lg border border-border-subtle px-3 py-2.5 transition-colors hover:border-border hover:bg-surface-fill"
                 >
                   <span className="min-w-0 flex-1 truncate text-[13.5px] font-medium">
                     {t.name}

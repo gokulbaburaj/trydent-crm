@@ -167,7 +167,7 @@ export default function MyWorkPage() {
                 <div
                   key={t.id}
                   style={{ animationDelay: `${Math.min(i, 10) * 20}ms` }}
-                  className="animate-row group flex items-center gap-3 border-b border-border-subtle px-3 py-2.5 last:border-0 hover:bg-white/[0.03]"
+                  className="animate-row group flex items-center gap-3 border-b border-border-subtle px-3 py-2.5 last:border-0 hover:bg-surface-fill"
                 >
                   <PriorityFlag priority={t.priority} showNormal />
                   <StatusPicker

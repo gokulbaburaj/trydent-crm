@@ -7,8 +7,14 @@
 
 /*
   shadcn/ui token convention (https://ui.shadcn.com/docs/theming)
-  Dark-only app: dark values live directly in :root.
+  Light app. Values live directly in :root — there is no `.dark` class.
   --primary is user-adjustable from Settings (see src/lib/theme.tsx).
+
+  Went light on 8 Aug, following the Salesforce/RonDesignLab reference. This
+  was only survivable because the 268 hardcoded `bg-white/5`-style utilities
+  had already been moved behind --hover / --active / --raise / --surface /
+  --edge. White at 5% over a white page is nothing at all; before that sweep
+  this change would have silently killed every hover state in the app.
 */
 :root {
   --radius: 0.625rem;
@@ -27,21 +33,21 @@
       elevated    popovers, menus,      sits above a card without a heavy
                   toasts, dialogs       shadow doing the work
   */
-  --background: #08080a;
-  --foreground: #fafafa;
-  --card: #141416;
-  --card-foreground: #fafafa;
-  --popover: #1c1c1f;
-  --popover-foreground: #fafafa;
-  --elevated: #1c1c1f;
+  --background: #f4f5f2;   /* warm off-white page, per the reference */
+  --foreground: #16171b;
+  --card: #ffffff;
+  --card-foreground: #16171b;
+  --popover: #ffffff;
+  --popover-foreground: #16171b;
+  --elevated: #ffffff;
   --primary: #5e6ad2;
   --primary-foreground: #ffffff;
-  --secondary: #262626;
-  --secondary-foreground: #fafafa;
-  --muted: #262626;
-  --muted-foreground: #a3a3a3;
-  --accent: #262626;
-  --accent-foreground: #fafafa;
+  --secondary: #ecedea;
+  --secondary-foreground: #16171b;
+  --muted: #ecedea;
+  --muted-foreground: #6b6f76;
+  --accent: #ecedea;
+  --accent-foreground: #16171b;
   --destructive: #eb5757;
   --destructive-foreground: #ffffff;
   /*
@@ -50,8 +56,8 @@
     barely perceptible — they catch an edge rather than outline a shape.
     Inputs keep a slightly stronger edge because a field has to look editable.
   */
-  --border: rgba(255, 255, 255, 0.055);
-  --input: rgba(255, 255, 255, 0.1);
+  --border: rgba(0, 0, 0, 0.08);
+  --input: rgba(0, 0, 0, 0.12);
   --ring: var(--primary);
 
   --chart-1: var(--primary);
@@ -61,12 +67,12 @@
   --chart-5: #d95c8a;
 
   --sidebar: var(--background);
-  --sidebar-foreground: #fafafa;
+  --sidebar-foreground: #16171b;
   --sidebar-primary: var(--primary);
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: rgba(255, 255, 255, 0.055);
-  --sidebar-accent-foreground: #fafafa;
-  --sidebar-border: rgba(255, 255, 255, 0.05);
+  --sidebar-accent: rgba(0, 0, 0, 0.05);
+  --sidebar-accent-foreground: #16171b;
+  --sidebar-border: rgba(0, 0, 0, 0.07);
   --sidebar-ring: var(--ring);
 
   /*
@@ -81,16 +87,18 @@
     Values below are byte-identical to what they replaced, so this indirection
     is invisible until the palette actually moves.
   */
-  --hover: rgba(255, 255, 255, 0.05);   /* was bg-white/5  */
-  --active: rgba(255, 255, 255, 0.10);  /* was bg-white/10 */
-  --raise: rgba(255, 255, 255, 0.02);   /* was bg-white/[0.02] — faint lift */
-  --edge: rgba(255, 255, 255, 0.15);    /* was border-white/15 on controls */
+  /* Black-alpha now. This single block is what 268 call sites resolve to. */
+  --hover: rgba(0, 0, 0, 0.045);
+  --active: rgba(0, 0, 0, 0.08);
+  --raise: rgba(0, 0, 0, 0.02);
+  --edge: rgba(0, 0, 0, 0.14);
+  --surface: rgba(0, 0, 0, 0.03);
 
   /* ---- Trydent extras (kept alongside the shadcn set) ---- */
-  --panel: #0e0e10;                          /* main canvas between sidebar and cards */
-  --border-subtle: rgba(255, 255, 255, 0.035);
-  --foreground-secondary: #d4d4d4;
-  --muted-2: #737373;
+  --panel: #f4f5f2;                          /* main canvas between sidebar and cards */
+  --border-subtle: rgba(0, 0, 0, 0.05);
+  --foreground-secondary: #3f434a;
+  --muted-2: #8b9098;
 
   /*
     Room the floating mobile nav needs at the bottom of a scroller.
@@ -116,16 +124,20 @@
     `activities.color` is an arbitrary hex that no fixed token can name.
 
     Same shape either way: `-bg` a low-alpha wash, `-bar` one saturated edge,
-    `-fg` label text in a bright tint of the hue. Never a pale fill with dark
-    text — that's a light-mode card in a dark app, which is what shipped
-    before 4 Aug. `-bg` stays rgba so hour lines show through the block.
+    `-fg` label text in the same hue. `-bg` stays rgba so hour lines show
+    through the block.
+
+    Inverted for light on 8 Aug: `-fg` was a bright tint (readable on a dark
+    block) and is now a dark shade (readable on a pale one). Getting this
+    backwards is exactly the bug that shipped before 4 Aug, in the other
+    direction.
   */
-  --event-yellow-bg: rgba(217, 165, 63, 0.16);
+  --event-yellow-bg: rgba(217, 165, 63, 0.18);
   --event-yellow-bar: #d9a53f;
-  --event-yellow-fg: #eccb85;
-  --event-indigo-bg: rgba(108, 116, 221, 0.20);
+  --event-yellow-fg: #7a5a12;
+  --event-indigo-bg: rgba(108, 116, 221, 0.14);
   --event-indigo-bar: #6c74dd;
-  --event-indigo-fg: #b3b8f2;
+  --event-indigo-fg: #343b8f;
   /*
     Bklit chart chrome. The @bklit registry ships LIGHT defaults here, which in
     this dark-only app rendered a white chart background, near-white grid lines
@@ -138,14 +150,14 @@
     the page foreground — near-white tick labels shout over the data. These
     match their published dark values while the series colours stay ours.
   */
-  --chart-foreground: oklch(0.55 0 0);
-  --chart-foreground-muted: oklch(0.45 0 0);
+  --chart-foreground: oklch(0.45 0 0);
+  --chart-foreground-muted: oklch(0.58 0 0);
   --chart-line-primary: var(--chart-1);
   --chart-line-secondary: var(--chart-2);
-  --chart-crosshair: oklch(0.5 0 0);
-  --chart-grid: oklch(0.28 0 0);
+  --chart-crosshair: oklch(0.6 0 0);
+  --chart-grid: oklch(0.9 0 0);
   --chart-brush-border: var(--border);
-  --chart-tooltip-background: oklch(0.18 0 0 / 0.92);
+  --chart-tooltip-background: oklch(1 0 0 / 0.96);
   --chart-tooltip-foreground: var(--foreground);
   --chart-tooltip-muted: var(--muted-foreground);
   --chart-marker-background: var(--card);
@@ -167,12 +179,12 @@
 
     Consumed via lib/chartSeries.tsx, which also owns the hatch order.
   */
-  --chart-scale-01: oklch(1 0 0 / 0.06);
-  --chart-scale-02: oklch(1 0 0 / 0.13);
-  --chart-scale-03: color-mix(in oklab, var(--primary) 30%, transparent);
-  --chart-scale-04: color-mix(in oklab, var(--primary) 58%, transparent);
+  --chart-scale-01: oklch(0 0 0 / 0.07);
+  --chart-scale-02: oklch(0 0 0 / 0.13);
+  --chart-scale-03: color-mix(in oklab, var(--primary) 32%, white);
+  --chart-scale-04: color-mix(in oklab, var(--primary) 62%, white);
   --chart-scale-05: var(--primary);
-  --chart-scale-pattern-color: oklch(1 0 0 / 0.15);
+  --chart-scale-pattern-color: oklch(0 0 0 / 0.15);
   --highlight: oklch(0.852 0.199 91.936);
 }
 
@@ -214,6 +226,7 @@
   --color-active: var(--active);
   --color-raise: var(--raise);
   --color-edge: var(--edge);
+  --color-surface-fill: var(--surface);
 
   /* Trydent aliases so existing markup keeps working */
   --color-panel: var(--panel);
