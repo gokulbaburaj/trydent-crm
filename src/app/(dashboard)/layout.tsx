@@ -151,9 +151,9 @@ export default function DashboardLayout({
               />
               <main
                 key={pathname}
-                // pb-20 clears the fixed bottom bar; without it the last row of every
-                // list is permanently behind it.
-                className="animate-page min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 pb-24 sm:p-4 sm:pb-24 md:p-6 md:pb-6"
+                // Bottom clearance comes from --mobile-nav-clear so the pill's
+                // real height and the safe area stay in one place. See globals.css.
+                className="animate-page min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-4 pb-[var(--mobile-nav-clear)] sm:p-4 md:p-6 md:pb-6"
               >
                 {children}
               </main>

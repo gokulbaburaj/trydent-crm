@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Archive, Hash, Info, MessageSquare, Plus, Trash2, Users } from "lucide-react";
+import { Archive, ChevronDown, Hash, Info, MessageSquare, Plus, Trash2, Users } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -196,6 +196,7 @@ function Channels() {
 
   const [activeId, setActiveId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [listOpen, setListOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [draft, setDraft] = useState("");
 
@@ -296,10 +297,16 @@ function Channels() {
    */
   const composer = useRef<MentionInputHandle>(null);
 
-  return (
-    <div className="flex h-full min-h-0 gap-3">
-      {/* Channel list */}
-      <aside className="hidden w-52 shrink-0 flex-col gap-1 sm:flex">
+  /*
+   * The channel list, defined once.
+   *
+   * It used to be `hidden ... sm:flex`, which on a phone meant there was no
+   * channel list AT ALL — you couldn't switch channels or create one, only see
+   * whichever was already open. Same markup now serves the desktop column and
+   * a mobile slide-over.
+   */
+  const channelList = (
+    <>
         <div className="mb-1 flex items-center justify-between px-1">
           <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
             Channels
@@ -336,7 +343,10 @@ function Channels() {
             key={c.id}
             channel={c}
             active={c.id === activeChannelId}
-            onClick={() => setActiveId(c.id)}
+            onClick={() => {
+              setActiveId(c.id);
+              setListOpen(false); // no-op on desktop; dismisses the slide-over on a phone
+            }}
           />
         ))}
 
@@ -351,7 +361,10 @@ function Channels() {
             channel={c}
             active={c.id === activeChannelId}
             hint={teamName(c)}
-            onClick={() => setActiveId(c.id)}
+            onClick={() => {
+              setActiveId(c.id);
+              setListOpen(false); // no-op on desktop; dismisses the slide-over on a phone
+            }}
           />
         ))}
 
@@ -360,7 +373,27 @@ function Channels() {
             No channels yet. Create one with the + above.
           </p>
         )}
-      </aside>
+    </>
+  );
+
+  return (
+    <div className="flex h-full min-h-0 gap-3">
+      {/* Channel list */}
+      <aside className="hidden w-52 shrink-0 flex-col gap-1 sm:flex">{channelList}</aside>
+
+      {/* Phone: the same list as a slide-over. Matches the shell's nav drawer
+          so every overlay in the app opens the same way. */}
+      {listOpen && (
+        <div className="fixed inset-0 z-[110] sm:hidden">
+          <div
+            className="animate-fade absolute inset-0 bg-black/60"
+            onClick={() => setListOpen(false)}
+          />
+          <div className="animate-page absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col gap-1 overflow-y-auto border-r border-border bg-background p-3">
+            {channelList}
+          </div>
+        </div>
+      )}
 
       {/* Conversation */}
       <section className="flex min-h-0 min-w-0 flex-1 flex-col rounded-lg border border-border bg-surface">
@@ -377,8 +410,19 @@ function Channels() {
         ) : (
           <>
             <header className="flex shrink-0 items-center gap-2 border-b border-border-subtle px-4 py-2.5">
-              <Hash className="h-4 w-4 text-muted-2" />
-              <span className="text-[14px] font-semibold">{active.name}</span>
+              <button
+                onClick={() => setListOpen(true)}
+                // min-h-11 = 44px. Measured at 21px, which is half a touch
+                // target — fine as a desktop label, not as the only way to
+                // change channel on a phone. Negative margin keeps the header
+                // the same height while the hit area grows.
+                className="-my-2 flex min-h-11 min-w-0 items-center gap-2 rounded-md px-1 text-left transition-colors active:bg-white/5 sm:my-0 sm:min-h-0 sm:pointer-events-none sm:px-0"
+                aria-label="Switch channel"
+              >
+                <Hash className="h-4 w-4 shrink-0 text-muted-2" />
+                <span className="truncate text-[14px] font-semibold">{active.name}</span>
+                <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-2 sm:hidden" />
+              </button>
               {active.topic && (
                 <span className="min-w-0 flex-1 truncate text-[12px] text-muted-foreground">
                   {active.topic}

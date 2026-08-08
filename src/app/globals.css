@@ -74,6 +74,17 @@
   --border-subtle: rgba(255, 255, 255, 0.035);
   --foreground-secondary: #d4d4d4;
   --muted-2: #737373;
+
+  /*
+    Room the floating mobile nav needs at the bottom of a scroller.
+
+    Derived, not guessed: the pill is 44px of target + 2×6px of padding = 56px,
+    it floats 12px above the bezel, and the home indicator wants
+    env(safe-area-inset-bottom). A guessed `pb-24` came out ~6px short and hid
+    the Channels composer behind the pill. Anything that pins content to the
+    bottom of the viewport on mobile should use this.
+  */
+  --mobile-nav-clear: calc(env(safe-area-inset-bottom) + 5.5rem);
   --success: #4cb782;
   --warning: #f2994a;
   --danger: var(--destructive);
@@ -340,6 +351,30 @@ button:not(:disabled):active,
 ::view-transition-group(*) {
   animation-duration: 280ms;
   animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ---- iOS: stop the zoom-on-focus ------------------------------------- */
+/*
+  Safari on iOS zooms the whole page whenever you focus an input whose
+  font-size is under 16px, and it does NOT zoom back out. Several of our fields
+  are 13px by design (filter search, the composer, inline editors), so typing
+  anywhere zoomed the layout and stranded you there.
+
+  Fixed globally rather than field by field: there are dozens of inputs and a
+  per-component rule drifts the moment someone adds another. 16px only below
+  the `sm` breakpoint, so the desktop type scale is untouched.
+
+  Not `maximum-scale=1` on the viewport — that fixes the zoom by disabling
+  pinch-zoom for everyone, which breaks the page for anyone who needs to
+  magnify it.
+*/
+@media (max-width: 639px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  textarea,
+  select,
+  [contenteditable="true"] {
+    font-size: 16px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

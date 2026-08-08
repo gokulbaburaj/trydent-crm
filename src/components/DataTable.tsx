@@ -325,15 +325,24 @@ export function DataTable<T>({
         </div>
       ) : (
         <ul className="flex flex-col gap-2.5">
-          {visible.map((row) => {
+          {visible.map((row, idx) => {
             const id = rowKey(row);
             return (
               <li key={id}>
                 <div
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
+                  /* Same staggered entrance the table rows get. Without it the
+                     card list appeared fully formed in one frame while every
+                     other list in the app eases in — which is most of why
+                     mobile felt dead. Capped at 12 so a long page doesn't
+                     finish arriving half a second after you look at it. */
+                  style={{ animationDelay: `${Math.min(idx, 12) * 22}ms` }}
                   className={cn(
-                    "flex flex-col gap-3 rounded-xl border border-border bg-surface p-3.5 transition-colors",
-                    onRowClick && "cursor-pointer active:bg-white/5",
+                    "animate-row flex flex-col gap-3 rounded-xl border border-border bg-surface p-3.5",
+                    // transition-[transform] too: a phone has no hover, so a
+                    // press is the ONLY feedback a card can give.
+                    "transition-[background-color,transform] duration-150",
+                    onRowClick && "cursor-pointer active:scale-[0.99] active:bg-white/5",
                     isDimmed?.(row) && "opacity-45"
                   )}
                 >
