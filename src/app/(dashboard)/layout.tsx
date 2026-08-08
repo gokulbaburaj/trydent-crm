@@ -148,7 +148,6 @@ export default function DashboardLayout({
                 email={email}
                 onSignOut={signOut}
                 title={title}
-                onMenuClick={() => setMobileNav(true)}
               />
               <main
                 key={pathname}

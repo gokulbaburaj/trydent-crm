@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, LogOut, Menu } from "lucide-react";
+import { Search, LogOut } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Popover, MenuItem, MenuSeparator } from "@/components/ui/Popover";
 import { openCommandMenu } from "@/components/CommandMenu";
@@ -12,25 +12,16 @@ export function Topbar({
   email,
   onSignOut,
   title,
-  onMenuClick,
 }: {
   profile: Profile | null;
   /** From the auth session — profiles no longer carries an email column. */
   email: string | null;
   onSignOut: () => void;
   title?: string;
-  onMenuClick?: () => void;
 }) {
   return (
     <header className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 md:px-6">
       <div className="flex min-w-0 items-center gap-2">
-        <button
-          onClick={onMenuClick}
-          className="rounded p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground md:hidden"
-          title="Menu"
-        >
-          <Menu className="h-4 w-4" />
-        </button>
         <h1 className="truncate text-[15px] font-semibold text-foreground">
           {title ?? "Overview"}
         </h1>
