@@ -147,7 +147,7 @@ export function FilterBar({
       <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
         {/* Free-text filter */}
         <div className="relative w-full sm:w-auto">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground sm:left-2.5 sm:h-3.5 sm:w-3.5" />
           <input
             value={filters.text}
             onChange={(e) => set({ text: e.target.value })}
@@ -276,7 +276,7 @@ export function FilterBar({
           <Popover
             align="right"
             trigger={
-              <button className="flex h-8 items-center gap-1.5 rounded-md border border-border bg-surface px-2.5 text-xs font-medium text-foreground-secondary hover:bg-white/5 hover:text-foreground">
+              <button className="flex min-h-11 items-center gap-1.5 rounded-full px-2 text-xs font-medium text-muted-foreground transition-colors sm:h-8 sm:min-h-0 sm:rounded-md sm:border sm:border-border sm:bg-surface sm:px-2.5 sm:text-foreground-secondary sm:hover:bg-white/5 sm:hover:text-foreground">
                 <Bookmark className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className="max-w-36 truncate">{activeView?.name ?? "Views"}</span>
                 <ChevronDown className="h-3 w-3 text-muted-foreground" />
@@ -399,10 +399,12 @@ function Facet({
       trigger={
         <button
           className={cn(
-            "flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-xs font-medium transition-colors",
+            "flex items-center gap-1.5 rounded-full text-xs font-medium transition-colors",
+            // Phone: no border, no fill, a 44px target. Desktop: the pill.
+            "min-h-11 px-2 sm:h-8 sm:min-h-0 sm:rounded-md sm:border sm:px-2.5",
             count > 0
-              ? "border-primary/40 bg-primary/10 text-primary"
-              : "border-border bg-surface text-foreground-secondary hover:bg-white/5 hover:text-foreground"
+              ? "text-primary sm:border-primary/40 sm:bg-primary/10"
+              : "text-muted-foreground sm:border-border sm:bg-surface sm:text-foreground-secondary sm:hover:bg-white/5 sm:hover:text-foreground"
           )}
         >
           <ListFilter className="h-3 w-3 opacity-70" />

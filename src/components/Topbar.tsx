@@ -1,6 +1,7 @@
 "use client";
 
 import { Search, LogOut } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Avatar } from "@/components/ui/Avatar";
 import { Popover, MenuItem, MenuSeparator } from "@/components/ui/Popover";
 import { openCommandMenu } from "@/components/CommandMenu";
@@ -20,9 +21,17 @@ export function Topbar({
   title?: string;
 }) {
   return (
-    <header className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 md:px-6">
+    <header
+      className={cn(
+        "flex items-center justify-between gap-3 px-4",
+        // Phone: a large title sitting in space, no dividing rule. Desktop keeps
+        // the compact bar — at 1400px a 28px title is shouting.
+        "pb-2 pt-5",
+        "md:border-b md:border-border md:px-6 md:py-3"
+      )}
+    >
       <div className="flex min-w-0 items-center gap-2">
-        <h1 className="truncate text-[15px] font-semibold text-foreground">
+        <h1 className="truncate text-[26px] font-semibold leading-tight tracking-tight text-foreground md:text-[15px] md:tracking-normal">
           {title ?? "Overview"}
         </h1>
       </div>
