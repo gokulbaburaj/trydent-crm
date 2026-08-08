@@ -735,12 +735,23 @@ export default function PipelinePage() {
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
+              {/*
+                `|| ""`, not `?? 0`.
+
+                A zero renders as the literal string "0", so the caret lands
+                after it and every keystroke appends: 0 → 01 → 015000. Showing
+                an empty field with a "0" placeholder means typing replaces
+                rather than extends, and `Number("")` is 0 so clearing the box
+                still stores zero. `accounts/page.tsx` already did this for
+                budgets; it just never reached here.
+              */}
               <div>
                 <Label>Deal Value ({editing.currency ?? base})</Label>
                 <Input
                   type="number"
                   min={0}
-                  value={editing.deal_value ?? 0}
+                  placeholder="0"
+                  value={editing.deal_value || ""}
                   onChange={(e) => setEditing({ ...editing, deal_value: Number(e.target.value) })}
                 />
               </div>
@@ -749,7 +760,8 @@ export default function PipelinePage() {
                 <Input
                   type="number"
                   min={0}
-                  value={editing.paid ?? 0}
+                  placeholder="0"
+                  value={editing.paid || ""}
                   onChange={(e) => setEditing({ ...editing, paid: Number(e.target.value) })}
                 />
               </div>

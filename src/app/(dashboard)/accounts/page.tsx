@@ -491,7 +491,8 @@ function AccountsInner() {
                                 max="100"
                                 step="0.1"
                                 aria-label={`Share for ${p?.full_name ?? "member"}`}
-                                value={a.percent ?? 0}
+                                placeholder="0"
+                                value={a.percent || ""}
                                 onChange={(e) =>
                                   updateAllocation(a.id, {
                                     percent: Number(e.target.value) || 0,
@@ -510,7 +511,8 @@ function AccountsInner() {
                               min="0"
                               step="0.01"
                               aria-label={`Amount for ${p?.full_name ?? "member"}`}
-                              value={a.amount}
+                              placeholder="0"
+                              value={a.amount || ""}
                               onChange={(e) =>
                                 updateAllocation(a.id, { amount: Number(e.target.value) || 0 })
                               }
