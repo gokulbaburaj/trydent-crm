@@ -485,7 +485,7 @@ function PortalInner() {
         <button
           onClick={signOut}
           title="Sign out"
-          className="rounded p-2 text-muted-foreground hover:bg-white/5 hover:text-foreground"
+          className="rounded p-2 text-muted-foreground hover:bg-hover hover:text-foreground"
         >
           <LogOut className="h-4 w-4" />
         </button>
@@ -581,7 +581,7 @@ function PortalInner() {
                             <span className="w-9 shrink-0 text-xs font-medium tabular-nums text-foreground-secondary">
                               {pct.toFixed(0)}%
                             </span>
-                            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
+                            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-active">
                               <div
                                 className={cn(
                                   "h-full rounded-full transition-all",
@@ -624,7 +624,7 @@ function PortalInner() {
                         className={cn(
                           "flex items-center gap-1.5 rounded-md px-2 py-1 text-xs transition-colors",
                           view === id
-                            ? "bg-white/10 font-medium text-foreground"
+                            ? "bg-active font-medium text-foreground"
                             : "text-muted-foreground hover:text-foreground"
                         )}
                       >
@@ -722,7 +722,7 @@ function PortalInner() {
                                         setDraft("");
                                       }}
                                       className={cn(
-                                        "flex shrink-0 items-center gap-1 rounded-md px-1.5 py-1 text-[11px] transition-colors hover:bg-white/5",
+                                        "flex shrink-0 items-center gap-1 rounded-md px-1.5 py-1 text-[11px] transition-colors hover:bg-hover",
                                         tComments.length > 0 || expanded
                                           ? "text-foreground-secondary"
                                           : "text-muted-foreground"
@@ -763,7 +763,7 @@ function PortalInner() {
                                       {tComments.map((c) => (
                                         <div
                                           key={c.id}
-                                          className="rounded-md border border-border-subtle bg-white/[0.02] px-2.5 py-1.5"
+                                          className="rounded-md border border-border-subtle bg-raise px-2.5 py-1.5"
                                         >
                                           <p className="text-[13px] leading-snug">{c.body}</p>
                                           <p className="mt-0.5 text-[10px] text-muted-2">
@@ -824,7 +824,7 @@ function PortalInner() {
                         className={cn(
                           "flex items-center gap-1.5 rounded-md px-2 py-1 text-xs transition-colors",
                           scheduleView === id
-                            ? "bg-white/10 font-medium text-foreground"
+                            ? "bg-active font-medium text-foreground"
                             : "text-muted-foreground hover:text-foreground"
                         )}
                       >
@@ -1055,7 +1055,7 @@ function PortalInner() {
                     />
                   </div>
                   <div className="flex items-center gap-3 py-3.5">
-                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/10">
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-active">
                       <div
                         className="h-full rounded-full bg-success transition-all"
                         style={{ width: `${invoicePaidPct}%` }}
@@ -1143,7 +1143,7 @@ function PortalInner() {
                       {awaitingApproval.map((t) => (
                         <div
                           key={t.id}
-                          className="flex items-center gap-2 rounded-md border border-border-subtle bg-white/[0.02] px-2.5 py-2"
+                          className="flex items-center gap-2 rounded-md border border-border-subtle bg-raise px-2.5 py-2"
                         >
                           <span className="min-w-0 flex-1 truncate text-[13px]">{t.name}</span>
                           {profile?.role === "client" ? (

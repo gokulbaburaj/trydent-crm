@@ -84,7 +84,7 @@ export function TimePicker({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex h-9 w-full items-center gap-2 rounded-md border border-white/15 bg-transparent px-3 py-1 text-sm text-foreground shadow-sm transition-colors hover:bg-white/5 focus:border-primary/60 focus:outline-none focus:ring-[3px] focus:ring-primary/20"
+        className="flex h-9 w-full items-center gap-2 rounded-md border border-edge bg-transparent px-3 py-1 text-sm text-foreground shadow-sm transition-colors hover:bg-hover focus:border-primary/60 focus:outline-none focus:ring-[3px] focus:ring-primary/20"
       >
         <Clock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
         <span className={cn("min-w-0 flex-1 truncate text-left", !label && "text-muted-2")}>
@@ -100,7 +100,7 @@ export function TimePicker({
               onChange(null);
               setOpen(false);
             }}
-            className="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-white/10 hover:text-foreground"
+            className="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-active hover:text-foreground"
           >
             <X className="h-3 w-3" />
           </span>
@@ -130,7 +130,7 @@ export function TimePicker({
                   "block w-full rounded px-2 py-1 text-left text-[13px] tabular-nums transition-colors",
                   selected
                     ? "bg-primary/15 font-medium text-foreground"
-                    : "text-foreground-secondary hover:bg-white/5 hover:text-foreground",
+                    : "text-foreground-secondary hover:bg-hover hover:text-foreground",
                   disabled && "pointer-events-none opacity-30"
                 )}
               >

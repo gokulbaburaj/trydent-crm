@@ -89,7 +89,7 @@ export function AvatarStack({
         <div
           title={people.slice(max).map((p) => p.full_name).join(", ")}
           className={cn(
-            "flex items-center justify-center rounded-full bg-white/10 px-1 font-medium text-foreground-secondary ring-2 ring-surface",
+            "flex items-center justify-center rounded-full bg-active px-1 font-medium text-foreground-secondary ring-2 ring-surface",
             chip
           )}
         >

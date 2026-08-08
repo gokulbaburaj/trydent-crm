@@ -119,7 +119,7 @@ function RecruitingInner() {
               className={cn(
                 "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs transition-colors",
                 tab === id
-                  ? "bg-white/10 font-medium text-foreground"
+                  ? "bg-active font-medium text-foreground"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -289,7 +289,7 @@ function HireForm({
         <div>
           <Label>Team</Label>
           {/* Read-only: the role decides it, so the two can't disagree. */}
-          <div className="flex h-9 items-center rounded-md border border-white/10 bg-white/[0.02] px-3 text-sm text-foreground-secondary">
+          <div className="flex h-9 items-center rounded-md border border-white/10 bg-raise px-3 text-sm text-foreground-secondary">
             {chosenRole?.team ?? "Set by the role"}
           </div>
         </div>
@@ -553,7 +553,7 @@ function Applicants({ onHired }: { onHired: (a: Applicant) => void }) {
                 className={cn(
                   "flex items-center gap-1.5 rounded px-2.5 py-1 text-[12px] font-medium transition-colors",
                   view === id
-                    ? "bg-white/10 text-foreground"
+                    ? "bg-active text-foreground"
                     : "text-muted-foreground hover:text-foreground-secondary"
                 )}
               >
@@ -689,7 +689,7 @@ function Applicants({ onHired }: { onHired: (a: Applicant) => void }) {
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
                         title="Open CV"
-                        className="rounded p-0.5 text-primary transition-colors hover:bg-white/5"
+                        className="rounded p-0.5 text-primary transition-colors hover:bg-hover"
                       >
                         <FileText className="h-3.5 w-3.5" />
                       </a>
@@ -711,7 +711,7 @@ function Applicants({ onHired }: { onHired: (a: Applicant) => void }) {
                       "flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-[12px] font-medium transition-colors",
                       a.shortlisted
                         ? "border-warning/40 bg-warning/10 text-warning"
-                        : "border-border text-foreground-secondary hover:bg-white/5 hover:text-foreground"
+                        : "border-border text-foreground-secondary hover:bg-hover hover:text-foreground"
                     )}
                   >
                     <Star className={cn("h-3.5 w-3.5", a.shortlisted && "fill-warning")} />
@@ -734,7 +734,7 @@ function Applicants({ onHired }: { onHired: (a: Applicant) => void }) {
                     className={cn(
                       "flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-[12px] font-medium transition-colors",
                       a.email
-                        ? "text-foreground-secondary hover:bg-white/5 hover:text-foreground"
+                        ? "text-foreground-secondary hover:bg-hover hover:text-foreground"
                         : "pointer-events-none opacity-40"
                     )}
                   >
@@ -903,7 +903,7 @@ function ApplicantDetail({
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Open resume"
-              className="shrink-0 rounded-md border border-border p-2 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+              className="shrink-0 rounded-md border border-border p-2 text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
             >
               <ExternalLink className="h-3.5 w-3.5" />
             </a>
@@ -1083,7 +1083,7 @@ function Onboarding() {
         </p>
         <Link
           href="/onboarding"
-          className="flex shrink-0 items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+          className="flex shrink-0 items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
         >
           Open Onboarding <ArrowUpRight className="h-3 w-3" />
         </Link>
@@ -1114,7 +1114,7 @@ function Onboarding() {
                   <button
                     type="button"
                     onClick={() => makeDefault(t.id)}
-                    className="shrink-0 rounded-md px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+                    className="shrink-0 rounded-md px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
                   >
                     Make default
                   </button>

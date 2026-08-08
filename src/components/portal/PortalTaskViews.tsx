@@ -66,7 +66,7 @@ export function PortalBoard({ tasks, projectName, teamById }: ViewProps) {
             </Badge>
             <span className="text-xs text-muted-foreground">{items.length}</span>
           </div>
-          <div className="flex flex-col gap-2 rounded-xl border border-border-subtle bg-white/[0.02] p-2">
+          <div className="flex flex-col gap-2 rounded-xl border border-border-subtle bg-raise p-2">
             {items.length === 0 && (
               <p className="py-4 text-center text-xs text-muted-foreground">Nothing here</p>
             )}
@@ -166,14 +166,14 @@ export function PortalCalendar({ tasks, projects, projectName }: ViewProps) {
             type="button"
             aria-label="Previous month"
             onClick={() => setMonthOffset((m) => m - 1)}
-            className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+            className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
           <button
             type="button"
             onClick={() => setMonthOffset(0)}
-            className="rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+            className="rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
           >
             Today
           </button>
@@ -181,7 +181,7 @@ export function PortalCalendar({ tasks, projects, projectName }: ViewProps) {
             type="button"
             aria-label="Next month"
             onClick={() => setMonthOffset((m) => m + 1)}
-            className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+            className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
           >
             <ChevronRight className="h-4 w-4" />
           </button>

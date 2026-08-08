@@ -400,7 +400,7 @@ export default function PipelinePage() {
           <Popover
             align="right"
             trigger={
-              <button className="flex items-center gap-1.5 rounded border border-border bg-surface px-2.5 py-1.5 text-xs font-medium text-foreground-secondary hover:bg-white/5 hover:text-foreground">
+              <button className="flex items-center gap-1.5 rounded border border-border bg-surface px-2.5 py-1.5 text-xs font-medium text-foreground-secondary hover:bg-hover hover:text-foreground">
                 {CURRENCIES.find((c) => c.code === currency)?.symbol} {currency}
                 <ChevronDown className="h-3 w-3 text-muted-foreground" />
               </button>
@@ -460,7 +460,7 @@ export default function PipelinePage() {
                   className={cn(
                     "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs transition-colors",
                     view === id
-                      ? "bg-white/10 font-medium text-foreground"
+                      ? "bg-active font-medium text-foreground"
                       : "text-muted-foreground hover:text-foreground"
                   )}
                 >
@@ -503,7 +503,7 @@ export default function PipelinePage() {
                     className={cn(
                       "rounded px-2 py-1 text-xs font-medium transition-colors",
                       range === id
-                        ? "bg-white/10 text-foreground"
+                        ? "bg-active text-foreground"
                         : "text-muted-foreground hover:text-foreground"
                     )}
                   >
@@ -532,7 +532,7 @@ export default function PipelinePage() {
                   className={cn(
                     "rounded px-2.5 py-1 text-xs font-medium transition-colors",
                     stageChart === c.id
-                      ? "bg-white/10 text-foreground"
+                      ? "bg-active text-foreground"
                       : "text-muted-foreground hover:text-foreground-secondary"
                   )}
                 >

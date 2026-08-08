@@ -179,7 +179,7 @@ export function Sidebar({
       )}
     >
       <div className="flex items-center justify-between gap-2 px-3 py-3.5">
-        <button className="flex min-w-0 items-center gap-1.5 rounded px-1 py-1 text-[13px] font-medium text-foreground hover:bg-white/5">
+        <button className="flex min-w-0 items-center gap-1.5 rounded px-1 py-1 text-[13px] font-medium text-foreground hover:bg-hover">
           <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-primary text-[10px] font-medium text-primary-foreground">
             TL
           </div>
@@ -190,7 +190,7 @@ export function Sidebar({
           <button
             title="Search (⌘K)"
             onClick={openCommandMenu}
-            className="rounded p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground"
+            className="rounded p-1.5 text-muted-foreground hover:bg-hover hover:text-foreground"
           >
             <Search className="h-3.5 w-3.5" />
           </button>
@@ -230,7 +230,7 @@ export function Sidebar({
               <button
                 onClick={createTeam}
                 title="New team"
-                className="mt-2.5 rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-white/5 hover:text-foreground group-hover/hdr:opacity-100"
+                className="mt-2.5 rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-hover hover:text-foreground group-hover/hdr:opacity-100"
               >
                 <Plus className="h-3.5 w-3.5" />
               </button>
@@ -262,7 +262,7 @@ export function Sidebar({
                     */}
                     <div
                       className={cn(
-                        "group/team flex items-center rounded pr-2 transition-colors hover:bg-white/5",
+                        "group/team flex items-center rounded pr-2 transition-colors hover:bg-hover",
                         pathname === `/team/${teamId}` && "bg-white/[0.07]"
                       )}
                     >
@@ -481,8 +481,8 @@ const linkClass = (active: boolean) =>
   cn(
     "flex items-center gap-2.5 rounded px-2 py-[7px] text-[13px] font-medium transition-colors",
     active
-      ? "bg-white/10 text-foreground"
-      : "text-foreground-secondary hover:bg-white/5 hover:text-foreground"
+      ? "bg-active text-foreground"
+      : "text-foreground-secondary hover:bg-hover hover:text-foreground"
   );
 
 function NavLink({
@@ -569,8 +569,8 @@ function SubLink({
       className={cn(
         "flex items-center gap-2 rounded px-2 py-1.5 text-[13px] transition-colors",
         active
-          ? "bg-white/10 text-foreground"
-          : "text-muted-foreground hover:bg-white/5 hover:text-foreground-secondary"
+          ? "bg-active text-foreground"
+          : "text-muted-foreground hover:bg-hover hover:text-foreground-secondary"
       )}
     >
       <Icon className="h-3.5 w-3.5 shrink-0" />

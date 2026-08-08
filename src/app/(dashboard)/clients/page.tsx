@@ -245,7 +245,7 @@ export default function ClientsPage() {
           <button
             onClick={() => setView("table")}
             className={`flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium ${
-              view === "table" ? "bg-white/10 text-foreground" : "text-muted-foreground hover:text-foreground-secondary"
+              view === "table" ? "bg-active text-foreground" : "text-muted-foreground hover:text-foreground-secondary"
             }`}
           >
             <List className="h-3.5 w-3.5" /> Table
@@ -253,7 +253,7 @@ export default function ClientsPage() {
           <button
             onClick={() => setView("kanban")}
             className={`flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium ${
-              view === "kanban" ? "bg-white/10 text-foreground" : "text-muted-foreground hover:text-foreground-secondary"
+              view === "kanban" ? "bg-active text-foreground" : "text-muted-foreground hover:text-foreground-secondary"
             }`}
           >
             <LayoutGrid className="h-3.5 w-3.5" /> Kanban
@@ -450,11 +450,11 @@ function TagInput({ tags, onChange }: { tags: string[]; onChange: (tags: string[
   }
 
   return (
-    <div className="flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border border-white/15 bg-transparent px-2 py-1.5 shadow-sm focus-within:border-primary/60 focus-within:ring-[3px] focus-within:ring-primary/20">
+    <div className="flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border border-edge bg-transparent px-2 py-1.5 shadow-sm focus-within:border-primary/60 focus-within:ring-[3px] focus-within:ring-primary/20">
       {tags.map((t) => (
         <span
           key={t}
-          className="inline-flex items-center gap-1 rounded bg-white/5 px-1.5 py-0.5 text-xs text-foreground-secondary"
+          className="inline-flex items-center gap-1 rounded bg-hover px-1.5 py-0.5 text-xs text-foreground-secondary"
         >
           {t}
           <button

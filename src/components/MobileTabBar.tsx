@@ -84,7 +84,7 @@ export function MobileTabBar({
                 "flex min-h-11 items-center justify-center gap-1.5 rounded-full px-3 transition-colors",
                 active
                   ? "bg-primary text-primary-foreground"
-                  : "min-w-11 text-muted-foreground active:bg-white/5 active:text-foreground"
+                  : "min-w-11 text-muted-foreground active:bg-hover active:text-foreground"
               )}
             >
               <tab.icon className="h-[18px] w-[18px] shrink-0" />
@@ -99,7 +99,7 @@ export function MobileTabBar({
         <button
           onClick={onOpenMenu}
           aria-label="More"
-          className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-white/5 active:text-foreground"
+          className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-hover active:text-foreground"
         >
           <Menu className="h-[18px] w-[18px] shrink-0" />
         </button>

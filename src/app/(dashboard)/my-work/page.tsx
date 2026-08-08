@@ -158,7 +158,7 @@ export default function MyWorkPage() {
               )}
             >
               {bucket}
-              <span className="rounded-full bg-white/5 px-1.5 py-px text-[11px] font-normal text-muted-foreground">
+              <span className="rounded-full bg-hover px-1.5 py-px text-[11px] font-normal text-muted-foreground">
                 {items.length}
               </span>
             </h3>
@@ -184,7 +184,7 @@ export default function MyWorkPage() {
                   </button>
                   <button
                     onClick={() => openInNewTab(`/projects/${t.project_id}`, projectName(t.project_id))}
-                    className="hidden shrink-0 items-center gap-1.5 rounded-md px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground sm:flex"
+                    className="hidden shrink-0 items-center gap-1.5 rounded-md px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-hover hover:text-foreground sm:flex"
                   >
                     <FolderKanban className="h-3 w-3" />
                     {projectName(t.project_id)}

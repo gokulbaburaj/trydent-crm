@@ -177,7 +177,7 @@ export function BulkActionBar({
                       onSetDue(null);
                       close();
                     }}
-                    className="rounded px-1.5 py-1 text-xs text-muted-foreground hover:bg-white/5 hover:text-foreground"
+                    className="rounded px-1.5 py-1 text-xs text-muted-foreground hover:bg-hover hover:text-foreground"
                   >
                     Clear {dueLabel.toLowerCase()}
                   </button>
@@ -211,7 +211,7 @@ export function BulkActionBar({
         <button
           onClick={onClear}
           title="Clear selection (Esc)"
-          className="ml-0.5 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+          className="ml-0.5 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
         >
           <X className="h-3.5 w-3.5" />
         </button>
@@ -225,7 +225,7 @@ export function BulkActionBar({
 
 function BarButton({ icon, children }: { icon: ReactNode; children: ReactNode }) {
   return (
-    <button className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium text-foreground-secondary transition-colors hover:bg-white/5 hover:text-foreground">
+    <button className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium text-foreground-secondary transition-colors hover:bg-hover hover:text-foreground">
       {icon}
       {children}
     </button>
@@ -267,12 +267,12 @@ function LabelMenu({
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder="New label…"
-          className="h-7 w-32 min-w-0 flex-1 rounded border border-white/15 bg-transparent px-2 text-xs text-foreground placeholder:text-muted-2 focus:border-primary/60 focus:outline-none"
+          className="h-7 w-32 min-w-0 flex-1 rounded border border-edge bg-transparent px-2 text-xs text-foreground placeholder:text-muted-2 focus:border-primary/60 focus:outline-none"
         />
         <button
           type="submit"
           disabled={!draft.trim()}
-          className="rounded p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground disabled:opacity-40"
+          className="rounded p-1.5 text-muted-foreground hover:bg-hover hover:text-foreground disabled:opacity-40"
           title="Apply label"
         >
           <Plus className="h-3.5 w-3.5" />

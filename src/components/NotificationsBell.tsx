@@ -66,7 +66,7 @@ export function NotificationsBell() {
           <Tip label="Notifications">
             <button
               onClick={load}
-              className="relative rounded p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground"
+              className="relative rounded p-1.5 text-muted-foreground hover:bg-hover hover:text-foreground"
             >
               <Bell className="h-4 w-4" />
               {unread > 0 && (
@@ -86,7 +86,7 @@ export function NotificationsBell() {
             {unread > 0 && (
               <button
                 onClick={() => markRead(items.filter((n) => !n.read_at).map((n) => n.id))}
-                className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground hover:bg-white/5 hover:text-foreground"
+                className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground hover:bg-hover hover:text-foreground"
               >
                 <Check className="h-3 w-3" /> Mark all read
               </button>
@@ -109,14 +109,14 @@ export function NotificationsBell() {
                     if (n.link) router.push(n.link);
                   }}
                   className={cn(
-                    "flex w-full items-start gap-2.5 rounded-md px-2.5 py-2 text-left transition-colors hover:bg-white/5",
+                    "flex w-full items-start gap-2.5 rounded-md px-2.5 py-2 text-left transition-colors hover:bg-hover",
                     !n.read_at && "bg-primary/[0.06]"
                   )}
                 >
                   <span
                     className={cn(
                       "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full",
-                      n.read_at ? "bg-white/5 text-muted-foreground" : "bg-primary/15 text-primary"
+                      n.read_at ? "bg-hover text-muted-foreground" : "bg-primary/15 text-primary"
                     )}
                   >
                     <Icon className="h-3 w-3" />

@@ -71,7 +71,7 @@ function PersonNode(props: NodeProps) {
         </div>
       </div>
       {data.reports > 0 && (
-        <span className="shrink-0 rounded-full bg-white/5 px-1.5 text-[10px] tabular-nums text-muted-foreground">
+        <span className="shrink-0 rounded-full bg-hover px-1.5 text-[10px] tabular-nums text-muted-foreground">
           {data.reports}
         </span>
       )}
@@ -197,7 +197,7 @@ export function OrgChartFlow({
             >
               <Building2 className="h-3 w-3 text-muted-foreground" />
               {t}
-              <span className="rounded-full bg-white/10 px-1.5 text-[10px] tabular-nums text-muted-foreground">
+              <span className="rounded-full bg-active px-1.5 text-[10px] tabular-nums text-muted-foreground">
                 {staff.filter((p) => p.team === t).length}
               </span>
               {canManage && (
@@ -269,7 +269,7 @@ export function OrgChartFlow({
                 "[&_.react-flow\\_\\_controls-button]:!border-border " +
                 "[&_.react-flow\\_\\_controls-button]:!bg-surface " +
                 "[&_.react-flow\\_\\_controls-button]:!fill-foreground-secondary " +
-                "[&_.react-flow\\_\\_controls-button:hover]:!bg-white/10 " +
+                "[&_.react-flow\\_\\_controls-button:hover]:!bg-active " +
                 "[&_.react-flow\\_\\_controls-button:hover]:!fill-foreground"
               }
             />

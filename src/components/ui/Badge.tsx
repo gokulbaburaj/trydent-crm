@@ -8,7 +8,7 @@ const toneClasses: Record<Tone, string> = {
   yellow: "bg-warning/10 text-warning",
   red: "bg-danger/10 text-danger",
   blue: "bg-blue-500/10 text-blue-400",
-  gray: "bg-white/5 text-foreground-secondary",
+  gray: "bg-hover text-foreground-secondary",
 };
 
 const dotClasses: Record<Tone, string> = {

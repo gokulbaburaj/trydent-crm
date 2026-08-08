@@ -221,7 +221,7 @@ function AccountsInner() {
               "ml-auto flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs transition-colors",
               showArchived
                 ? "border-primary/40 bg-primary/10 text-foreground"
-                : "border-border text-muted-foreground hover:bg-white/5 hover:text-foreground"
+                : "border-border text-muted-foreground hover:bg-hover hover:text-foreground"
             )}
           >
             <Archive className="h-3.5 w-3.5" />
@@ -314,7 +314,7 @@ function AccountsInner() {
                   onClick={() =>
                     updateProject(project.id, { archived: !project.archived })
                   }
-                  className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+                  className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
                 >
                   {project.archived ? (
                     <ArchiveRestore className="h-3.5 w-3.5" />
@@ -324,7 +324,7 @@ function AccountsInner() {
                 </button>
               </div>
 
-              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-active">
                 <div
                   // transition-all animates every property that changes,
                   // including the ones layout moves during an expand — the bar
@@ -472,7 +472,7 @@ function AccountsInner() {
                                 className={cn(
                                   "rounded px-1.5 py-0.5 text-[11px] transition-colors",
                                   active
-                                    ? "bg-white/10 font-medium text-foreground"
+                                    ? "bg-active font-medium text-foreground"
                                     : "text-muted-foreground hover:text-foreground"
                                 )}
                               >
@@ -541,7 +541,7 @@ function AccountsInner() {
                       e.preventDefault();
                       addAllocation(project.id);
                     }}
-                    className="mt-1 flex flex-wrap items-end gap-2 rounded-lg border border-border-subtle bg-white/[0.02] p-2.5"
+                    className="mt-1 flex flex-wrap items-end gap-2 rounded-lg border border-border-subtle bg-raise p-2.5"
                   >
                     <div className="min-w-[10rem] flex-1">
                       <Label>Person</Label>

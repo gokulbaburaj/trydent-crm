@@ -256,7 +256,7 @@ function OnboardingInner() {
         <div className="ml-auto flex items-center gap-2">
           <Link
             href="/recruiting"
-            className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+            className="flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
           >
             Edit templates <ArrowUpRight className="h-3 w-3" />
           </Link>
@@ -276,7 +276,7 @@ function OnboardingInner() {
       <div>
         <h3 className="mb-2.5 text-sm font-semibold">
           In progress
-          <span className="ml-2 rounded bg-white/5 px-1.5 py-0.5 text-xs font-normal text-muted-foreground">
+          <span className="ml-2 rounded bg-hover px-1.5 py-0.5 text-xs font-normal text-muted-foreground">
             {inProgress.length}
           </span>
         </h3>
@@ -314,7 +314,7 @@ function OnboardingInner() {
                     </div>
                     <span className="shrink-0 text-sm font-semibold tabular-nums">{pct}%</span>
                   </div>
-                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-active">
                     <div
                       className="h-full rounded-full bg-primary transition-all"
                       style={{ width: `${pct}%` }}
@@ -400,7 +400,7 @@ function OnboardingInner() {
                 </div>
               </div>
 
-              <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+              <div className="h-1.5 overflow-hidden rounded-full bg-active">
                 <div
                   className={cn(
                     "h-full rounded-full transition-all",
@@ -452,7 +452,7 @@ function OnboardingInner() {
                 {sectionTasks.map((t, i) => (
                   <div
                     key={t.id}
-                    className="group flex items-center gap-2 rounded-md border border-border-subtle px-2.5 py-2 transition-colors hover:border-white/15"
+                    className="group flex items-center gap-2 rounded-md border border-border-subtle px-2.5 py-2 transition-colors hover:border-edge"
                   >
                     <span className="w-4 shrink-0 text-[11px] tabular-nums text-muted-2">
                       {i + 1}

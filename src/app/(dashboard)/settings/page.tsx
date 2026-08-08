@@ -248,7 +248,7 @@ export default function SettingsPage() {
                 "rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors",
                 c.code === base
                   ? "border-primary/40 bg-primary/10 text-primary"
-                  : "border-border bg-surface text-foreground-secondary hover:bg-white/5 hover:text-foreground"
+                  : "border-border bg-surface text-foreground-secondary hover:bg-hover hover:text-foreground"
               )}
             >
               {c.symbol} {c.code}
@@ -515,7 +515,7 @@ function SummaryCard({
 }) {
   return (
     <Link href={href} className="group block">
-      <Card className="transition-colors group-hover:border-border group-hover:bg-white/[0.02]">
+      <Card className="transition-colors group-hover:border-border group-hover:bg-raise">
         <div className="flex items-center gap-3">
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border-subtle text-muted-foreground">
             <Icon className="h-4 w-4" />

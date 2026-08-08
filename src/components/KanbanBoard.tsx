@@ -74,14 +74,14 @@ export function KanbanBoard<T extends { id: string }>({
         {columns.map((col) => {
           const colItems = items.filter((i) => getColumnId(i) === col.id);
           return (
-            <section key={col.id} className="rounded-md border border-border bg-white/[0.02]">
+            <section key={col.id} className="rounded-md border border-border bg-raise">
               <header className="flex items-center justify-between gap-2 px-3 py-2">
                 <h3 className="min-w-0 truncate text-[13px] font-medium text-foreground">
                   {col.label}
                 </h3>
                 <div className="flex shrink-0 items-center gap-1.5">
                   {columnMeta?.(col.id, colItems)}
-                  <span className="rounded bg-white/5 px-1.5 py-0.5 text-xs text-muted-foreground">
+                  <span className="rounded bg-hover px-1.5 py-0.5 text-xs text-muted-foreground">
                     {colItems.length}
                   </span>
                 </div>
@@ -129,7 +129,7 @@ export function KanbanBoard<T extends { id: string }>({
                 </h3>
                 <div className="flex shrink-0 items-center gap-1.5">
                   {columnMeta?.(col.id, colItems)}
-                  <span className="rounded bg-white/5 px-1.5 py-0.5 text-xs text-muted-foreground">
+                  <span className="rounded bg-hover px-1.5 py-0.5 text-xs text-muted-foreground">
                     {colItems.length}
                   </span>
                 </div>
@@ -231,7 +231,7 @@ function KanbanColumnDroppable({
       className={cn(
         // Columns share the available width evenly; min-width keeps them
         // readable and lets the row scroll once space runs out.
-        "min-w-[15rem] flex-1 rounded-md border border-border bg-white/[0.02] p-3 transition-colors",
+        "min-w-[15rem] flex-1 rounded-md border border-border bg-raise p-3 transition-colors",
         className,
         isOver && "border-primary bg-primary/5"
       )}
@@ -256,8 +256,8 @@ function KanbanCardDraggable({
       {...listeners}
       {...attributes}
       className={cn(
-        "animate-row cursor-grab rounded border border-border bg-surface p-3 transition-[border-color,background-color,box-shadow,translate,opacity] duration-150 hover:-translate-y-px hover:border-white/15 hover:bg-white/5 hover:shadow-lg hover:shadow-black/20 active:cursor-grabbing",
-        isDragging && "border-dashed border-white/15 bg-transparent"
+        "animate-row cursor-grab rounded border border-border bg-surface p-3 transition-[border-color,background-color,box-shadow,translate,opacity] duration-150 hover:-translate-y-px hover:border-edge hover:bg-hover hover:shadow-lg hover:shadow-black/20 active:cursor-grabbing",
+        isDragging && "border-dashed border-edge bg-transparent"
       )}
     >
       {/* While dragging, the clone follows the cursor — the origin becomes an empty dashed slot. */}

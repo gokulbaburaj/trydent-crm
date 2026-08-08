@@ -60,7 +60,7 @@ function ChannelInfo({
       trigger={
         <button
           title="Channel details"
-          className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+          className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
         >
           <Info className="h-4 w-4" />
         </button>
@@ -314,7 +314,7 @@ function Channels() {
           <button
             onClick={() => setCreating((c) => !c)}
             title="New channel"
-            className="rounded p-1 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+            className="rounded p-1 text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
           >
             <Plus className="h-3.5 w-3.5" />
           </button>
@@ -416,7 +416,7 @@ function Channels() {
                 // target — fine as a desktop label, not as the only way to
                 // change channel on a phone. Negative margin keeps the header
                 // the same height while the hit area grows.
-                className="-my-2 flex min-h-11 min-w-0 items-center gap-2 rounded-md px-1 text-left transition-colors active:bg-white/5 sm:my-0 sm:min-h-0 sm:pointer-events-none sm:px-0"
+                className="-my-2 flex min-h-11 min-w-0 items-center gap-2 rounded-md px-1 text-left transition-colors active:bg-hover sm:my-0 sm:min-h-0 sm:pointer-events-none sm:px-0"
                 aria-label="Switch channel"
               >
                 <Hash className="h-4 w-4 shrink-0 text-muted-2" />
@@ -545,8 +545,8 @@ function ChannelLink({
       className={cn(
         "flex items-center gap-1.5 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors",
         active
-          ? "bg-white/10 font-medium text-foreground"
-          : "text-foreground-secondary hover:bg-white/5 hover:text-foreground"
+          ? "bg-active font-medium text-foreground"
+          : "text-foreground-secondary hover:bg-hover hover:text-foreground"
       )}
     >
       {channel.team_id ? (
@@ -579,7 +579,7 @@ function MessageRow({
   return (
     <div
       className={cn(
-        "group flex gap-2.5 rounded px-1 py-0.5 hover:bg-white/[0.02]",
+        "group flex gap-2.5 rounded px-1 py-0.5 hover:bg-raise",
         grouped ? "mt-0.5" : "mt-2.5"
       )}
     >
@@ -602,7 +602,7 @@ function MessageRow({
         <button
           onClick={onDelete}
           aria-label="Delete message"
-          className="shrink-0 self-start rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-white/5 hover:text-danger group-hover:opacity-100"
+          className="shrink-0 self-start rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-hover hover:text-danger group-hover:opacity-100"
         >
           <Trash2 className="h-3 w-3" />
         </button>

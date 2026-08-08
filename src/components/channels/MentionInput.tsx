@@ -120,8 +120,8 @@ export const MentionInput = forwardRef<
                 className={cn(
                   "flex w-full items-center gap-1.5 px-2 py-1.5 text-left text-[13px] transition-colors",
                   i === highlight
-                    ? "bg-white/10 text-foreground"
-                    : "text-foreground-secondary hover:bg-white/5"
+                    ? "bg-active text-foreground"
+                    : "text-foreground-secondary hover:bg-hover"
                 )}
               >
                 <Icon className="h-3.5 w-3.5 shrink-0 text-muted-2" />
@@ -175,7 +175,7 @@ export const MentionInput = forwardRef<
             submit();
           }
         }}
-        className="max-h-32 min-h-9 w-full resize-none rounded-md border border-white/15 bg-transparent px-3 py-2 text-sm text-foreground shadow-sm placeholder:text-muted-2 focus:border-primary/60 focus:outline-none focus:ring-[3px] focus:ring-primary/20"
+        className="max-h-32 min-h-9 w-full resize-none rounded-md border border-edge bg-transparent px-3 py-2 text-sm text-foreground shadow-sm placeholder:text-muted-2 focus:border-primary/60 focus:outline-none focus:ring-[3px] focus:ring-primary/20"
       />
     </div>
   );

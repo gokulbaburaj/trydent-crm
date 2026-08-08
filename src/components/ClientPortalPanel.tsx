@@ -542,7 +542,7 @@ export function ClientPortalPanel({
         <Link
           href={`/portal?client=${client.id}`}
           target="_blank"
-          className="flex flex-1 items-center justify-center gap-1.5 rounded border border-border bg-white/5 px-3 py-2 text-xs font-medium text-foreground-secondary transition-colors hover:bg-white/10 hover:text-foreground"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded border border-border bg-hover px-3 py-2 text-xs font-medium text-foreground-secondary transition-colors hover:bg-active hover:text-foreground"
         >
           <Eye className="h-3.5 w-3.5" /> Preview portal
         </Link>
@@ -561,7 +561,7 @@ export function ClientPortalPanel({
       </div>
 
       {/* Login provisioning */}
-      <div className="flex flex-col gap-3 rounded border border-border bg-white/[0.02] p-3">
+      <div className="flex flex-col gap-3 rounded border border-border bg-raise p-3">
         <div className="flex items-center gap-2">
           <KeyRound className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="text-[13px] font-medium">Portal login</span>
@@ -575,7 +575,7 @@ export function ClientPortalPanel({
         {portal.portal_username && !loginCreated && (
           <p className="text-xs text-muted-foreground">
             Signs in with username{" "}
-            <span className="rounded bg-white/5 px-1 py-0.5 font-medium text-foreground-secondary">
+            <span className="rounded bg-hover px-1 py-0.5 font-medium text-foreground-secondary">
               {portal.portal_username}
             </span>{" "}
             — passwords aren&apos;t stored; use Reset to issue a new one anytime.
@@ -605,7 +605,7 @@ export function ClientPortalPanel({
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <Label>Username (auto-generated)</Label>
-                <div className="flex h-9 items-center rounded-md border border-white/15 bg-white/[0.03] px-3 text-sm text-foreground-secondary">
+                <div className="flex h-9 items-center rounded-md border border-edge bg-white/[0.03] px-3 text-sm text-foreground-secondary">
                   {loginUsername}
                 </div>
               </div>
@@ -652,7 +652,7 @@ export function ClientPortalPanel({
       </div>
 
       {/* Updates */}
-      <div className="flex flex-col gap-2 rounded border border-border bg-white/[0.02] p-3">
+      <div className="flex flex-col gap-2 rounded border border-border bg-raise p-3">
         <div className="flex items-center gap-2">
           <Megaphone className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="text-[13px] font-medium">Portal updates</span>
@@ -683,7 +683,7 @@ export function ClientPortalPanel({
       </div>
 
       {/* Messages */}
-      <div className="flex flex-col gap-2 rounded border border-border bg-white/[0.02] p-3">
+      <div className="flex flex-col gap-2 rounded border border-border bg-raise p-3">
         <div className="flex items-center gap-2">
           <MessageSquare className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="text-[13px] font-medium">Messages</span>
@@ -760,7 +760,7 @@ export function ClientPortalPanel({
               <div className="mt-2 flex gap-2">
                 <Link
                   href="/schedule"
-                  className="flex flex-1 items-center justify-center gap-1.5 rounded border border-border bg-white/5 px-3 py-1.5 text-[11px] font-medium text-foreground-secondary transition-colors hover:bg-white/10 hover:text-foreground"
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded border border-border bg-hover px-3 py-1.5 text-[11px] font-medium text-foreground-secondary transition-colors hover:bg-active hover:text-foreground"
                 >
                   Open Schedule
                 </Link>
@@ -787,7 +787,7 @@ export function ClientPortalPanel({
       )}
 
       {/* Documents */}
-      <div className="flex flex-col gap-2 rounded border border-border bg-white/[0.02] p-3">
+      <div className="flex flex-col gap-2 rounded border border-border bg-raise p-3">
         <div className="flex items-center gap-2">
           <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="text-[13px] font-medium">Documents</span>
@@ -811,7 +811,7 @@ export function ClientPortalPanel({
               e.preventDefault();
               addDocument();
             }}
-            className="flex flex-col gap-2 rounded-md border border-border-subtle bg-white/[0.02] p-2.5"
+            className="flex flex-col gap-2 rounded-md border border-border-subtle bg-raise p-2.5"
           >
             <div className="grid grid-cols-2 gap-2">
               <div>
@@ -845,7 +845,7 @@ export function ClientPortalPanel({
                   // still overwrite it above.
                   if (f && !docName.trim()) setDocName(f.name.replace(/\.[^.]+$/, ""));
                 }}
-                className="block w-full cursor-pointer rounded-md border border-border bg-transparent px-2.5 py-1.5 text-[12.5px] text-muted-foreground file:mr-2.5 file:rounded file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-[12px] file:text-foreground hover:file:bg-white/15"
+                className="block w-full cursor-pointer rounded-md border border-border bg-transparent px-2.5 py-1.5 text-[12.5px] text-muted-foreground file:mr-2.5 file:rounded file:border-0 file:bg-active file:px-2 file:py-1 file:text-[12px] file:text-foreground hover:file:bg-white/15"
               />
               {docFile && (
                 <p className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-2">
@@ -932,7 +932,7 @@ export function ClientPortalPanel({
                   type="button"
                   aria-label={`Delete ${d.name}`}
                   onClick={() => deleteDocument(d.id)}
-                  className="shrink-0 rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-white/5 hover:text-danger group-hover:opacity-100"
+                  className="shrink-0 rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-hover hover:text-danger group-hover:opacity-100"
                 >
                   <Trash2 className="h-3 w-3" />
                 </button>
@@ -943,7 +943,7 @@ export function ClientPortalPanel({
       </div>
 
       {/* Invoices */}
-      <div className="flex flex-col gap-2 rounded border border-border bg-white/[0.02] p-3">
+      <div className="flex flex-col gap-2 rounded border border-border bg-raise p-3">
         <div className="flex items-center gap-2">
           <Receipt className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="text-[13px] font-medium">Invoices</span>
@@ -965,7 +965,7 @@ export function ClientPortalPanel({
               e.preventDefault();
               addInvoice();
             }}
-            className="flex flex-col gap-2 rounded-md border border-border-subtle bg-white/[0.02] p-2.5"
+            className="flex flex-col gap-2 rounded-md border border-border-subtle bg-raise p-2.5"
           >
             <div className="grid grid-cols-3 gap-2">
               <div>
@@ -1012,7 +1012,7 @@ export function ClientPortalPanel({
                 type="file"
                 accept="application/pdf,image/*"
                 onChange={(e) => setInvFile(e.target.files?.[0] ?? null)}
-                className="block w-full cursor-pointer rounded-md border border-border bg-transparent px-2.5 py-1.5 text-[12.5px] text-muted-foreground file:mr-2.5 file:rounded file:border-0 file:bg-white/10 file:px-2 file:py-1 file:text-[12px] file:text-foreground hover:file:bg-white/15"
+                className="block w-full cursor-pointer rounded-md border border-border bg-transparent px-2.5 py-1.5 text-[12.5px] text-muted-foreground file:mr-2.5 file:rounded file:border-0 file:bg-active file:px-2 file:py-1 file:text-[12px] file:text-foreground hover:file:bg-white/15"
               />
               {invFile && (
                 <p className="mt-1 text-[11px] text-muted-2">
@@ -1098,7 +1098,7 @@ export function ClientPortalPanel({
                 type="button"
                 aria-label={`Delete ${inv.number}`}
                 onClick={() => deleteInvoice(inv.id)}
-                className="shrink-0 rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-white/5 hover:text-danger group-hover:opacity-100"
+                className="shrink-0 rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-hover hover:text-danger group-hover:opacity-100"
               >
                 <Trash2 className="h-3 w-3" />
               </button>

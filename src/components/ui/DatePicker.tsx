@@ -30,7 +30,7 @@ export function DatePicker({
       trigger={
         <button
           type="button"
-          className="flex h-9 w-full items-center gap-2 rounded-md border border-white/15 bg-transparent px-3 py-1 text-sm text-foreground shadow-sm hover:bg-white/5 focus:outline-none focus:border-primary/60 focus:ring-[3px] focus:ring-primary/20"
+          className="flex h-9 w-full items-center gap-2 rounded-md border border-edge bg-transparent px-3 py-1 text-sm text-foreground shadow-sm hover:bg-hover focus:outline-none focus:border-primary/60 focus:ring-[3px] focus:ring-primary/20"
         >
           <CalendarIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
           <span className={cn("min-w-0 flex-1 truncate text-left", !selected && "text-muted-2")}>
@@ -44,7 +44,7 @@ export function DatePicker({
                 e.stopPropagation();
                 onChange(null);
               }}
-              className="rounded p-0.5 text-muted-foreground hover:bg-white/10 hover:text-foreground"
+              className="rounded p-0.5 text-muted-foreground hover:bg-active hover:text-foreground"
             >
               <X className="h-3 w-3" />
             </span>
@@ -71,7 +71,7 @@ export function DatePicker({
                 onChange(format(new Date(), "yyyy-MM-dd"));
                 close();
               }}
-              className="rounded px-1.5 py-1 text-xs font-medium text-muted-foreground hover:bg-white/5 hover:text-foreground"
+              className="rounded px-1.5 py-1 text-xs font-medium text-muted-foreground hover:bg-hover hover:text-foreground"
             >
               Today
             </button>
@@ -81,7 +81,7 @@ export function DatePicker({
                 onChange(null);
                 close();
               }}
-              className="rounded px-1.5 py-1 text-xs text-muted-foreground hover:bg-white/5 hover:text-foreground"
+              className="rounded px-1.5 py-1 text-xs text-muted-foreground hover:bg-hover hover:text-foreground"
             >
               Clear
             </button>

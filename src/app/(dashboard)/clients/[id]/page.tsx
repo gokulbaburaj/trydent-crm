@@ -158,7 +158,7 @@ export default function ClientDetailPage() {
       {/* Breadcrumb */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1 text-[13px] text-muted-foreground">
-          <Link href="/clients" className="rounded px-1 py-0.5 hover:bg-white/5 hover:text-foreground">
+          <Link href="/clients" className="rounded px-1 py-0.5 hover:bg-hover hover:text-foreground">
             Clients
           </Link>
           <ChevronRight className="h-3.5 w-3.5" />
@@ -167,7 +167,7 @@ export default function ClientDetailPage() {
         <Popover
           align="right"
           trigger={
-            <button className="rounded p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground">
+            <button className="rounded p-1.5 text-muted-foreground hover:bg-hover hover:text-foreground">
               <MoreHorizontal className="h-4 w-4" />
             </button>
           }
@@ -215,7 +215,7 @@ export default function ClientDetailPage() {
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
           <Popover
             trigger={
-              <button className="flex h-9 items-center gap-2 rounded-md border border-white/5 bg-white/5 px-2.5 text-xs font-medium text-foreground-secondary hover:bg-white/10">
+              <button className="flex h-9 items-center gap-2 rounded-md border border-white/5 bg-hover px-2.5 text-xs font-medium text-foreground-secondary hover:bg-active">
                 {client.account_owner ? (
                   <>
                     <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary/15 text-[8px] font-semibold text-primary">
@@ -250,7 +250,7 @@ export default function ClientDetailPage() {
             )}
           </Popover>
           {portal && (
-            <span className="inline-flex items-center gap-1.5 rounded border border-white/5 bg-white/5 px-2 py-1 text-xs font-medium text-foreground-secondary">
+            <span className="inline-flex items-center gap-1.5 rounded border border-white/5 bg-hover px-2 py-1 text-xs font-medium text-foreground-secondary">
               <MonitorSmartphone className="h-3 w-3 text-muted-foreground" /> Portal: {portal.status}
             </span>
           )}
@@ -471,8 +471,8 @@ function TabButton({
       className={cn(
         "flex items-center gap-1.5 rounded px-2.5 py-1.5 text-[13px] font-medium transition-colors",
         active
-          ? "bg-white/10 text-foreground"
-          : "text-muted-foreground hover:bg-white/5 hover:text-foreground-secondary"
+          ? "bg-active text-foreground"
+          : "text-muted-foreground hover:bg-hover hover:text-foreground-secondary"
       )}
     >
       <Icon className="h-3.5 w-3.5" /> {label}
@@ -490,11 +490,11 @@ function TagInput({ tags, onChange }: { tags: string[]; onChange: (tags: string[
   }
 
   return (
-    <div className="flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border border-white/15 bg-transparent px-2 py-1.5 shadow-sm focus-within:border-primary/60 focus-within:ring-[3px] focus-within:ring-primary/20">
+    <div className="flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border border-edge bg-transparent px-2 py-1.5 shadow-sm focus-within:border-primary/60 focus-within:ring-[3px] focus-within:ring-primary/20">
       {tags.map((t) => (
         <span
           key={t}
-          className="inline-flex items-center gap-1 rounded bg-white/5 px-1.5 py-0.5 text-xs text-foreground-secondary"
+          className="inline-flex items-center gap-1 rounded bg-hover px-1.5 py-0.5 text-xs text-foreground-secondary"
         >
           {t}
           <button

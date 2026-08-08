@@ -84,7 +84,7 @@ export function MenuItem({
         "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors",
         danger
           ? "text-danger hover:bg-danger/10"
-          : "text-foreground-secondary hover:bg-white/5 hover:text-foreground"
+          : "text-foreground-secondary hover:bg-hover hover:text-foreground"
       )}
     >
       {icon && <span className="flex w-4 shrink-0 items-center justify-center">{icon}</span>}

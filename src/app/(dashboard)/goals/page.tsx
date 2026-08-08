@@ -360,7 +360,7 @@ function GoalsInner() {
                   type="button"
                   aria-label="Delete goal"
                   onClick={() => deleteGoal(goal.id)}
-                  className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-white/5 hover:text-danger"
+                  className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-hover hover:text-danger"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
@@ -391,7 +391,7 @@ function GoalsInner() {
                               current_manual: Number(e.target.value) || 0,
                             })
                           }
-                          className="h-7 w-24 rounded-md border border-white/15 bg-transparent px-2 text-right text-xs tabular-nums focus:border-primary/60 focus:outline-none"
+                          className="h-7 w-24 rounded-md border border-edge bg-transparent px-2 text-right text-xs tabular-nums focus:border-primary/60 focus:outline-none"
                         />
                       ) : (
                         <span className="tabular-nums text-muted-foreground">
@@ -415,7 +415,7 @@ function GoalsInner() {
                       </button>
                     </div>
                     <div className="mt-1 flex items-center gap-2">
-                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
+                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-active">
                         <div
                           className={cn(
                             "h-full rounded-full transition-all",
@@ -438,7 +438,7 @@ function GoalsInner() {
                     e.preventDefault();
                     addKeyResult(goal.id);
                   }}
-                  className="flex flex-col gap-2 rounded-lg border border-border-subtle bg-white/[0.02] p-2.5"
+                  className="flex flex-col gap-2 rounded-lg border border-border-subtle bg-raise p-2.5"
                 >
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     <div>
@@ -500,7 +500,7 @@ function GoalsInner() {
                 <button
                   type="button"
                   onClick={() => setKrFor(goal.id)}
-                  className="flex items-center gap-1.5 self-start rounded-md px-1.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+                  className="flex items-center gap-1.5 self-start rounded-md px-1.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
                 >
                   <Plus className="h-3.5 w-3.5" /> Add key result
                 </button>

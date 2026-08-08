@@ -108,7 +108,7 @@ function ToastCard({
                   secondary.onClick();
                   dismiss();
                 }}
-                className="rounded-md border border-border px-2.5 py-1.5 text-[12px] font-medium text-foreground-secondary transition-colors hover:bg-white/5 hover:text-foreground"
+                className="rounded-md border border-border px-2.5 py-1.5 text-[12px] font-medium text-foreground-secondary transition-colors hover:bg-hover hover:text-foreground"
               >
                 {secondary.label}
               </button>

@@ -80,7 +80,7 @@ function TeamDashboardInner() {
           {hasAdminRights(access) && (
             <Link
               href={`/settings/teams/${d.team.id}`}
-              className="ml-auto flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-[12px] text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+              className="ml-auto flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-[12px] text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
             >
               <Settings2 className="h-3.5 w-3.5" /> Manage team
             </Link>
@@ -112,7 +112,7 @@ function DeliveryView({ d }: { d: Dash }) {
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 [&>*]:transition-[border-color,background-color,translate] [&>*]:duration-150 [&>*:hover]:-translate-y-px [&>*:hover]:border-white/15">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 [&>*]:transition-[border-color,background-color,translate] [&>*]:duration-150 [&>*:hover]:-translate-y-px [&>*:hover]:border-edge">
         <StatCard label="Open tasks" value={String(d.openTasks.length)} icon={ClipboardList} />
         <StatCard label="Overdue" value={String(d.overdue.length)} icon={AlertTriangle} />
         <StatCard label="Due this week" value={String(d.dueThisWeek.length)} icon={CalendarDays} />

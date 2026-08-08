@@ -53,7 +53,7 @@ export function PriorityPicker({
     <Popover
       align={align}
       trigger={
-        <button className="flex items-center gap-1.5 rounded-md border border-white/5 bg-white/5 px-2 py-1 text-xs font-medium text-foreground-secondary transition-colors hover:bg-white/10">
+        <button className="flex items-center gap-1.5 rounded-md border border-white/5 bg-hover px-2 py-1 text-xs font-medium text-foreground-secondary transition-colors hover:bg-active">
           <Flag
             className={cn("h-3 w-3", meta.className)}
             fill={meta.fill ? "currentColor" : "none"}

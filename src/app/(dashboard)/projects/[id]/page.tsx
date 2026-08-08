@@ -364,7 +364,7 @@ export default function ProjectDetailPage() {
           <Popover
             align="right"
             trigger={
-              <button className="rounded p-1 text-muted-foreground opacity-0 hover:bg-white/5 hover:text-foreground group-hover:opacity-100">
+              <button className="rounded p-1 text-muted-foreground opacity-0 hover:bg-hover hover:text-foreground group-hover:opacity-100">
                 <MoreHorizontal className="h-3.5 w-3.5" />
               </button>
             }
@@ -734,7 +734,7 @@ export default function ProjectDetailPage() {
       {/* Breadcrumb */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1 text-[13px] text-muted-foreground">
-          <Link href="/projects" className="rounded px-1 py-0.5 hover:bg-white/5 hover:text-foreground">
+          <Link href="/projects" className="rounded px-1 py-0.5 hover:bg-hover hover:text-foreground">
             Projects
           </Link>
           <ChevronRight className="h-3.5 w-3.5" />
@@ -743,7 +743,7 @@ export default function ProjectDetailPage() {
         <Popover
           align="right"
           trigger={
-            <button className="rounded p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground">
+            <button className="rounded p-1.5 text-muted-foreground hover:bg-hover hover:text-foreground">
               <MoreHorizontal className="h-4 w-4" />
             </button>
           }
@@ -791,7 +791,7 @@ export default function ProjectDetailPage() {
                 <Label>Deal</Label>
                 <Link
                   href="/pipeline"
-                  className="group -mr-1 flex items-center justify-end gap-1.5 rounded-md px-1 py-0.5 hover:bg-white/5"
+                  className="group -mr-1 flex items-center justify-end gap-1.5 rounded-md px-1 py-0.5 hover:bg-hover"
                 >
                   <span className="text-[19px] font-semibold leading-none tabular-nums">
                     {formatCurrency(Number(projectDeal.deal_value), projectDeal.currency)}
@@ -891,7 +891,7 @@ export default function ProjectDetailPage() {
             <Label>Client</Label>
           <Popover
             trigger={
-              <button className="flex h-9 max-w-full items-center gap-1.5 overflow-hidden rounded-md border border-white/5 bg-white/5 px-2.5 text-xs font-medium text-foreground-secondary hover:bg-white/10">
+              <button className="flex h-9 max-w-full items-center gap-1.5 overflow-hidden rounded-md border border-white/5 bg-hover px-2.5 text-xs font-medium text-foreground-secondary hover:bg-active">
                 <Building2 className="h-3 w-3 shrink-0 text-muted-foreground" />
                 <span className="truncate">{clientName(project.client_id)}</span>
               </button>
@@ -928,7 +928,7 @@ export default function ProjectDetailPage() {
                   <button
                     type="button"
                     onClick={markContacted}
-                    className="flex items-center gap-1.5 rounded-md border border-white/5 bg-white/5 px-2.5 py-2 text-xs font-medium text-foreground-secondary transition-colors hover:border-primary/40 hover:bg-primary/10 hover:text-foreground"
+                    className="flex items-center gap-1.5 rounded-md border border-white/5 bg-hover px-2.5 py-2 text-xs font-medium text-foreground-secondary transition-colors hover:border-primary/40 hover:bg-primary/10 hover:text-foreground"
                   >
                     <PhoneCall className="h-3 w-3" /> Contacted today
                   </button>
@@ -947,7 +947,7 @@ export default function ProjectDetailPage() {
             <Label>Lead</Label>
           <Popover
             trigger={
-              <button className="flex h-9 max-w-full items-center gap-2 overflow-hidden rounded-md border border-white/5 bg-white/5 px-2.5 text-xs font-medium text-foreground-secondary hover:bg-white/10">
+              <button className="flex h-9 max-w-full items-center gap-2 overflow-hidden rounded-md border border-white/5 bg-hover px-2.5 text-xs font-medium text-foreground-secondary hover:bg-active">
                 {project.owner ? (
                   <>
                     <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[8px] font-semibold text-primary">
@@ -986,7 +986,7 @@ export default function ProjectDetailPage() {
             <Label>Team</Label>
             <Popover
               trigger={
-                <button className="flex h-9 max-w-full items-center gap-2 overflow-hidden rounded-md border border-white/5 bg-white/5 px-2.5 text-xs font-medium text-foreground-secondary hover:bg-white/10">
+                <button className="flex h-9 max-w-full items-center gap-2 overflow-hidden rounded-md border border-white/5 bg-hover px-2.5 text-xs font-medium text-foreground-secondary hover:bg-active">
                   {projectMembers.length > 0 ? (
                     <>
                       <AvatarStack people={projectMembers} />
@@ -1093,7 +1093,7 @@ export default function ProjectDetailPage() {
             <div className="mb-3 flex items-center justify-between">
               <h3 className="flex items-center gap-2 text-sm font-semibold">
                 Tasks
-                <span className="rounded bg-white/5 px-1.5 py-0.5 text-xs font-normal text-muted-foreground">
+                <span className="rounded bg-hover px-1.5 py-0.5 text-xs font-normal text-muted-foreground">
                   {active.length - done.length} open
                 </span>
               </h3>
@@ -1131,7 +1131,7 @@ export default function ProjectDetailPage() {
                   onMouseLeave={() => setHoverTask(null)}
                   className={cn(
                     "group flex items-center gap-2.5 rounded px-1.5 py-1.5 transition-colors",
-                    hoverTask === t.id ? "bg-white/[0.07]" : "hover:bg-white/5"
+                    hoverTask === t.id ? "bg-white/[0.07]" : "hover:bg-hover"
                   )}
                 >
                   <button
@@ -1181,13 +1181,13 @@ export default function ProjectDetailPage() {
           <Card className="flex flex-col overflow-hidden">
             <h3 className="mb-3 flex shrink-0 items-center gap-2 text-sm font-semibold">
               Upcoming Meetings
-              <span className="rounded bg-white/5 px-1.5 py-0.5 text-xs font-normal text-muted-foreground">
+              <span className="rounded bg-hover px-1.5 py-0.5 text-xs font-normal text-muted-foreground">
                 {upcomingSchedule.length}
               </span>
               <button
                 type="button"
                 onClick={newMeeting}
-                className="ml-auto flex items-center gap-1 rounded-md px-1.5 py-1 text-[11px] font-normal text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+                className="ml-auto flex items-center gap-1 rounded-md px-1.5 py-1 text-[11px] font-normal text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
               >
                 <Plus className="h-3 w-3" /> Schedule
               </button>
@@ -1454,7 +1454,7 @@ export default function ProjectDetailPage() {
           </div>
           <div>
             <Label>Attendees</Label>
-            <div className="flex flex-wrap gap-1.5 rounded-md border border-white/15 bg-white/[0.02] p-2">
+            <div className="flex flex-wrap gap-1.5 rounded-md border border-edge bg-raise p-2">
               {profiles.length === 0 && (
                 <span className="px-1 text-xs text-muted-foreground">
                   No team members yet.
@@ -1476,7 +1476,7 @@ export default function ProjectDetailPage() {
                       "flex items-center gap-1.5 rounded-full border px-2 py-1 text-xs transition-colors",
                       on
                         ? "border-primary/40 bg-primary/15 text-foreground"
-                        : "border-white/10 text-muted-foreground hover:bg-white/5"
+                        : "border-white/10 text-muted-foreground hover:bg-hover"
                     )}
                   >
                     <Avatar name={p.full_name} url={p.avatar_url} size="xs" />
@@ -1643,14 +1643,14 @@ function MiniCalendar({
         <div className="flex items-center gap-1">
           <button
             onClick={() => setMonth((m) => subMonths(m, 1))}
-            className="rounded p-1 text-muted-foreground hover:bg-white/5 hover:text-foreground"
+            className="rounded p-1 text-muted-foreground hover:bg-hover hover:text-foreground"
           >
             <ChevronLeft className="h-3.5 w-3.5" />
           </button>
           <span className="text-xs font-medium">{format(month, "MMM yyyy")}</span>
           <button
             onClick={() => setMonth((m) => addMonths(m, 1))}
-            className="rounded p-1 text-muted-foreground hover:bg-white/5 hover:text-foreground"
+            className="rounded p-1 text-muted-foreground hover:bg-hover hover:text-foreground"
           >
             <ChevronRight className="h-3.5 w-3.5" />
           </button>
@@ -1774,14 +1774,14 @@ function ProjectCalendar({
         <div className="mb-3 flex items-center justify-between">
           <button
             onClick={() => setMonth((m) => subMonths(m, 1))}
-            className="rounded p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground"
+            className="rounded p-1.5 text-muted-foreground hover:bg-hover hover:text-foreground"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
           <h3 className="text-sm font-semibold">{format(month, "MMMM yyyy")}</h3>
           <button
             onClick={() => setMonth((m) => addMonths(m, 1))}
-            className="rounded p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground"
+            className="rounded p-1.5 text-muted-foreground hover:bg-hover hover:text-foreground"
           >
             <ChevronRight className="h-4 w-4" />
           </button>
@@ -1815,7 +1815,7 @@ function ProjectCalendar({
                   "flex h-20 flex-col items-stretch gap-0.5 rounded border p-1 text-left transition-colors",
                   isSelected
                     ? "border-primary bg-primary/10"
-                    : "border-transparent hover:bg-white/5",
+                    : "border-transparent hover:bg-hover",
                   !isSameMonth(day, month) && "opacity-40"
                 )}
               >
@@ -1911,7 +1911,7 @@ function ProjectCalendar({
         </h3>
 
         {selected && (
-          <div className="mb-3 flex flex-col gap-2 rounded border border-border bg-white/[0.02] p-2.5">
+          <div className="mb-3 flex flex-col gap-2 rounded border border-border bg-raise p-2.5">
             <Input
               placeholder={`Add on ${format(selected, "MMM d")}...`}
               value={quickName}
@@ -2203,8 +2203,8 @@ function PageTabButton({
       className={cn(
         "flex items-center gap-1.5 rounded px-2.5 py-1.5 text-[13px] font-medium transition-colors",
         active
-          ? "bg-white/10 text-foreground"
-          : "text-muted-foreground hover:bg-white/5 hover:text-foreground-secondary"
+          ? "bg-active text-foreground"
+          : "text-muted-foreground hover:bg-hover hover:text-foreground-secondary"
       )}
     >
       <Icon className="h-3.5 w-3.5" /> {label}

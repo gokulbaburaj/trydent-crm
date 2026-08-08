@@ -153,7 +153,7 @@ function ProjectsPageInner() {
               <span className="w-9 shrink-0 text-xs tabular-nums text-muted-foreground">
                 {pct.toFixed(0)}%
               </span>
-              <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/10">
+              <div className="h-1 flex-1 overflow-hidden rounded-full bg-active">
                 <div className="h-full rounded-full bg-success" style={{ width: `${pct}%` }} />
               </div>
             </div>
@@ -325,7 +325,7 @@ function ProjectsPageInner() {
           {teamFilter && (
             <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-primary/40 bg-primary/10 py-0.5 pl-2.5 pr-1 text-[11px] font-medium text-primary">
               Team: {teamFilter}
-              <Link href="/projects" title="Clear team filter" className="rounded-full p-0.5 hover:bg-white/10">
+              <Link href="/projects" title="Clear team filter" className="rounded-full p-0.5 hover:bg-active">
                 <X className="h-3 w-3" />
               </Link>
             </span>
@@ -364,7 +364,7 @@ function ProjectsPageInner() {
                 className={cn(
                   "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs transition-colors",
                   view === id
-                    ? "bg-white/10 font-medium text-foreground"
+                    ? "bg-active font-medium text-foreground"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -475,7 +475,7 @@ function ProjectsPageInner() {
                         <button
                           key={p.id}
                           onClick={() => openInNewTab(`/projects/${p.id}`, p.name)}
-                          className="rounded border border-border bg-white/[0.02] p-3 text-left transition-[border-color,background-color,box-shadow,translate] duration-150 hover:-translate-y-px hover:border-white/15 hover:bg-white/5 hover:shadow-lg hover:shadow-black/20"
+                          className="rounded border border-border bg-raise p-3 text-left transition-[border-color,background-color,box-shadow,translate] duration-150 hover:-translate-y-px hover:border-edge hover:bg-hover hover:shadow-lg hover:shadow-black/20"
                         >
                           <div className="flex items-center justify-between gap-2">
                             <span className="truncate text-sm font-medium">{p.name}</span>
@@ -488,7 +488,7 @@ function ProjectsPageInner() {
                               <span className="text-xs tabular-nums text-muted-foreground">
                                 {pct.toFixed(0)}%
                               </span>
-                              <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/10">
+                              <div className="h-1 flex-1 overflow-hidden rounded-full bg-active">
                                 <div
                                   className="h-full rounded-full bg-success"
                                   style={{ width: `${pct}%` }}
@@ -667,7 +667,7 @@ function PaidEditor({ deal, onSaved }: { deal: Deal; onSaved: (d: Deal) => void 
       trigger={
         <button
           className={cn(
-            "rounded px-1 py-0.5 transition-colors hover:bg-white/5",
+            "rounded px-1 py-0.5 transition-colors hover:bg-hover",
             owed > 0 ? "text-warning" : "text-success"
           )}
           title="Record a payment"

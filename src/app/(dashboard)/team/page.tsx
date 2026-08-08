@@ -376,7 +376,7 @@ function TeamPageInner() {
                     <button
                       onClick={() => openInNewTab(`/staff-portal?user=${p.id}`, `${p.full_name.split(" ")[0]} — preview`)}
                       title="Preview staff portal"
-                      className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+                      className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
                     >
                       <Eye className="h-3.5 w-3.5" />
                     </button>
@@ -385,7 +385,7 @@ function TeamPageInner() {
                       <button
                         onClick={() => setPayFor(p)}
                         title="Payment plan"
-                        className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+                        className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
                       >
                         <CreditCard className="h-3.5 w-3.5" />
                       </button>
@@ -680,7 +680,7 @@ function PaymentPlanEditor({
           setAmount("");
           setDueDate(null);
         }}
-        className="flex flex-col gap-3 rounded-lg border border-border bg-white/[0.02] p-3"
+        className="flex flex-col gap-3 rounded-lg border border-border bg-raise p-3"
       >
         <span className="text-[13px] font-medium">Add a payment</span>
         <Input placeholder="Label (e.g. Milestone 1, Monthly retainer)" value={label} onChange={(e) => setLabel(e.target.value)} />
@@ -712,7 +712,7 @@ function TeamPicker({
     <div onClick={(e) => e.stopPropagation()}>
       <Popover
         trigger={
-          <button className="inline-flex items-center gap-1.5 rounded-md border border-white/5 bg-white/5 px-2 py-1 text-xs font-medium text-foreground-secondary hover:bg-white/10">
+          <button className="inline-flex items-center gap-1.5 rounded-md border border-white/5 bg-hover px-2 py-1 text-xs font-medium text-foreground-secondary hover:bg-active">
             <Building2 className="h-3 w-3 text-muted-foreground" />
             {value || <span className="text-muted-2">No team</span>}
           </button>
@@ -747,12 +747,12 @@ function TeamPicker({
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 placeholder="New team…"
-                className="h-7 w-32 min-w-0 flex-1 rounded border border-white/15 bg-transparent px-2 text-xs text-foreground placeholder:text-muted-2 focus:border-primary/60 focus:outline-none"
+                className="h-7 w-32 min-w-0 flex-1 rounded border border-edge bg-transparent px-2 text-xs text-foreground placeholder:text-muted-2 focus:border-primary/60 focus:outline-none"
               />
               <button
                 type="submit"
                 disabled={!draft.trim()}
-                className="rounded p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground disabled:opacity-40"
+                className="rounded p-1.5 text-muted-foreground hover:bg-hover hover:text-foreground disabled:opacity-40"
                 title="Add team"
               >
                 <Plus className="h-3.5 w-3.5" />
@@ -779,7 +779,7 @@ function ManagerPicker({
     <div onClick={(e) => e.stopPropagation()}>
       <Popover
         trigger={
-          <button className="inline-flex items-center gap-1.5 rounded-md border border-white/5 bg-white/5 px-2 py-1 text-xs font-medium text-foreground-secondary hover:bg-white/10">
+          <button className="inline-flex items-center gap-1.5 rounded-md border border-white/5 bg-hover px-2 py-1 text-xs font-medium text-foreground-secondary hover:bg-active">
             <User className="h-3 w-3 text-muted-foreground" />
             {current ? current.full_name : <span className="text-muted-2">No manager</span>}
           </button>
@@ -819,7 +819,7 @@ function ViewButton({
       onClick={onClick}
       className={cn(
         "flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium transition-colors",
-        active ? "bg-white/10 text-foreground" : "text-muted-foreground hover:text-foreground-secondary"
+        active ? "bg-active text-foreground" : "text-muted-foreground hover:text-foreground-secondary"
       )}
     >
       <Icon className="h-3.5 w-3.5" /> {label}

@@ -69,6 +69,23 @@
   --sidebar-border: rgba(255, 255, 255, 0.05);
   --sidebar-ring: var(--ring);
 
+  /*
+    Interaction states, as tokens rather than literal white-alpha.
+
+    These were `bg-white/5` / `bg-white/10` / `border-white/15` written inline —
+    288 of them across 54 files. That works exactly as long as the app is dark
+    and stops working the instant it isn't: white at 5% over a white page is
+    nothing at all. Behind a token, changing theme is one edit here instead of
+    a sweep through every component.
+
+    Values below are byte-identical to what they replaced, so this indirection
+    is invisible until the palette actually moves.
+  */
+  --hover: rgba(255, 255, 255, 0.05);   /* was bg-white/5  */
+  --active: rgba(255, 255, 255, 0.10);  /* was bg-white/10 */
+  --raise: rgba(255, 255, 255, 0.02);   /* was bg-white/[0.02] — faint lift */
+  --edge: rgba(255, 255, 255, 0.15);    /* was border-white/15 on controls */
+
   /* ---- Trydent extras (kept alongside the shadcn set) ---- */
   --panel: #0e0e10;                          /* main canvas between sidebar and cards */
   --border-subtle: rgba(255, 255, 255, 0.035);
@@ -192,6 +209,11 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-hover: var(--hover);
+  --color-active: var(--active);
+  --color-raise: var(--raise);
+  --color-edge: var(--edge);
 
   /* Trydent aliases so existing markup keeps working */
   --color-panel: var(--panel);

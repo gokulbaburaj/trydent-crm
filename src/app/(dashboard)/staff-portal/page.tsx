@@ -145,7 +145,7 @@ function StaffPortalInner() {
           <button
             onClick={signOut}
             title="Sign out"
-            className="rounded p-2 text-muted-foreground hover:bg-white/5 hover:text-foreground"
+            className="rounded p-2 text-muted-foreground hover:bg-hover hover:text-foreground"
           >
             <LogOut className="h-4 w-4" />
           </button>
@@ -196,7 +196,7 @@ function StaffPortalInner() {
                       )}
                     >
                       {bucket}
-                      <span className="rounded-full bg-white/5 px-1.5 py-px text-[11px] font-normal text-muted-foreground">
+                      <span className="rounded-full bg-hover px-1.5 py-px text-[11px] font-normal text-muted-foreground">
                         {items.length}
                       </span>
                     </h3>

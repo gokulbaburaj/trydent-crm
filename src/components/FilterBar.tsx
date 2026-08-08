@@ -152,7 +152,7 @@ export function FilterBar({
             value={filters.text}
             onChange={(e) => set({ text: e.target.value })}
             placeholder={placeholder}
-            className="h-9 w-full rounded-md border border-white/15 sm:h-8 sm:w-52 bg-transparent pl-8 pr-7 text-[13px] text-foreground shadow-sm placeholder:text-muted-2 focus:border-primary/60 focus:outline-none focus:ring-[3px] focus:ring-primary/20"
+            className="h-9 w-full rounded-md border border-edge sm:h-8 sm:w-52 bg-transparent pl-8 pr-7 text-[13px] text-foreground shadow-sm placeholder:text-muted-2 focus:border-primary/60 focus:outline-none focus:ring-[3px] focus:ring-primary/20"
           />
           {filters.text && (
             <button
@@ -263,7 +263,7 @@ export function FilterBar({
               <button
                 type="button"
                 onClick={() => set({ due: { from: null, to: null } })}
-                className="rounded px-1.5 py-1 text-xs text-muted-foreground hover:bg-white/5 hover:text-foreground"
+                className="rounded px-1.5 py-1 text-xs text-muted-foreground hover:bg-hover hover:text-foreground"
               >
                 Clear
               </button>
@@ -276,7 +276,7 @@ export function FilterBar({
           <Popover
             align="right"
             trigger={
-              <button className="flex min-h-11 items-center gap-1.5 rounded-full px-2 text-xs font-medium text-muted-foreground transition-colors sm:h-8 sm:min-h-0 sm:rounded-md sm:border sm:border-border sm:bg-surface sm:px-2.5 sm:text-foreground-secondary sm:hover:bg-white/5 sm:hover:text-foreground">
+              <button className="flex min-h-11 items-center gap-1.5 rounded-full px-2 text-xs font-medium text-muted-foreground transition-colors sm:h-8 sm:min-h-0 sm:rounded-md sm:border sm:border-border sm:bg-surface sm:px-2.5 sm:text-foreground-secondary sm:hover:bg-hover sm:hover:text-foreground">
                 <Bookmark className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className="max-w-36 truncate">{activeView?.name ?? "Views"}</span>
                 <ChevronDown className="h-3 w-3 text-muted-foreground" />
@@ -292,7 +292,7 @@ export function FilterBar({
                 {views.map((v) => (
                   <div
                     key={v.name}
-                    className="group flex items-center gap-0.5 rounded-md hover:bg-white/5"
+                    className="group flex items-center gap-0.5 rounded-md hover:bg-hover"
                   >
                     <button
                       onClick={() => {
@@ -404,7 +404,7 @@ function Facet({
             "min-h-11 px-2 sm:h-8 sm:min-h-0 sm:rounded-md sm:border sm:px-2.5",
             count > 0
               ? "text-primary sm:border-primary/40 sm:bg-primary/10"
-              : "text-muted-foreground sm:border-border sm:bg-surface sm:text-foreground-secondary sm:hover:bg-white/5 sm:hover:text-foreground"
+              : "text-muted-foreground sm:border-border sm:bg-surface sm:text-foreground-secondary sm:hover:bg-hover sm:hover:text-foreground"
           )}
         >
           <ListFilter className="h-3 w-3 opacity-70" />
@@ -425,11 +425,11 @@ function Facet({
 
 function Chip({ children, onRemove }: { children: ReactNode; onRemove: () => void }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full border border-border bg-white/5 py-0.5 pl-2.5 pr-1 text-[11px] font-medium text-foreground-secondary">
+    <span className="inline-flex items-center gap-1 rounded-full border border-border bg-hover py-0.5 pl-2.5 pr-1 text-[11px] font-medium text-foreground-secondary">
       {children}
       <button
         onClick={onRemove}
-        className="rounded-full p-0.5 text-muted-foreground hover:bg-white/10 hover:text-foreground"
+        className="rounded-full p-0.5 text-muted-foreground hover:bg-active hover:text-foreground"
         title="Remove filter"
       >
         <X className="h-3 w-3" />

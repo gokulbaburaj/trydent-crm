@@ -205,7 +205,7 @@ export function TaskDetailDrawer({
               trigger={
                 <button
                   title="More actions"
-                  className="mt-1 shrink-0 rounded p-2 text-muted-foreground hover:bg-white/5 hover:text-foreground"
+                  className="mt-1 shrink-0 rounded p-2 text-muted-foreground hover:bg-hover hover:text-foreground"
                 >
                   <MoreHorizontal className="h-4 w-4" />
                 </button>
@@ -278,7 +278,7 @@ export function TaskDetailDrawer({
             <Popover
               fullWidth
               trigger={
-                <button className="flex w-full items-center gap-2 rounded border border-border bg-surface px-3 py-2 text-sm text-foreground hover:bg-white/5">
+                <button className="flex w-full items-center gap-2 rounded border border-border bg-surface px-3 py-2 text-sm text-foreground hover:bg-hover">
                   {task.assigned_to ? (
                     <>
                       <span className="flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[8px] font-semibold text-primary">
@@ -422,14 +422,14 @@ export function TaskDetailDrawer({
                   href={l.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="rounded p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground"
+                  className="rounded p-1.5 text-muted-foreground hover:bg-hover hover:text-foreground"
                   title="Open link"
                 >
                   <ExternalLink className="h-3.5 w-3.5" />
                 </a>
                 <button
                   onClick={() => removeLink(idx)}
-                  className="rounded p-1.5 text-muted-foreground opacity-0 hover:bg-white/5 hover:text-danger group-hover:opacity-100"
+                  className="rounded p-1.5 text-muted-foreground opacity-0 hover:bg-hover hover:text-danger group-hover:opacity-100"
                   title="Remove link"
                 >
                   <X className="h-3.5 w-3.5" />

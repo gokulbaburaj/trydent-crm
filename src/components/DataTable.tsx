@@ -212,7 +212,7 @@ export function DataTable<T>({
               onClick={() => setPage((p) => Math.max(0, p - 1))}
               disabled={safePage === 0}
               aria-label="Previous page"
-              className="rounded-md border border-border p-1 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground disabled:pointer-events-none disabled:opacity-35"
+              className="rounded-md border border-border p-1 text-muted-foreground transition-colors hover:bg-hover hover:text-foreground disabled:pointer-events-none disabled:opacity-35"
             >
               <ChevronLeft className="h-3.5 w-3.5" />
             </button>
@@ -234,8 +234,8 @@ export function DataTable<T>({
                   className={cn(
                     "min-w-[1.75rem] rounded-md px-1.5 py-1 tabular-nums transition-colors",
                     n === safePage
-                      ? "bg-white/10 font-medium text-foreground"
-                      : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
+                      ? "bg-active font-medium text-foreground"
+                      : "text-muted-foreground hover:bg-hover hover:text-foreground"
                   )}
                 >
                   {n + 1}
@@ -248,7 +248,7 @@ export function DataTable<T>({
               onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
               disabled={safePage >= totalPages - 1}
               aria-label="Next page"
-              className="rounded-md border border-border p-1 text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground disabled:pointer-events-none disabled:opacity-35"
+              className="rounded-md border border-border p-1 text-muted-foreground transition-colors hover:bg-hover hover:text-foreground disabled:pointer-events-none disabled:opacity-35"
             >
               <ChevronRight className="h-3.5 w-3.5" />
             </button>
@@ -274,7 +274,7 @@ export function DataTable<T>({
             align="right"
             className="w-48"
             trigger={
-              <button className="flex min-h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground active:bg-white/5">
+              <button className="flex min-h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-muted-foreground active:bg-hover">
                 <ArrowUpDown className="h-3.5 w-3.5" />
                 {sort ? columns[sort.index]?.header || "Sorted" : "Sort"}
                 {sort && (sort.dir === 1 ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />)}
@@ -342,7 +342,7 @@ export function DataTable<T>({
                     // transition-[transform] too: a phone has no hover, so a
                     // press is the ONLY feedback a card can give.
                     "transition-[background-color,transform] duration-150",
-                    onRowClick && "cursor-pointer active:scale-[0.99] active:bg-white/5",
+                    onRowClick && "cursor-pointer active:scale-[0.99] active:bg-hover",
                     isDimmed?.(row) && "opacity-45"
                   )}
                 >
@@ -476,7 +476,7 @@ export function DataTable<T>({
                 style={{ animationDelay: `${Math.min(idx, 12) * 22}ms` }}
                 className={cn(
                   "group animate-row border-b border-border-subtle last:border-0 transition-colors",
-                  onRowClick && "cursor-pointer hover:bg-white/5",
+                  onRowClick && "cursor-pointer hover:bg-hover",
                   isSelected && "bg-primary/5",
                   // Opacity, not a grey text colour — it fades the badges and
                   // avatars too, which is the point.

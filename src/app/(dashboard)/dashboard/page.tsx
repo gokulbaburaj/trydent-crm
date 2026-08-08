@@ -265,7 +265,7 @@ export default function DashboardPage() {
             </div>
             <Link
               href="/pipeline"
-              className="flex items-center gap-1.5 rounded-md border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-foreground-secondary transition-colors hover:bg-white/10 hover:text-foreground"
+              className="flex items-center gap-1.5 rounded-md border border-white/10 bg-hover px-2.5 py-1.5 text-xs text-foreground-secondary transition-colors hover:bg-active hover:text-foreground"
             >
               Open pipeline <ArrowRight className="h-3 w-3" />
             </Link>
@@ -349,7 +349,7 @@ export default function DashboardPage() {
                   className={cn(
                     "rounded px-2.5 py-1 text-xs font-medium transition-colors",
                     revenueChart === c.id
-                      ? "bg-white/10 text-foreground"
+                      ? "bg-active text-foreground"
                       : "text-muted-foreground hover:text-foreground-secondary"
                   )}
                 >
@@ -432,7 +432,7 @@ export default function DashboardPage() {
             const client = clients.find((c) => c.id === a.client_id);
             return (
               <div key={a.id} className="flex items-center gap-3 py-3">
-                <div className="flex w-11 shrink-0 flex-col items-center rounded bg-white/10 py-1.5">
+                <div className="flex w-11 shrink-0 flex-col items-center rounded bg-active py-1.5">
                   <span className="text-sm font-bold">{formatDateFns(date, "d")}</span>
                   <span className="text-[10px] uppercase text-muted-foreground">{formatDateFns(date, "EEE")}</span>
                 </div>

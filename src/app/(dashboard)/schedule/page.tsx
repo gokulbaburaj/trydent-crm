@@ -446,7 +446,7 @@ export default function SchedulePage() {
               <div className="flex items-center rounded border border-border bg-surface">
                 <button
                   onClick={goPrev}
-                  className="flex h-7 w-7 items-center justify-center text-muted-foreground hover:bg-white/5 hover:text-foreground"
+                  className="flex h-7 w-7 items-center justify-center text-muted-foreground hover:bg-hover hover:text-foreground"
                   aria-label="Previous"
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -459,7 +459,7 @@ export default function SchedulePage() {
                 </button>
                 <button
                   onClick={goNext}
-                  className="flex h-7 w-7 items-center justify-center text-muted-foreground hover:bg-white/5 hover:text-foreground"
+                  className="flex h-7 w-7 items-center justify-center text-muted-foreground hover:bg-hover hover:text-foreground"
                   aria-label="Next"
                 >
                   <ChevronRight className="h-4 w-4" />
@@ -469,7 +469,7 @@ export default function SchedulePage() {
                 <button
                   onClick={() => setCalView("week")}
                   className={`rounded px-2.5 py-1 text-xs font-medium ${
-                    calView === "week" ? "bg-white/10 text-foreground" : "text-muted-foreground hover:text-foreground-secondary"
+                    calView === "week" ? "bg-active text-foreground" : "text-muted-foreground hover:text-foreground-secondary"
                   }`}
                 >
                   Week
@@ -477,7 +477,7 @@ export default function SchedulePage() {
                 <button
                   onClick={() => setCalView("month")}
                   className={`rounded px-2.5 py-1 text-xs font-medium ${
-                    calView === "month" ? "bg-white/10 text-foreground" : "text-muted-foreground hover:text-foreground-secondary"
+                    calView === "month" ? "bg-active text-foreground" : "text-muted-foreground hover:text-foreground-secondary"
                   }`}
                 >
                   Month
@@ -572,7 +572,7 @@ export default function SchedulePage() {
             </div>
             <div>
               <Label>Attendees</Label>
-              <div className="flex flex-wrap gap-1.5 rounded-md border border-white/15 bg-white/[0.02] p-2">
+              <div className="flex flex-wrap gap-1.5 rounded-md border border-edge bg-raise p-2">
                 {profiles.length === 0 && (
                   <span className="px-1 text-xs text-muted-foreground">No team members yet.</span>
                 )}
@@ -596,7 +596,7 @@ export default function SchedulePage() {
                         "flex items-center gap-1.5 rounded-full border px-2 py-1 text-xs transition-colors",
                         selected
                           ? "border-primary/40 bg-primary/15 text-foreground"
-                          : "border-white/10 text-muted-foreground hover:bg-white/5"
+                          : "border-white/10 text-muted-foreground hover:bg-hover"
                       )}
                     >
                       <Avatar name={p.full_name} url={p.avatar_url} size="xs" />
@@ -1048,8 +1048,8 @@ function WeekEvent({
         // block is mostly the grid showing through. A white-alpha overlay is
         // the app's standard hover anyway (see design.md), so use that.
         "group/ev absolute overflow-hidden rounded px-1.5 py-1 text-left transition-[box-shadow,background-color] duration-150 hover:shadow-md hover:shadow-black/30",
-        "after:pointer-events-none after:absolute after:inset-0 after:bg-white/0 after:transition-colors hover:after:bg-white/5",
-        isDragging && "z-30 shadow-xl shadow-black/50 after:bg-white/10"
+        "after:pointer-events-none after:absolute after:inset-0 after:bg-white/0 after:transition-colors hover:after:bg-hover",
+        isDragging && "z-30 shadow-xl shadow-black/50 after:bg-active"
       )}
       style={{
         top: top + 1,
@@ -1387,7 +1387,7 @@ function TabButton({
     <button
       onClick={onClick}
       className={`flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium ${
-        active ? "bg-white/10 text-foreground" : "text-muted-foreground hover:text-foreground-secondary"
+        active ? "bg-active text-foreground" : "text-muted-foreground hover:text-foreground-secondary"
       }`}
     >
       <Icon className="h-3.5 w-3.5" /> {label}

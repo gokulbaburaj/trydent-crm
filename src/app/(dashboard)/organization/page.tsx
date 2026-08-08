@@ -257,7 +257,7 @@ export default function OrganizationPage() {
                       {pct}%
                     </span>
                   </div>
-                  <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-white/10">
+                  <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-active">
                     <div
                       className={cn(
                         "h-full rounded-full transition-all",
