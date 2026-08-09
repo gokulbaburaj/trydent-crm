@@ -544,6 +544,52 @@ button:not(:disabled):active,
   }
 }
 
+/*
+  ── prefers-reduced-transparency ────────────────────────────────────────────
+
+  Handled nowhere before this. The record pane's whole visual identity is
+  translucent — a gradient wash with frosted cards over it — and someone who
+  has asked their OS to reduce transparency was getting the full effect,
+  backdrop blur included.
+
+  This is a real accessibility setting, not a preference: it exists for people
+  who find layered translucency hard to parse. The answer is a frostier,
+  solid surface, NOT removing the design — the layout, radii and colour
+  relationships all survive; only the see-through part goes.
+
+  The wash itself stays. It's a background gradient rather than a translucent
+  layer, so it costs no legibility once the cards on top are opaque.
+*/
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --wash-card: #ffffff;
+    --wash-card-strong: #ffffff;
+    --wash-edge: rgba(0, 0, 0, 0.1);
+  }
+  /* Blur is the expensive half of the effect and the part that actually
+     impairs reading through a surface. */
+  [class*="backdrop-blur"] {
+    backdrop-filter: none !important;
+  }
+}
+
+/*
+  prefers-contrast: more — near-solid backgrounds with a defined border.
+
+  Separate from the above because the settings are independent: someone can
+  want high contrast while being fine with translucency.
+*/
+@media (prefers-contrast: more) {
+  :root {
+    --wash-card: #ffffff;
+    --wash-card-strong: #ffffff;
+    --wash-edge: rgba(0, 0, 0, 0.35);
+    --wash-line: rgba(0, 0, 0, 0.45);
+    --border: rgba(0, 0, 0, 0.3);
+    --muted-foreground: #4a4e55;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-page,
   .animate-pop,

@@ -308,7 +308,20 @@ function ClientRecord({
               </RoundButton>
             }
           />
-          <div className="rounded-[calc(var(--radius)-0.5rem)] bg-[var(--wash-card-strong)] p-3">
+          {/*
+            Solid, not another translucent layer.
+
+            This was `--wash-card-strong` (white 86%) sitting inside a WashCard
+            (white 70%) — a light translucent surface stacked on a light
+            translucent surface, which is the one thing Apple's material
+            guidance says never to do, because the two blends compound and the
+            text ends up reading through both.
+
+            Solid also earns its place semantically: this panel is the next
+            action on the record, so it should sit ON the card rather than
+            dissolve into it.
+          */}
+          <div className="rounded-[calc(var(--radius)-0.5rem)] border border-[var(--wash-line)] bg-card p-3">
             <div className="text-[13px] font-semibold">Follow up</div>
             <p className="mt-1 text-[13px] text-muted-foreground">
               {client.last_contact
