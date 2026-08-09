@@ -5,28 +5,60 @@ conflicts with this file, either follow this file or update it in the same PR.
 
 ## System
 
-**shadcn/ui, dark only, neutral base** — real registry components in
+**shadcn/ui, light, warm neutral base** — real registry components in
 `src/components/shadcn/` (installed via `npx shadcn@latest add <name>`, never
 hand-edited). App wrappers in `src/components/ui/` adapt legacy prop names
 (`variant="primary" | "danger"`, `tone="green"`, Drawer/Popover/Dropdown APIs).
 Pages import from `ui/`, not `shadcn/`.
 
-Shell is Linear-inspired and non-negotiable: dark sidebar on `--background`,
-browser-style tab bar, content inside a rounded `--panel` canvas.
+Shell as of 9 Aug: a labelled nav rail on `--background` (foldable to 60px
+icons), browser-style tab bar, content inside a rounded `--panel` canvas.
+
+The rail's sections are named for INTENT — My Work, Customers, Sales,
+Performance, Organization — not for object type. The previous "Workspace"
+bucket held six unrelated pages under a label that never narrowed the search,
+so you read all six every time. An accurate section label beats a tidy one.
+
+Record surfaces use **list-detail**, not table-plus-drawer. See
+`src/components/RecordShell.tsx` for the full reasoning; the short version is
+that a drawer covers the list it came from, isn't addressable, and caps detail
+at ~480px. Selection lives in the URL (`?r=<id>`) via `router.replace`, so
+reading through a queue leaves one history entry rather than one per record.
 
 ## Tokens (globals.css — change here, nowhere else)
 
 | Token | Value | Use |
 | --- | --- | --- |
-| `--background` | `#0a0a0a` | shell, sidebar |
-| `--panel` | `#101010` | main canvas |
-| `--card` / `--popover` | `#171717` | cards, menus, inputs' popovers |
+| `--background` | `#f4f5f2` | shell, nav rail |
+| `--panel` | `#f4f5f2` | main canvas |
+| `--card` / `--popover` | `#ffffff` | cards, menus, inputs' popovers |
 | `--primary` | user-chosen (default `#5e6ad2`) | brand: buttons, rings, selection, charts |
 | `--secondary` / `--muted` / `--accent` | `#262626` | shadcn support surfaces (accent ≠ brand!) |
 | `--muted-foreground` | `#a3a3a3` | secondary text |
-| `--border` / `--input` | white 10% / 15% | hairlines, control borders |
+| `--border` / `--input` | black 8% / 12% | hairlines, control borders |
 | `--success` `--warning` `--destructive` | green/amber/red | semantic only |
-| `--radius` | `0.625rem` | drives the whole radius scale |
+| `--radius` | `1.25rem` | drives the whole radius scale |
+
+### The four colour systems
+
+Independent, and keeping them independent is the point. Each answers a
+different question; the moment two of them colour the same chip, neither means
+anything.
+
+| System | Question | Tokens | Rule |
+| --- | --- | --- | --- |
+| **wash** | where am I | `--wash`, `--wash-card` | ONE gradient, scoped to the record pane. Cards are translucent windows onto it, never individually painted — hue tracks position. |
+| **heat** | how much is this | `--heat-0..4` | Value maps to hue. Nothing else in the app is allowed to. Bucketing lives in `lib/heat.ts`. |
+| **primary** | what stage | `--primary` | Process, progress, selection. Stays user-adjustable in Settings. |
+| **ink** | what do I do | `--foreground` | Primary actions and the active tab. Exactly one black control per view. |
+
+The wash is fixed and warm, deliberately NOT derived from `--primary`: an
+indigo-derived gradient comes out cold and violet, and the warmth is most of
+what separates this from a themed admin panel.
+
+A `WashCard` outside a `WashPane` is plain translucent white. That degrades
+quietly rather than breaking — but it also won't look like anything, so it is
+not a general-purpose card. Use `Card`.
 
 **Calendar blocks** are a wash + one saturated left edge + label text in the
 same hue. Never a pale fill with dark text — that's a light-mode card dropped

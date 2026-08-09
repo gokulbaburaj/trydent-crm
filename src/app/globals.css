@@ -117,6 +117,77 @@
   --block-ink: #16171b;
   --block-ink-fg: #ffffff;
 
+  /*
+    ── The four colour systems ───────────────────────────────────────────────
+
+    Read off the Dynamic 365 reference on 9 Aug, after a first pass that
+    reduced the whole thing to "lime accent" and was wrong. There is no single
+    accent in that design. There are four independent systems, and each one
+    answers a different question:
+
+      wash     WHERE am I        one gradient, scoped to the record pane
+      heat     HOW MUCH is this  value maps to hue, nothing else does
+      primary  WHAT STAGE        process, progress, selection  (user-adjustable)
+      ink      WHAT DO I DO      primary actions. Black. Nothing else is.
+
+    Keeping them separate is the whole point. The moment the accent also means
+    "high value" or the wash also means "selected", the screen stops being
+    readable and becomes decorated.
+  */
+
+  /*
+    1. WASH — a single diagonal gradient, not four coloured cards.
+
+    In the reference the entire record pane sits on ONE gradient; the cards are
+    translucent windows onto it. That is why the top-left card reads lime and
+    the bottom-right reads rose while nothing is individually coloured, and
+    it's the effect that can't be faked per-card — paint each card its own
+    colour and you get a fruit salad, because the hue stops tracking position.
+
+    Fixed and warm, deliberately NOT derived from --primary. The warmth is most
+    of why the reference reads as premium rather than as a themed admin panel,
+    and an indigo-derived wash would come out cold and violet. --primary keeps
+    its job below.
+  */
+  --wash-1: #dff29a;   /* lime, top-left */
+  --wash-2: #f6f0d8;   /* cream */
+  --wash-3: #fae3cd;   /* peach */
+  --wash-4: #f8d7dd;   /* rose, bottom-right */
+  --wash: linear-gradient(
+    135deg,
+    var(--wash-1) 0%,
+    var(--wash-2) 34%,
+    var(--wash-3) 66%,
+    var(--wash-4) 100%
+  );
+  /*
+    Cards on the wash are translucent white, NOT --card. At full opacity they'd
+    cut the gradient into rectangles and the continuity — the actual effect —
+    would be gone. 62% is where the type still passes contrast over the darkest
+    part of the wash (the rose corner) while the gradient still reads through.
+  */
+  --wash-card: rgba(255, 255, 255, 0.62);
+  --wash-card-strong: rgba(255, 255, 255, 0.82);
+  --wash-edge: rgba(255, 255, 255, 0.55);
+
+  /*
+    2. HEAT — value → hue. Five steps, cold to hot.
+
+    In the reference the lead scores run 32 rose, 62 peach, 72 amber, 83 lime,
+    90 black: the colour IS the number. Same ramp as the wash on purpose, so a
+    hot record and the top-left of the gradient agree, and the selected row in
+    the queue matches the pane it opened.
+
+    Ink is the top step rather than a brighter lime because past ~90 the ramp
+    has nowhere warmer to go, and inverting to black is what makes the best one
+    on screen unmistakable. See lib/heat.ts for the bucketing.
+  */
+  --heat-0: #f8d7dd;  --heat-0-fg: #7c3444;
+  --heat-1: #fae3cd;  --heat-1-fg: #85512a;
+  --heat-2: #f7ecb4;  --heat-2-fg: #6f5a12;
+  --heat-3: #dff29a;  --heat-3-fg: #4a5f14;
+  --heat-4: #16171b;  --heat-4-fg: #ffffff;
+
   /* ---- Trydent extras (kept alongside the shadcn set) ---- */
   --panel: #f4f5f2;                          /* main canvas between sidebar and cards */
   --border-subtle: rgba(0, 0, 0, 0.05);

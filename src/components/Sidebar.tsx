@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
   ListChecks,
   MessageSquare,
+  PanelLeftClose,
   Plus,
   Receipt,
   Search,
@@ -57,25 +58,50 @@ interface NavItem {
   page: PageKey;
 }
 
-const TOP: NavItem[] = [
+/*
+  ── Grouped by purpose, 9 Aug ───────────────────────────────────────────────
+
+  Was: two pinned items, then a "Workspace" section holding Clients, Pipeline,
+  Invoices, Projects, Schedule and Channels. Six things with nothing in common
+  beyond "not admin", under a label that told you nothing — you had to read all
+  six every time because the heading never narrowed the search.
+
+  The reference's rail works because each label answers "what am I trying to
+  do": My Work, Customers, Sales, Performance, Collateral. You skip four
+  sections without reading them. That's the whole value of a section label and
+  it's why an accurate one beats a tidy one.
+
+  Splitting on that axis puts Schedule with My Work (it's your day, not a
+  customer record), Channels with Customers (that's who you're talking to), and
+  leaves Sales holding the three things that actually track money: Pipeline →
+  Invoices → Projects, in the order the money moves.
+*/
+const MY_WORK: NavItem[] = [
   { href: "/my-work", label: "My Work", icon: ListChecks, page: "my-work" },
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, page: "dashboard" },
+  { href: "/schedule", label: "Schedule", icon: Calendar, page: "schedule" },
 ];
 
-const WORKSPACE: NavItem[] = [
+const CUSTOMERS: NavItem[] = [
   { href: "/clients", label: "Clients", icon: Users, page: "clients" },
+  { href: "/channels", label: "Channels", icon: MessageSquare, page: "channels" },
+];
+
+const SALES: NavItem[] = [
   { href: "/pipeline", label: "Pipeline", icon: GitBranch, page: "pipeline" },
   // Sits under Pipeline because that's the order the money moves: deal closes,
   // invoice goes out. Shares the Clients grant — see ROUTE_KEYS in permissions.
   { href: "/invoices", label: "Invoices", icon: Receipt, page: "clients" },
   { href: "/projects", label: "Projects", icon: FolderKanban, page: "projects" },
-  { href: "/schedule", label: "Schedule", icon: Calendar, page: "schedule" },
-  { href: "/channels", label: "Channels", icon: MessageSquare, page: "channels" },
+];
+
+const PERFORMANCE: NavItem[] = [
+  { href: "/goals", label: "Goals", icon: Target, page: "goals" },
+  { href: "/accounts", label: "Accounts", icon: Wallet, page: "accounts" },
 ];
 
 const ORGANIZATION: NavItem[] = [
   { href: "/organization", label: "Organisation", icon: Building2, page: "organization" },
-  { href: "/accounts", label: "Accounts", icon: Wallet, page: "accounts" },
   { href: "/settings", label: "Settings", icon: Settings, page: "settings" },
 ];
 
@@ -93,9 +119,14 @@ const ORGANIZATION: NavItem[] = [
  * So: anyone holding the hub still gets the tidy single entry. Anyone granted
  * these pages *without* the hub gets direct links, because otherwise the grant
  * is unusable.
+ *
+ * Goals left this list on 9 Aug and now sits under Performance unconditionally.
+ * It's a destination people go to on purpose and check often, which is not what
+ * the hub is for — the hub exists to keep four ADMIN pages from crowding the
+ * rail. Consequence: someone holding `organization` now sees a Goals link they
+ * previously reached only through the hub. That's the intended trade.
  */
 const ORG_DETAIL: NavItem[] = [
-  { href: "/goals", label: "Goals", icon: Target, page: "goals" },
   { href: "/recruiting", label: "Recruiting", icon: UserPlus, page: "recruiting" },
   { href: "/onboarding", label: "Onboarding", icon: ClipboardCheck, page: "onboarding" },
   { href: "/team", label: "Team", icon: UsersRound, page: "team" },
@@ -111,7 +142,10 @@ export function Sidebar({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const activeTeam = searchParams.get("team");
-  const { state, toggleSection, toggleTeam, openTeam, setOrder } = useNavState();
+  const { state, toggleSection, toggleTeam, openTeam, setOrder, toggleRail } = useNavState();
+  // The mobile drawer is already a deliberate act of opening the nav — folding
+  // it to icons in there would be hiding the thing you just asked for.
+  const rail = state.rail && !mobile;
 
   const { profile: me, access } = useAuth();
   const isAdmin = me?.role === "admin";
@@ -174,50 +208,107 @@ export function Sidebar({
   return (
     <aside
       className={cn(
-        "h-full w-[220px] shrink-0 flex-col overflow-y-auto bg-background",
+        "h-full shrink-0 flex-col overflow-y-auto overflow-x-hidden bg-background",
+        // Width is transitioned rather than swapped so folding reads as the
+        // rail moving out of the way, not as the page reflowing under you.
+        "transition-[width] duration-200 ease-out motion-reduce:transition-none",
+        rail ? "w-[60px]" : "w-[220px]",
         mobile ? "flex w-full" : "hidden md:flex"
       )}
     >
-      <div className="flex items-center justify-between gap-2 px-3 py-3.5">
-        <button className="flex min-w-0 items-center gap-1.5 rounded-md px-1 py-1 text-[13px] font-medium text-foreground hover:bg-hover">
-          <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-primary text-[10px] font-medium text-primary-foreground">
-            TL
-          </div>
-          <span className="truncate">Trydent Labs</span>
-          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-        </button>
-        <div className="flex shrink-0 items-center gap-0.5">
+      {/*
+        "Menu" as a literal heading, with the fold control beside it.
+
+        Lifted straight from the reference and it's a better call than the
+        workspace switcher that was here: the switcher looked like a control
+        and did nothing (there is one workspace), while the rail had no
+        heading at all — so the first labelled thing on screen was a section.
+        Naming the rail is what makes the section labels below it read as
+        subdivisions of something rather than as four floating captions.
+      */}
+      <div className={cn("flex items-center gap-2 px-3 py-3.5", rail && "justify-center px-0")}>
+        {!rail && (
+          <h2 className="min-w-0 flex-1 truncate text-[19px] font-semibold tracking-tight">
+            Menu
+          </h2>
+        )}
+        {!rail && (
           <button
             title="Search (⌘K)"
             onClick={openCommandMenu}
-            className="rounded-md p-1.5 text-muted-foreground hover:bg-hover hover:text-foreground"
+            className="shrink-0 rounded-full p-2 text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
           >
-            <Search className="h-3.5 w-3.5" />
+            <Search className="h-4 w-4" />
           </button>
-        </div>
+        )}
+        {!mobile && (
+          <button
+            onClick={toggleRail}
+            title={rail ? "Expand menu" : "Collapse menu"}
+            aria-label={rail ? "Expand menu" : "Collapse menu"}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
+          >
+            <PanelLeftClose
+              className={cn("h-4 w-4 transition-transform duration-200", rail && "rotate-180")}
+            />
+          </button>
+        )}
       </div>
 
       <nav className="flex flex-1 flex-col gap-1 px-2 pb-4">
-        {/* Pinned top items — not collapsible, not reorderable */}
-        <div className="flex flex-col gap-px">
-          {allowed(TOP).map((item) => (
-            <NavLink key={item.href} item={item} active={!!isActive(item.href)} onNavigate={onNavigate} />
-          ))}
-        </div>
-
         <Section
-          id="workspace"
-          label="Workspace"
-          items={allowed(WORKSPACE)}
+          id="my-work"
+          label="My Work"
+          items={allowed(MY_WORK)}
           state={state}
+          rail={rail}
           onToggle={toggleSection}
           onReorder={setOrder}
           isActive={isActive}
           onNavigate={onNavigate}
         />
 
-        {/* Teams — each expands to its own scoped views */}
-        <div className="flex flex-col gap-px">
+        <Section
+          id="customers"
+          label="Customers"
+          items={allowed(CUSTOMERS)}
+          state={state}
+          rail={rail}
+          onToggle={toggleSection}
+          onReorder={setOrder}
+          isActive={isActive}
+          onNavigate={onNavigate}
+        />
+
+        <Section
+          id="sales"
+          label="Sales"
+          items={allowed(SALES)}
+          state={state}
+          rail={rail}
+          onToggle={toggleSection}
+          onReorder={setOrder}
+          isActive={isActive}
+          onNavigate={onNavigate}
+        />
+
+        <Section
+          id="performance"
+          label="Performance"
+          items={allowed(PERFORMANCE)}
+          state={state}
+          rail={rail}
+          onToggle={toggleSection}
+          onReorder={setOrder}
+          isActive={isActive}
+          onNavigate={onNavigate}
+        />
+
+        {/* Teams — each expands to its own scoped views.
+            Dropped entirely in rail mode: a team is identified by its NAME, and
+            every row would collapse to the same Building2 glyph. Five identical
+            icons is worse than no section. */}
+        <div className={cn("flex flex-col gap-px", rail && "hidden")}>
           <div className="group/hdr flex items-center">
             <div className="min-w-0 flex-1">
               <SectionHeader
@@ -372,6 +463,7 @@ export function Sidebar({
           label="Organization"
           items={orgItems}
           state={state}
+          rail={rail}
           onToggle={toggleSection}
           onReorder={setOrder}
           isActive={isActive}
@@ -396,7 +488,7 @@ function SectionHeader({
   return (
     <button
       onClick={onToggle}
-      className="group flex items-center gap-1 rounded-md px-2 pb-1.5 pt-4 text-xs font-medium text-muted-foreground hover:text-foreground-secondary"
+      className="group flex items-center gap-1 rounded-md px-2 pb-1.5 pt-4 text-[13px] font-medium text-muted-foreground hover:text-foreground-secondary"
     >
       {label}
       <ChevronDown
@@ -409,11 +501,24 @@ function SectionHeader({
   );
 }
 
+/**
+ * The divider that stands in for a section label when the rail is folded.
+ *
+ * Not a tooltip and not a truncated label — at 60px there is no honest way to
+ * show "Performance", and a first-letter chip ("P") is a puzzle. A rule is an
+ * admission that the grouping still exists while the name doesn't, which is
+ * accurate. The name comes back when you unfold.
+ */
+function RailDivider() {
+  return <div className="mx-auto my-2 h-px w-6 bg-border-subtle" />;
+}
+
 function Section({
   id,
   label,
   items,
   state,
+  rail = false,
   onToggle,
   onReorder,
   isActive,
@@ -423,13 +528,17 @@ function Section({
   label: string;
   items: NavItem[];
   state: ReturnType<typeof useNavState>["state"];
+  rail?: boolean;
   onToggle: (id: string) => void;
   onReorder: (id: string, hrefs: string[]) => void;
   isActive: (href: string) => boolean | undefined;
   onNavigate?: () => void;
 }) {
   const ordered = useMemo(() => applyOrder(items, state.order[id]), [items, state.order, id]);
-  const collapsed = !!state.collapsed[id];
+  // A folded rail shows every item. Honouring a per-section collapse here would
+  // hide links behind two independent controls, one of which isn't on screen —
+  // you'd fold the rail and lose Pipeline with nothing to click to get it back.
+  const collapsed = !rail && !!state.collapsed[id];
 
   // Distance constraint so a plain click still navigates.
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
@@ -444,9 +553,18 @@ function Section({
     onReorder(id, arrayMove(hrefs, from, to));
   }
 
+  // Nothing survived the permission filter — a label over empty space reads as
+  // a loading state. Below the hooks, not above: an early return before
+  // useSensors changes hook order between renders as permissions resolve.
+  if (ordered.length === 0) return null;
+
   return (
     <div className="flex flex-col gap-px">
-      <SectionHeader label={label} collapsed={collapsed} onToggle={() => onToggle(id)} />
+      {rail ? (
+        <RailDivider />
+      ) : (
+        <SectionHeader label={label} collapsed={collapsed} onToggle={() => onToggle(id)} />
+      )}
       {/* Same 0fr/1fr grid as the team rows, so every collapse in the sidebar
           moves the same way. Kept mounted rather than conditionally rendered —
           unmounting would snap the section shut with nothing to animate. */}
@@ -465,6 +583,7 @@ function Section({
                     key={item.href}
                     item={item}
                     active={!!isActive(item.href)}
+                    rail={rail}
                     onNavigate={onNavigate}
                   />
                 ))}
@@ -477,48 +596,33 @@ function Section({
   );
 }
 
-const linkClass = (active: boolean) =>
+/*
+  Pill, not a rounded rectangle.
+
+  The active row in the reference is a full-height rounded-full capsule, and
+  that shape is doing real work: it matches the black action pills and the
+  stage stepper, so "the selected thing" looks the same everywhere in the app.
+  A 6px-radius highlight next to a 20px-radius card is the detail that made the
+  first pass read as a themed admin panel.
+*/
+const linkClass = (active: boolean, rail = false) =>
   cn(
-    "flex items-center gap-2.5 rounded-md px-2 py-[7px] text-[13px] font-medium transition-colors",
+    "flex items-center rounded-full text-[13px] font-medium transition-colors",
+    rail ? "h-9 w-9 justify-center" : "gap-2.5 px-3 py-2",
     active
       ? "bg-active text-foreground"
       : "text-foreground-secondary hover:bg-hover hover:text-foreground"
   );
 
-function NavLink({
-  item,
-  active,
-  onNavigate,
-}: {
-  item: NavItem;
-  active: boolean;
-  onNavigate?: () => void;
-}) {
-  const { go } = useTabs();
-  return (
-    <Link
-      href={item.href}
-      onClick={(e) => {
-        // If this page is already open in another tab, jump to it instead of
-        // turning the current tab into a duplicate.
-        if (go(item.href)) e.preventDefault();
-        onNavigate?.();
-      }}
-      className={linkClass(active)}
-    >
-      <item.icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-      {item.label}
-    </Link>
-  );
-}
-
 function SortableNavLink({
   item,
   active,
+  rail = false,
   onNavigate,
 }: {
   item: NavItem;
   active: boolean;
+  rail?: boolean;
   onNavigate?: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -532,18 +636,27 @@ function SortableNavLink({
       style={{ transform: CSS.Transform.toString(transform), transition }}
       {...attributes}
       {...listeners}
-      className={cn("touch-none", isDragging && "opacity-60")}
+      className={cn("touch-none", rail && "flex justify-center", isDragging && "opacity-60")}
     >
       <Link
         href={item.href}
+        // `title`, not a Tooltip component: this is the only label a folded
+        // rail has, and it must survive a pointer-down that starts a drag —
+        // Radix tooltips dismiss on pointer-down.
+        title={rail ? item.label : undefined}
         onClick={(e) => {
           if (go(item.href)) e.preventDefault();
           onNavigate?.();
         }}
-        className={linkClass(active)}
+        className={linkClass(active, rail)}
       >
-        <item.icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-        {item.label}
+        <item.icon
+          className={cn(
+            "h-4 w-4 shrink-0",
+            active ? "text-foreground" : "text-muted-foreground"
+          )}
+        />
+        {!rail && item.label}
       </Link>
     </div>
   );

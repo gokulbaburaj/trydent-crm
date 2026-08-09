@@ -14,12 +14,21 @@ export interface NavState {
   order: Record<string, string[]>;
   /** team name → expanded */
   teams: Record<string, boolean>;
+  /**
+   * The whole rail collapsed to icons.
+   *
+   * Separate from `collapsed`, which is per-section. Folding the rail is a
+   * different intent — it's about reclaiming ~180px for the record pane, not
+   * about hiding a group you don't use — and conflating them would mean
+   * un-collapsing the rail silently expanded every section you'd closed.
+   */
+  rail: boolean;
 }
 
 const KEY = "trydent-nav";
 const EVENT = "trydent-nav-change";
 
-const EMPTY: NavState = { collapsed: {}, order: {}, teams: {} };
+const EMPTY: NavState = { collapsed: {}, order: {}, teams: {}, rail: false };
 
 /** Cache parsed state by raw string so snapshots stay referentially stable. */
 let cache: { raw: string | null; value: NavState } | null = null;
@@ -50,6 +59,7 @@ function normalize(v: unknown): NavState {
     collapsed: boolMap(o.collapsed),
     order: orderMap(o.order),
     teams: boolMap(o.teams),
+    rail: o.rail === true,
   };
 }
 
@@ -124,9 +134,14 @@ export function useNavState() {
     write({ ...cur, order: { ...cur.order, [sectionId]: hrefs } });
   }, []);
 
+  const toggleRail = useCallback(() => {
+    const cur = read();
+    write({ ...cur, rail: !cur.rail });
+  }, []);
+
   const resetLayout = useCallback(() => write(EMPTY), []);
 
-  return { state, toggleSection, toggleTeam, openTeam, setOrder, resetLayout };
+  return { state, toggleSection, toggleTeam, openTeam, setOrder, toggleRail, resetLayout };
 }
 
 /**

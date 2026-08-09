@@ -5,6 +5,7 @@ import {
   Building2,
   CalendarDays,
   CircleDot,
+  Columns2,
   LayoutGrid,
   List,
   Mail,
@@ -38,8 +39,9 @@ import { formatDate } from "@/lib/format";
 import type { Client, ClientPortal } from "@/lib/types";
 import { CLIENT_STATUSES, LEAD_SOURCES } from "@/lib/types";
 import { useViewPreference } from "@/lib/useViewPreference";
+import { ClientFocusView } from "@/components/ClientFocusView";
 
-type View = "table" | "kanban";
+type View = "table" | "kanban" | "focus";
 
 const emptyForm: Partial<Client> = {
   company: "",
@@ -258,6 +260,19 @@ export default function ClientsPage() {
           >
             <LayoutGrid className="h-3.5 w-3.5" /> Kanban
           </button>
+          {/* Focus is the new list-detail layout. Added ALONGSIDE the table
+              rather than replacing it: the table carries filters, saved views,
+              bulk actions and multi-select, and swapping it out in the same
+              change that introduces the layout would make any regression
+              impossible to attribute. */}
+          <button
+            onClick={() => setView("focus")}
+            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium ${
+              view === "focus" ? "bg-active text-foreground" : "text-muted-foreground hover:text-foreground-secondary"
+            }`}
+          >
+            <Columns2 className="h-3.5 w-3.5" /> Focus
+          </button>
         </div>
         <Button onClick={() => setEditing({ ...emptyForm })} size="sm">
           <Plus className="h-4 w-4" /> New Client
@@ -278,7 +293,24 @@ export default function ClientsPage() {
       />
 
       <div key={view} className="animate-fade">
-      {view === "table" ? (
+      {view === "focus" ? (
+        /*
+          Given an explicit height rather than h-full. The page above is a
+          scrolling `flex-col gap-5` — inside it, `h-full` resolves against a
+          parent with no fixed height and collapses the whole shell to zero.
+          The 15rem is the topbar, tab bar, view toggle and filter bar above
+          it; --mobile-nav-clear keeps the phone pill off the queue's last row.
+        */
+        <div className="h-[calc(100vh-15rem)] min-h-[26rem] pb-[var(--mobile-nav-clear)] md:pb-0">
+          <ClientFocusView
+            clients={visibleClients}
+            onOpenFull={(id) => {
+              const c = visibleClients.find((x) => x.id === id);
+              if (c) openClient(c);
+            }}
+          />
+        </div>
+      ) : view === "table" ? (
         <DataTable
           columns={columns}
           rows={visibleClients}
