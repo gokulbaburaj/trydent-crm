@@ -10,6 +10,7 @@ import {
   ChevronRight,
   CircleDot,
   IndianRupee,
+  Columns2,
   LayoutGrid,
   List,
   Plus,
@@ -31,6 +32,7 @@ import { toast } from "@/components/Toaster";
 import { FilterBar } from "@/components/FilterBar";
 import { DataTable, type Column } from "@/components/DataTable";
 import { useViewPreference } from "@/lib/useViewPreference";
+import { ProjectFocusView } from "@/components/ProjectFocusView";
 import { applyFilters, useStoredFilters } from "@/lib/filters";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { useStaffProfiles } from "@/lib/useStaffProfiles";
@@ -91,7 +93,7 @@ function ProjectsPageInner() {
    * sorting inside a group of three shows you nothing. The table is flat, so
    * clicking a header actually reorders the page.
    */
-  const [view, setView] = useViewPreference<"table" | "grouped">("projects", "table");
+  const [view, setView] = useViewPreference<"table" | "grouped" | "focus">("projects", "table");
 
   const projectColumns: Column<Project>[] = useMemo(() => {
     const completionOf = (id: string) => {
@@ -355,7 +357,7 @@ function ProjectsPageInner() {
           />
         </div>
         <div className="flex shrink-0 items-center gap-0.5 rounded-lg border border-border bg-surface p-0.5">
-          {([["table", "Table", List], ["grouped", "By client", LayoutGrid]] as const).map(
+          {([["table", "Table", List], ["grouped", "By client", LayoutGrid], ["focus", "Focus", Columns2]] as const).map(
             ([id, label, Icon]) => (
               <button
                 key={id}
@@ -376,7 +378,20 @@ function ProjectsPageInner() {
         </div>
       </div>
 
-      {view === "table" ? (
+      {view === "focus" ? (
+        /* Explicit height, same reason as the other two Focus views: the page
+           above is a scrolling flex column, so h-full resolves against no
+           fixed height and collapses the shell to zero. */
+        <div className="h-[calc(100vh-15rem)] min-h-[26rem]">
+          <ProjectFocusView
+            projects={filtered}
+            clients={clients}
+            tasks={tasks}
+            profiles={profiles}
+            onOpenFull={(p) => openInNewTab(`/projects/${p.id}`, p.name)}
+          />
+        </div>
+      ) : view === "table" ? (
         <DataTable
           rows={filtered}
           columns={projectColumns}

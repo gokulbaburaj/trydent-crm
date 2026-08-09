@@ -46,6 +46,7 @@ export const VIEW_PREFERENCES = [
     options: [
       { id: "table", label: "Table" },
       { id: "grouped", label: "By client" },
+      { id: "focus", label: "Focus" },
     ],
     fallback: "table",
   },

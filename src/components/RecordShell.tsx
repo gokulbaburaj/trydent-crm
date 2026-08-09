@@ -264,7 +264,24 @@ export function QueueItem({
         "w-full rounded-[calc(var(--radius)-0.35rem)] px-3 py-3 text-left transition-colors",
         selected
           ? heatBackground
-            ? "shadow-sm"
+            ? [
+                "shadow-sm",
+                /*
+                  Step the muted tiers up on a heat background.
+
+                  The queue's secondary text is tuned for the card surface it
+                  normally sits on. A selected row repaints that surface with a
+                  heat colour, and the contrast scanner caught the result at
+                  3.73:1 against a 4.5 floor — the client name and date on the
+                  selected project were the least readable text on the page,
+                  which is exactly backwards for the row you're looking at.
+
+                  --foreground-secondary measures 7.5:1 on the darkest heat
+                  step, so one substitution covers all five.
+                */
+                "[&_.text-muted-2]:text-foreground-secondary",
+                "[&_.text-muted-foreground]:text-foreground-secondary",
+              ]
             : "bg-active"
           : "hover:bg-hover",
         className
