@@ -84,7 +84,8 @@ export function ToolbarButton({
       className={cn(
         "inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-full px-3",
         "text-[13px] font-medium text-foreground-secondary",
-        "transition-colors hover:bg-[var(--wash-card)] hover:text-foreground",
+        "transition-[background-color,color,transform] duration-[160ms] ease-out",
+        "hover:bg-[var(--wash-card)] hover:text-foreground active:scale-[0.97]",
         "disabled:pointer-events-none disabled:opacity-40",
         className
       )}

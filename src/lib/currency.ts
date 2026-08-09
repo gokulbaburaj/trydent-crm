@@ -9,6 +9,7 @@ import {
   convertAmount as convert,
   formatConverted,
   isCode,
+  resolveMoney,
   toBaseAmount,
 } from "@/lib/fx";
 
@@ -190,6 +191,20 @@ export function useCurrency() {
     [rates, base, display]
   );
 
+  /*
+    Same conversion, returned as parts rather than a string, for <Money>.
+
+    Memoised for the same load-bearing reason as `toBase` and `format` — rates
+    arrive after first paint, and a fresh closure per render would either make
+    callers recompute every render or never correct themselves once the rates
+    land. See the note above and the `useCurrency` entry in CLAUDE.md.
+  */
+  const resolve = useCallback(
+    (value: number, from: CurrencyCode = base) =>
+      resolveMoney(rates, base, value, from, display),
+    [rates, base, display]
+  );
+
   return {
     /** Viewer's chosen display currency. */
     currency: display,
@@ -202,6 +217,8 @@ export function useCurrency() {
     convertAmount,
     toBase,
     format,
+    /** Conversion as parts, for the animated <Money> component. */
+    resolve,
   };
 }
 

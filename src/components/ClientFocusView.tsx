@@ -133,6 +133,7 @@ export function ClientFocusView({
   return (
     <RecordShell
       hasSelection={!!selected}
+      recordKey={selected?.client.id}
       onBack={close}
       list={
         <>

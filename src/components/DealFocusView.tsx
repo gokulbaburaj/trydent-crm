@@ -33,6 +33,7 @@ import {
   type Stage,
 } from "@/components/RecordPane";
 import { HeatChip, WashCard } from "@/components/ui/Wash";
+import { Money } from "@/components/ui/Money";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Badge, statusTone } from "@/components/ui/Badge";
 import { heatInRange, heatOf } from "@/lib/heat";
@@ -61,7 +62,6 @@ import type { Client, CurrencyCode, Deal, DealStage } from "@/lib/types";
 export function DealFocusView({
   deals,
   clients,
-  formatCurrency,
   toBase,
   ownerName,
   onStageChange,
@@ -69,7 +69,6 @@ export function DealFocusView({
 }: {
   deals: Deal[];
   clients: Client[];
-  formatCurrency: (value: number, ccy: CurrencyCode) => string;
   /* Same lesson as Clients: account_owner is a profile ID, and rendering it
      raw puts a UUID where a person's name belongs. Passed in rather than
      looked up again here so there is one resolver, not two that can drift. */
@@ -117,6 +116,7 @@ export function DealFocusView({
   return (
     <RecordShell
       hasSelection={!!selected}
+      recordKey={selected?.deal.id}
       onBack={close}
       list={
         <>
@@ -171,7 +171,7 @@ export function DealFocusView({
                               "text-muted-2 line-through"
                           )}
                         >
-                          {formatCurrency(Number(deal.deal_value), deal.currency)}
+                          <Money value={Number(deal.deal_value)} from={deal.currency} animate={false} />
                         </div>
                         {!closed && (
                           <HeatChip
@@ -203,7 +203,6 @@ export function DealFocusView({
           <DealRecord
             deal={selected.deal}
             clientName={clientName(selected.deal.client_id)}
-            formatCurrency={formatCurrency}
             ownerName={ownerName}
             onStageChange={onStageChange}
             onOpenClient={onOpenClient}
@@ -217,14 +216,12 @@ export function DealFocusView({
 function DealRecord({
   deal,
   clientName,
-  formatCurrency,
   ownerName,
   onStageChange,
   onOpenClient,
 }: {
   deal: Deal;
   clientName: string;
-  formatCurrency: (value: number, ccy: CurrencyCode) => string;
   ownerName: (id: string | null) => string;
   onStageChange?: (deal: Deal, stage: DealStage) => void;
   onOpenClient?: (clientId: string) => void;
@@ -284,11 +281,11 @@ function DealRecord({
 
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3 lg:ml-auto">
             <MetaPair label="Value">
-              {formatCurrency(value, deal.currency)}
+              <Money value={value} from={deal.currency} />
             </MetaPair>
             <MetaPair label="Collected">
               <span className="inline-flex items-center gap-2">
-                {formatCurrency(paid, deal.currency)}
+                <Money value={paid} from={deal.currency} />
                 <HeatChip
                   step={heatOf(collected * 100)}
                   label={`${Math.round(collected * 100)}%`}
@@ -327,13 +324,15 @@ function DealRecord({
         <WashCard strong>
           <PanelHeader title="Money" />
           <dl className="space-y-3">
-            <MoneyRow label="Deal value" value={formatCurrency(value, deal.currency)} />
-            <MoneyRow label="Collected" value={formatCurrency(paid, deal.currency)} />
-            <MoneyRow
-              label="Outstanding"
-              value={formatCurrency(Math.max(0, value - paid), deal.currency)}
-              emphasise={value - paid > 0}
-            />
+            <MoneyRow label="Deal value">
+              <Money value={value} from={deal.currency} />
+            </MoneyRow>
+            <MoneyRow label="Collected">
+              <Money value={paid} from={deal.currency} />
+            </MoneyRow>
+            <MoneyRow label="Outstanding" emphasise={value - paid > 0}>
+              <Money value={Math.max(0, value - paid)} from={deal.currency} />
+            </MoneyRow>
           </dl>
           {/* Track uses --wash-line rather than a white-alpha fill: on a wash
               card a white track is invisible, which is the same mistake the
@@ -412,10 +411,13 @@ function DealRecord({
 function MoneyRow({
   label,
   value,
+  children,
   emphasise = false,
 }: {
   label: string;
-  value: string;
+  /** Plain text rows (owner, currency). Use `children` for a <Money>. */
+  value?: string;
+  children?: React.ReactNode;
   emphasise?: boolean;
 }) {
   return (
@@ -427,7 +429,7 @@ function MoneyRow({
           emphasise && "text-foreground"
         )}
       >
-        {value}
+        {children ?? value}
       </dd>
     </div>
   );

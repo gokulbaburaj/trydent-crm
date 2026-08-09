@@ -172,7 +172,11 @@ export function GhostPill({
         "inline-flex items-center justify-center gap-2 rounded-full px-4",
         "min-h-9 text-[13px] font-medium",
         "border border-[var(--wash-line)] bg-transparent text-foreground",
-        "transition-colors hover:bg-[var(--wash-card-strong)]",
+        // Press feedback, matching the InkButton it sits beside. 0.97 and
+        // 160ms are the standard subtle-press values; anything deeper reads
+        // as a bounce on a control this size.
+        "transition-[background-color,transform] duration-[160ms] ease-out",
+        "hover:bg-[var(--wash-card-strong)] active:scale-[0.97]",
         "disabled:pointer-events-none disabled:opacity-40",
         className
       )}

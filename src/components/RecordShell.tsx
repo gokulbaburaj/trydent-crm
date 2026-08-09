@@ -89,6 +89,7 @@ export function RecordShell({
   detail,
   empty,
   hasSelection,
+  recordKey,
   onBack,
   listWidth = "clamp(300px, 26vw, 380px)",
   className,
@@ -100,6 +101,21 @@ export function RecordShell({
   /** Shown in the pane's place when nothing is selected, on wide screens only. */
   empty?: React.ReactNode;
   hasSelection: boolean;
+  /**
+   * Identity of the record on show. Remounts the pane when it changes.
+   *
+   * Does two jobs at once, which is why it's one prop rather than two:
+   *
+   *  1. The pane's content used to swap with nothing bridging the old and new
+   *     record. A remount lets `.animate-pop` (130ms, the existing token) carry
+   *     it. Deliberately the shortest animation we have — reading through a
+   *     queue is a tens-per-day action, and anything slower reads as lag.
+   *  2. It makes <Money> behave. NumberFlow animates when a value changes
+   *     within a mount and paints instantly on a fresh one — so a currency
+   *     switch rolls the digits while clicking to another record doesn't.
+   *     Without the key, every figure would spin on every row click.
+   */
+  recordKey?: string | null;
   onBack: () => void;
   listWidth?: string;
   className?: string;
@@ -137,7 +153,10 @@ export function RecordShell({
       )}
 
       {hasSelection && (
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <div
+          key={recordKey ?? undefined}
+          className="animate-pop flex min-h-0 min-w-0 flex-1 flex-col"
+        >
           {/* Back is the only way out on a narrow screen, so it is rendered
               here rather than left to each page to remember. */}
           {!wide && (

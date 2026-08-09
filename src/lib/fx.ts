@@ -126,7 +126,32 @@ export function formatConverted(
   from: CurrencyCode,
   display: CurrencyCode
 ): string {
+  const { amount, currency } = resolveMoney(rates, base, value, from, display);
+  return formatMoney(amount, currency);
+}
+
+/**
+ * The same decision as `formatConverted`, but returning the PARTS rather than
+ * a finished string.
+ *
+ * NumberFlow needs a number and a currency code — it does its own Intl
+ * formatting so it can animate individual digits. Handing it a pre-formatted
+ * string would mean parsing "₹1,20,000" back into a number, which is a
+ * locale-dependent guess.
+ *
+ * `formatConverted` is implemented in terms of this rather than the two
+ * existing side by side, so the fallback rule — when rates are missing, show
+ * the SOURCE currency rather than a converted-looking number that wasn't
+ * converted — can't drift between the animated and static paths.
+ */
+export function resolveMoney(
+  rates: Rates | null,
+  base: CurrencyCode,
+  value: number,
+  from: CurrencyCode,
+  display: CurrencyCode
+): { amount: number; currency: CurrencyCode; converted: boolean } {
   const c = convertAmount(rates, base, value, from, display);
-  if (c == null) return formatMoney(value, from);
-  return formatMoney(c, display);
+  if (c == null) return { amount: value, currency: from, converted: false };
+  return { amount: c, currency: display, converted: from !== display };
 }

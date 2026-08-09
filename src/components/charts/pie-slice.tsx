@@ -149,6 +149,19 @@ function AnimatedSliceTranslate({
           x: shouldTranslate ? offset.x : 0,
           y: shouldTranslate ? offset.y : 0,
         }}
+        /*
+          `initial={false}` — start AT the animate values rather than
+          transitioning into them.
+
+          Without it motion has to read a from-value, and an <path> with no
+          explicit opacity gives it `undefined`, which it can't tween. That's
+          the "animating opacity from undefined to 1" warning, six per pie
+          chart (one per slice, times two motion elements). Nothing was
+          visually wrong — there is no meaningful enter animation for opacity
+          here anyway — but six warnings on every Pipeline load is enough noise
+          to hide a real one.
+        */
+        initial={false}
         d={hitboxPath}
         fill={fill}
         pointerEvents="none"
@@ -174,6 +187,8 @@ function AnimatedSliceTranslate({
         x: isHovered ? offset.x : 0,
         y: isHovered ? offset.y : 0,
       }}
+      /* See the note above — same missing from-value. */
+      initial={false}
       d={animatedPath}
       fill={fill}
       key={`slice-${animationKey}-${index}`}

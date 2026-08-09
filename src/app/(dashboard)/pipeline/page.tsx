@@ -632,7 +632,6 @@ export default function PipelinePage() {
           <DealFocusView
             deals={visibleDeals}
             clients={clients}
-            formatCurrency={(v, ccy) => formatCurrency(v, ccy)}
             toBase={toBase}
             ownerName={ownerName}
             onStageChange={handleStageMove}
