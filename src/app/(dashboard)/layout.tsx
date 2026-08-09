@@ -109,7 +109,14 @@ export default function DashboardLayout({
   return (
     <TabsProvider>
       <PageTitleContext.Provider value={setPageTitle}>
-      <TooltipProvider delayDuration={350}>
+      {/*
+        350ms before the first tooltip, then 400ms of grace where neighbours
+        open instantly. Radix defaults skipDelayDuration to 300, which is
+        shorter than it takes to move between two 36px buttons and read the
+        first label — so the grace kept expiring and every icon in the TabBar
+        made you wait again. See the Tip component for the animation half.
+      */}
+      <TooltipProvider delayDuration={350} skipDelayDuration={400}>
       <div className="flex h-screen overflow-hidden bg-background">
         <Suspense fallback={<div className="hidden w-[220px] shrink-0 md:block" />}>
           <Sidebar />
