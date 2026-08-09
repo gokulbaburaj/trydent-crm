@@ -5,6 +5,19 @@ import { useCurrency } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 import type { CurrencyCode } from "@/lib/types";
 
+/*
+  NumberFlow takes a raw easing string, not a class, so it can't use the
+  Tailwind arbitrary-value syntax the rest of the app uses. Read from the
+  stylesheet at module load rather than duplicated as a literal — a copy here
+  would silently diverge the first time --ease-out is retuned.
+*/
+const EASE_OUT =
+  typeof window === "undefined"
+    ? "cubic-bezier(0.16, 1, 0.3, 1)"
+    : getComputedStyle(document.documentElement)
+        .getPropertyValue("--ease-out")
+        .trim() || "cubic-bezier(0.16, 1, 0.3, 1)";
+
 /**
  * A currency figure whose digits transition when the amount changes.
  *
@@ -75,10 +88,19 @@ export function Money({
       /*
         Respects prefers-reduced-motion natively — NumberFlow falls back to a
         plain value swap rather than needing a media query here.
+
+        250ms, not the 400ms this shipped with. UI motion stays under 300ms and
+        400 was a number I picked rather than took from the duration table —
+        a digit roll is state indication, which sits with dropdowns and selects
+        at 150-250ms. At 400ms the figure was still moving after the eye had
+        finished reading it.
+
+        Curve is the house `--ease-out`, read off the stylesheet rather than
+        hardcoded, so re-timing the app is one edit.
       */
-      transformTiming={{ duration: 400, easing: "cubic-bezier(0.16, 1, 0.3, 1)" }}
-      spinTiming={{ duration: 400, easing: "cubic-bezier(0.16, 1, 0.3, 1)" }}
-      opacityTiming={{ duration: 200, easing: "ease-out" }}
+      transformTiming={{ duration: 250, easing: EASE_OUT }}
+      spinTiming={{ duration: 250, easing: EASE_OUT }}
+      opacityTiming={{ duration: 150, easing: EASE_OUT }}
     />
   );
 }

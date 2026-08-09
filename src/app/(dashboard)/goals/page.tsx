@@ -418,7 +418,7 @@ function GoalsInner() {
                       <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-active">
                         <div
                           className={cn(
-                            "h-full rounded-full transition-all",
+                            "h-full rounded-full transition-[width] duration-300 ease-[var(--ease-out)]",
                             krPct >= 100 ? "bg-success" : "bg-primary"
                           )}
                           style={{ width: `${krPct}%` }}

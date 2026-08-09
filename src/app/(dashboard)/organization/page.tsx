@@ -260,7 +260,7 @@ export default function OrganizationPage() {
                   <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-active">
                     <div
                       className={cn(
-                        "h-full rounded-full transition-all",
+                        "h-full rounded-full transition-[width] duration-300 ease-[var(--ease-out)]",
                         pct >= 100 ? "bg-success" : "bg-primary"
                       )}
                       style={{ width: `${pct}%` }}

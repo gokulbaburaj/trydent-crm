@@ -584,7 +584,7 @@ function PortalInner() {
                             <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-active">
                               <div
                                 className={cn(
-                                  "h-full rounded-full transition-all",
+                                  "h-full rounded-full transition-[width] duration-300 ease-[var(--ease-out)]",
                                   pct >= 100 ? "bg-success" : "bg-primary"
                                 )}
                                 style={{ width: `${pct}%` }}
@@ -1057,7 +1057,7 @@ function PortalInner() {
                   <div className="flex items-center gap-3 py-3.5">
                     <div className="h-2 flex-1 overflow-hidden rounded-full bg-active">
                       <div
-                        className="h-full rounded-full bg-success transition-all"
+                        className="h-full rounded-full bg-success transition-[width] duration-300 ease-[var(--ease-out)]"
                         style={{ width: `${invoicePaidPct}%` }}
                       />
                     </div>

@@ -316,7 +316,7 @@ function OnboardingInner() {
                   </div>
                   <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-active">
                     <div
-                      className="h-full rounded-full bg-primary transition-all"
+                      className="h-full rounded-full bg-primary transition-[width] duration-300 ease-[var(--ease-out)]"
                       style={{ width: `${pct}%` }}
                     />
                   </div>
@@ -403,7 +403,7 @@ function OnboardingInner() {
               <div className="h-1.5 overflow-hidden rounded-full bg-active">
                 <div
                   className={cn(
-                    "h-full rounded-full transition-all",
+                    "h-full rounded-full transition-[width] duration-300 ease-[var(--ease-out)]",
                     pct >= 100 ? "bg-success" : "bg-primary"
                   )}
                   style={{ width: `${pct}%` }}

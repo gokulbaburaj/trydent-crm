@@ -214,6 +214,25 @@
     bottom of the viewport on mobile should use this.
   */
   --mobile-nav-clear: calc(env(safe-area-inset-bottom) + 5.5rem);
+
+  /*
+    ── Easing, as tokens ───────────────────────────────────────────────────────
+
+    The curve below was already the house curve — it appeared as a literal
+    `cubic-bezier(0.16, 1, 0.3, 1)` seven times in this file — but it had no
+    name, so anything written in a component reached for Tailwind's built-in
+    `ease-out` instead. Built-in easings are too weak for deliberate motion:
+    `ease-out` is `cubic-bezier(0, 0, 0.2, 1)`, which barely decelerates.
+
+    Deliberately NOT the (0.23, 1, 0.32, 1) recommended by the animation
+    standards. Ours is expo-out and is what every existing animation in the app
+    already uses; swapping it would re-time the whole app to gain nothing
+    perceptible. Naming what's here beats importing a near-identical rival.
+  */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  /* iOS-like drawer curve (Ionic). For sheets and drawers only. */
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
   --success: #4cb782;
   --warning: #f2994a;
   --danger: var(--destructive);

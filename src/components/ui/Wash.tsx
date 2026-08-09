@@ -175,7 +175,7 @@ export function GhostPill({
         // Press feedback, matching the InkButton it sits beside. 0.97 and
         // 160ms are the standard subtle-press values; anything deeper reads
         // as a bounce on a control this size.
-        "transition-[background-color,transform] duration-[160ms] ease-out",
+        "transition-[background-color,transform] duration-[160ms] ease-[var(--ease-out)]",
         "hover:bg-[var(--wash-card-strong)] active:scale-[0.97]",
         "disabled:pointer-events-none disabled:opacity-40",
         className
