@@ -38,7 +38,7 @@ export interface PieChartProps {
   innerRadius?: number;
   /** Padding angle between slices in radians. Default: 0 */
   padAngle?: number;
-  /** Corner radius for rounded slice edges. Default: 0 */
+  /** Corner radius for rounded-md slice edges. Default: 0 */
   cornerRadius?: number;
   /** Start angle in radians. Default: -PI/2 (top) */
   startAngle?: number;

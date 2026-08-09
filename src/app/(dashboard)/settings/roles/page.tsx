@@ -80,7 +80,7 @@ function RolesInner() {
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="truncate text-[13.5px] font-medium">{r.name}</span>
                       {r.team ? (
-                        <span className="rounded border border-border-subtle px-1.5 py-0.5 text-[11px] text-muted-foreground">
+                        <span className="rounded-md border border-border-subtle px-1.5 py-0.5 text-[11px] text-muted-foreground">
                           {r.team}
                         </span>
                       ) : (

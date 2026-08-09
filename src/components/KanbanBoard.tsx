@@ -81,7 +81,7 @@ export function KanbanBoard<T extends { id: string }>({
                 </h3>
                 <div className="flex shrink-0 items-center gap-1.5">
                   {columnMeta?.(col.id, colItems)}
-                  <span className="rounded bg-hover px-1.5 py-0.5 text-xs text-muted-foreground">
+                  <span className="rounded-md bg-hover px-1.5 py-0.5 text-xs text-muted-foreground">
                     {colItems.length}
                   </span>
                 </div>
@@ -91,7 +91,7 @@ export function KanbanBoard<T extends { id: string }>({
                   {colItems.map((item) => (
                     <div
                       key={item.id}
-                      className="animate-row flex items-start gap-2 rounded border border-border bg-surface p-3"
+                      className="animate-row flex items-start gap-2 rounded-md border border-border bg-surface p-3"
                     >
                       <div className="min-w-0 flex-1">{renderCard(item)}</div>
                       <MoveSelect
@@ -129,7 +129,7 @@ export function KanbanBoard<T extends { id: string }>({
                 </h3>
                 <div className="flex shrink-0 items-center gap-1.5">
                   {columnMeta?.(col.id, colItems)}
-                  <span className="rounded bg-hover px-1.5 py-0.5 text-xs text-muted-foreground">
+                  <span className="rounded-md bg-hover px-1.5 py-0.5 text-xs text-muted-foreground">
                     {colItems.length}
                   </span>
                 </div>
@@ -154,7 +154,7 @@ export function KanbanBoard<T extends { id: string }>({
           dropAnimation={{ duration: 200, easing: "cubic-bezier(0.16, 1, 0.3, 1)" }}
         >
           {activeItem ? (
-            <div className="rotate-2 scale-[1.03] cursor-grabbing rounded border border-primary/50 bg-surface p-3 shadow-2xl shadow-black/60">
+            <div className="rotate-2 scale-[1.03] cursor-grabbing rounded-md border border-primary/50 bg-surface p-3 shadow-2xl shadow-black/60">
               {renderCard(activeItem)}
             </div>
           ) : null}
@@ -184,7 +184,7 @@ function MoveSelect({
     <div className="relative shrink-0">
       <span
         aria-hidden
-        className="flex h-7 w-7 items-center justify-center rounded border border-border text-muted-foreground"
+        className="flex h-7 w-7 items-center justify-center rounded-md border border-border text-muted-foreground"
       >
         <ChevronsUpDown className="h-3.5 w-3.5" />
       </span>
@@ -256,7 +256,7 @@ function KanbanCardDraggable({
       {...listeners}
       {...attributes}
       className={cn(
-        "animate-row cursor-grab rounded border border-border bg-surface p-3 transition-[border-color,background-color,box-shadow,translate,opacity] duration-150 hover:-translate-y-px hover:border-edge hover:bg-hover hover:shadow-lg hover:shadow-black/20 active:cursor-grabbing",
+        "animate-row cursor-grab rounded-md border border-border bg-surface p-3 transition-[border-color,background-color,box-shadow,translate,opacity] duration-150 hover:-translate-y-px hover:border-edge hover:bg-hover hover:shadow-lg hover:shadow-black/20 active:cursor-grabbing",
         isDragging && "border-dashed border-edge bg-transparent"
       )}
     >

@@ -90,7 +90,7 @@ function ToastCard({
           <button
             onClick={dismiss}
             aria-label="Dismiss"
-            className="-mr-1 -mt-0.5 shrink-0 rounded p-1 text-muted-2 transition-colors hover:text-foreground"
+            className="-mr-1 -mt-0.5 shrink-0 rounded-md p-1 text-muted-2 transition-colors hover:text-foreground"
           >
             <X className="h-3.5 w-3.5" />
           </button>

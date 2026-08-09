@@ -60,7 +60,7 @@ function ChannelInfo({
       trigger={
         <button
           title="Channel details"
-          className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
+          className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
         >
           <Info className="h-4 w-4" />
         </button>
@@ -314,7 +314,7 @@ function Channels() {
           <button
             onClick={() => setCreating((c) => !c)}
             title="New channel"
-            className="rounded p-1 text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
+            className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
           >
             <Plus className="h-3.5 w-3.5" />
           </button>
@@ -579,7 +579,7 @@ function MessageRow({
   return (
     <div
       className={cn(
-        "group flex gap-2.5 rounded px-1 py-0.5 hover:bg-raise",
+        "group flex gap-2.5 rounded-md px-1 py-0.5 hover:bg-raise",
         grouped ? "mt-0.5" : "mt-2.5"
       )}
     >
@@ -602,7 +602,7 @@ function MessageRow({
         <button
           onClick={onDelete}
           aria-label="Delete message"
-          className="shrink-0 self-start rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-hover hover:text-danger group-hover:opacity-100"
+          className="shrink-0 self-start rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-hover hover:text-danger group-hover:opacity-100"
         >
           <Trash2 className="h-3 w-3" />
         </button>

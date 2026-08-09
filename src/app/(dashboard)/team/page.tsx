@@ -376,7 +376,7 @@ function TeamPageInner() {
                     <button
                       onClick={() => openInNewTab(`/staff-portal?user=${p.id}`, `${p.full_name.split(" ")[0]} — preview`)}
                       title="Preview staff portal"
-                      className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
+                      className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
                     >
                       <Eye className="h-3.5 w-3.5" />
                     </button>
@@ -385,7 +385,7 @@ function TeamPageInner() {
                       <button
                         onClick={() => setPayFor(p)}
                         title="Payment plan"
-                        className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
+                        className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
                       >
                         <CreditCard className="h-3.5 w-3.5" />
                       </button>
@@ -399,7 +399,7 @@ function TeamPageInner() {
                     onClick={() => removeMember(p)}
                     disabled={removingId === p.id}
                     title="Remove team member"
-                    className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-danger/10 hover:text-danger disabled:opacity-50"
+                    className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-danger/10 hover:text-danger disabled:opacity-50"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -661,7 +661,7 @@ function PaymentPlanEditor({
             <span className="shrink-0 tabular-nums">{formatCurrency(Number(l.amount))}</span>
             <button
               onClick={() => onDelete(l.id)}
-              className="shrink-0 rounded p-1 text-muted-foreground hover:text-danger"
+              className="shrink-0 rounded-md p-1 text-muted-foreground hover:text-danger"
               title="Delete"
             >
               <Trash2 className="h-3.5 w-3.5" />
@@ -747,12 +747,12 @@ function TeamPicker({
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 placeholder="New team…"
-                className="h-7 w-32 min-w-0 flex-1 rounded border border-edge bg-transparent px-2 text-xs text-foreground placeholder:text-muted-2 focus:border-primary/60 focus:outline-none"
+                className="h-7 w-32 min-w-0 flex-1 rounded-md border border-edge bg-transparent px-2 text-xs text-foreground placeholder:text-muted-2 focus:border-primary/60 focus:outline-none"
               />
               <button
                 type="submit"
                 disabled={!draft.trim()}
-                className="rounded p-1.5 text-muted-foreground hover:bg-hover hover:text-foreground disabled:opacity-40"
+                className="rounded-md p-1.5 text-muted-foreground hover:bg-hover hover:text-foreground disabled:opacity-40"
                 title="Add team"
               >
                 <Plus className="h-3.5 w-3.5" />
@@ -818,7 +818,7 @@ function ViewButton({
     <button
       onClick={onClick}
       className={cn(
-        "flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium transition-colors",
+        "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
         active ? "bg-active text-foreground" : "text-muted-foreground hover:text-foreground-secondary"
       )}
     >

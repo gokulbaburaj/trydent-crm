@@ -133,6 +133,33 @@ export function TaskDetailDrawer({
     onUpdate(task.id, { links: links.filter((_, i) => i !== idx) });
   }
 
+  /**
+   * Edit a link in place.
+   *
+   * Adding was possible and removing was possible, but a typo in a URL meant
+   * deleting the row and retyping both fields. Blank titles fall back to the
+   * hostname exactly as `addLink` does, so an emptied title doesn't leave a
+   * nameless row.
+   */
+  function updateLink(idx: number, patch: Partial<TaskLink>) {
+    if (!task) return;
+    const next = links.map((l, i) => {
+      if (i !== idx) return l;
+      const url = withProtocol((patch.url ?? l.url).trim());
+      const rawTitle = (patch.title ?? l.title).trim();
+      let title = rawTitle;
+      if (!title) {
+        try {
+          title = new URL(url).hostname;
+        } catch {
+          title = url;
+        }
+      }
+      return { title, url };
+    });
+    onUpdate(task.id, { links: next });
+  }
+
   async function addSubtask(e: React.FormEvent) {
     e.preventDefault();
     if (!task) return;
@@ -197,7 +224,7 @@ export function TaskDetailDrawer({
               const n = name.trim();
               if (n && n !== task.name) onUpdate(task.id, { name: n });
             }}
-            className="w-full rounded border border-transparent bg-transparent px-1 py-1 text-xl font-semibold tracking-tight text-foreground hover:border-border focus:border-primary/60 focus:outline-none focus:ring-1 focus:ring-primary/30"
+            className="w-full rounded-md border border-transparent bg-transparent px-1 py-1 text-xl font-semibold tracking-tight text-foreground hover:border-border focus:border-primary/60 focus:outline-none focus:ring-1 focus:ring-primary/30"
           />
           {task.recurrence !== "none" && onSkip ? (
             <Popover
@@ -205,7 +232,7 @@ export function TaskDetailDrawer({
               trigger={
                 <button
                   title="More actions"
-                  className="mt-1 shrink-0 rounded p-2 text-muted-foreground hover:bg-hover hover:text-foreground"
+                  className="mt-1 shrink-0 rounded-md p-2 text-muted-foreground hover:bg-hover hover:text-foreground"
                 >
                   <MoreHorizontal className="h-4 w-4" />
                 </button>
@@ -249,7 +276,7 @@ export function TaskDetailDrawer({
                   onClose();
                 }
               }}
-              className="mt-1 shrink-0 rounded p-2 text-muted-foreground hover:bg-danger/10 hover:text-danger"
+              className="mt-1 shrink-0 rounded-md p-2 text-muted-foreground hover:bg-danger/10 hover:text-danger"
             >
               <Trash2 className="h-4 w-4" />
             </button>
@@ -278,7 +305,7 @@ export function TaskDetailDrawer({
             <Popover
               fullWidth
               trigger={
-                <button className="flex w-full items-center gap-2 rounded border border-border bg-surface px-3 py-2 text-sm text-foreground hover:bg-hover">
+                <button className="flex w-full items-center gap-2 rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground hover:bg-hover">
                   {task.assigned_to ? (
                     <>
                       <span className="flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[8px] font-semibold text-primary">
@@ -314,24 +341,45 @@ export function TaskDetailDrawer({
               )}
             </Popover>
           </div>
-          <div>
-            <Label>Due date</Label>
-            <DatePicker
-              value={task.due_date}
-              placeholder="Due date"
-              onChange={(d) =>
-                // Times hang off the date. Clearing the date has to clear them
-                // too, or the row keeps a 3pm that belongs to no day and the
-                // check constraint has nothing to catch it.
-                onUpdate(task.id, d ? { due_date: d } : { due_date: null, due_time: null, end_time: null })
-              }
-            />
+          {/*
+            Start and due sit together as a pair, because that's what they are.
+            Start is optional: null means the task lives entirely on its due
+            date, which is every task created before 2026-08-08b.
+          */}
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label>Start date</Label>
+              <DatePicker
+                value={task.start_date}
+                placeholder="Same day"
+                // The database enforces start <= due; stopping the picker from
+                // offering an impossible date is friendlier than letting the
+                // write fail and surfacing a constraint error.
+                maxDate={task.due_date ?? undefined}
+                onChange={(d) => onUpdate(task.id, { start_date: d })}
+              />
+            </div>
+            <div>
+              <Label>Due date</Label>
+              <DatePicker
+                value={task.due_date}
+                placeholder="Due date"
+                minDate={task.start_date ?? undefined}
+                onChange={(d) =>
+                  // Times hang off the due date. Clearing it has to clear them
+                  // too, or the row keeps a 3pm that belongs to no day and the
+                  // check constraint has nothing to catch it. A start with no
+                  // due date is allowed — that's open-ended work — so it stays.
+                  onUpdate(task.id, d ? { due_date: d } : { due_date: null, due_time: null, end_time: null })
+                }
+              />
+            </div>
           </div>
           {/* Times only make sense once there's a day to hang them on. */}
           {task.due_date && (
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <Label>Starts</Label>
+                <Label>Start time</Label>
                 <TimePicker
                   value={task.due_time}
                   placeholder="All day"
@@ -344,10 +392,10 @@ export function TaskDetailDrawer({
                 />
               </div>
               <div>
-                <Label>Ends</Label>
+                <Label>End time</Label>
                 <TimePicker
                   value={task.end_time}
-                  placeholder={task.due_time ? "Optional" : "Set a start first"}
+                  placeholder={task.due_time ? "Optional" : "Set a start time first"}
                   minTime={task.due_time}
                   onChange={(t) => onUpdate(task.id, { end_time: t })}
                 />
@@ -394,7 +442,7 @@ export function TaskDetailDrawer({
                 onUpdate(task.id, { description });
               }
             }}
-            className="w-full resize-none rounded border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-2 focus:border-primary/60 focus:outline-none focus:ring-1 focus:ring-primary/30"
+            className="w-full resize-none rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-2 focus:border-primary/60 focus:outline-none focus:ring-1 focus:ring-primary/30"
           />
         </div>
 
@@ -403,33 +451,68 @@ export function TaskDetailDrawer({
           <Label>Deliverables & links</Label>
           <div className="flex flex-col gap-1.5">
             {links.length === 0 && (
-              <p className="rounded border border-dashed border-border px-3 py-3 text-center text-xs text-muted-foreground">
+              <p className="rounded-md border border-dashed border-border px-3 py-3 text-center text-xs text-muted-foreground">
                 No links yet — add the Google Drive folder, Figma file, or wherever the
                 deliverable lives.
               </p>
             )}
             {links.map((l, idx) => (
               <div
-                key={`${l.url}-${idx}`}
-                className="group flex items-center gap-2.5 rounded border border-border bg-surface px-3 py-2"
+                key={idx} /* index, not url — keying on a value you can edit remounts mid-typing */
+                className="group flex items-center gap-2.5 rounded-md border border-border bg-surface px-3 py-2"
               >
                 <Link2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                {/* Inputs rather than text: a link you can open and delete but
+                    not correct means retyping both fields over one typo. They
+                    read as plain text until focused so the row stays calm. */}
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{l.title}</p>
-                  <p className="truncate text-xs text-muted-foreground">{l.url}</p>
+                  <input
+                    defaultValue={l.title}
+                    onBlur={(e) => {
+                      if (e.target.value.trim() !== l.title) {
+                        updateLink(idx, { title: e.target.value });
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") e.currentTarget.blur();
+                      if (e.key === "Escape") {
+                        e.currentTarget.value = l.title;
+                        e.currentTarget.blur();
+                      }
+                    }}
+                    aria-label="Link title"
+                    className="w-full truncate rounded-md border border-transparent bg-transparent px-1 py-0.5 text-sm font-medium text-foreground hover:border-border focus:border-primary/60 focus:outline-none"
+                  />
+                  <input
+                    defaultValue={l.url}
+                    onBlur={(e) => {
+                      if (e.target.value.trim() !== l.url) {
+                        updateLink(idx, { url: e.target.value });
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") e.currentTarget.blur();
+                      if (e.key === "Escape") {
+                        e.currentTarget.value = l.url;
+                        e.currentTarget.blur();
+                      }
+                    }}
+                    aria-label="Link URL"
+                    className="w-full truncate rounded-md border border-transparent bg-transparent px-1 py-0.5 text-xs text-muted-foreground hover:border-border focus:border-primary/60 focus:text-foreground focus:outline-none"
+                  />
                 </div>
                 <a
                   href={l.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="rounded p-1.5 text-muted-foreground hover:bg-hover hover:text-foreground"
+                  className="rounded-md p-1.5 text-muted-foreground hover:bg-hover hover:text-foreground"
                   title="Open link"
                 >
                   <ExternalLink className="h-3.5 w-3.5" />
                 </a>
                 <button
                   onClick={() => removeLink(idx)}
-                  className="rounded p-1.5 text-muted-foreground opacity-0 hover:bg-hover hover:text-danger group-hover:opacity-100"
+                  className="rounded-md p-1.5 text-muted-foreground opacity-0 hover:bg-hover hover:text-danger group-hover:opacity-100"
                   title="Remove link"
                 >
                   <X className="h-3.5 w-3.5" />
@@ -468,7 +551,7 @@ export function TaskDetailDrawer({
             </Button>
           </form>
           {subtasks.length === 0 ? (
-            <p className="rounded border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">
+            <p className="rounded-md border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">
               Break this task down — subtasks get their own mini board.
             </p>
           ) : (
@@ -487,7 +570,7 @@ export function TaskDetailDrawer({
                       e.stopPropagation();
                       deleteSubtask(s.id);
                     }}
-                    className="rounded p-0.5 text-muted-foreground opacity-0 hover:text-danger group-hover/sub:opacity-100"
+                    className="rounded-md p-0.5 text-muted-foreground opacity-0 hover:text-danger group-hover/sub:opacity-100"
                   >
                     <X className="h-3 w-3" />
                   </button>

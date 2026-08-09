@@ -209,7 +209,7 @@ export function OrgChartFlow({
                     onClick={() => onRenameTeam(t)}
                     title={`Rename ${t}`}
                     aria-label={`Rename ${t}`}
-                    className="rounded p-0.5 text-muted-2 opacity-60 transition-opacity hover:text-foreground group-hover:opacity-100"
+                    className="rounded-md p-0.5 text-muted-2 opacity-60 transition-opacity hover:text-foreground group-hover:opacity-100"
                   >
                     <Pencil className="h-3 w-3" />
                   </button>
@@ -217,7 +217,7 @@ export function OrgChartFlow({
                     onClick={() => onDeleteTeam(t)}
                     title={`Delete ${t}`}
                     aria-label={`Delete ${t}`}
-                    className="rounded p-0.5 text-muted-2 opacity-60 transition-opacity hover:text-danger group-hover:opacity-100"
+                    className="rounded-md p-0.5 text-muted-2 opacity-60 transition-opacity hover:text-danger group-hover:opacity-100"
                   >
                     <Trash2 className="h-3 w-3" />
                   </button>

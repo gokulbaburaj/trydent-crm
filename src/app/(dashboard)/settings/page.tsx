@@ -436,7 +436,7 @@ function SortableViewRow({
         {...attributes}
         {...listeners}
         aria-label={`Reorder ${label}`}
-        className="touch-none cursor-grab rounded p-0.5 text-muted-2 transition-colors hover:text-foreground active:cursor-grabbing"
+        className="touch-none cursor-grab rounded-md p-0.5 text-muted-2 transition-colors hover:text-foreground active:cursor-grabbing"
       >
         <GripVertical className="h-3.5 w-3.5" />
       </button>

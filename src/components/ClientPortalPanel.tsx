@@ -542,7 +542,7 @@ export function ClientPortalPanel({
         <Link
           href={`/portal?client=${client.id}`}
           target="_blank"
-          className="flex flex-1 items-center justify-center gap-1.5 rounded border border-border bg-hover px-3 py-2 text-xs font-medium text-foreground-secondary transition-colors hover:bg-active hover:text-foreground"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-border bg-hover px-3 py-2 text-xs font-medium text-foreground-secondary transition-colors hover:bg-active hover:text-foreground"
         >
           <Eye className="h-3.5 w-3.5" /> Preview portal
         </Link>
@@ -561,7 +561,7 @@ export function ClientPortalPanel({
       </div>
 
       {/* Login provisioning */}
-      <div className="flex flex-col gap-3 rounded border border-border bg-raise p-3">
+      <div className="flex flex-col gap-3 rounded-md border border-border bg-raise p-3">
         <div className="flex items-center gap-2">
           <KeyRound className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="text-[13px] font-medium">Portal login</span>
@@ -575,7 +575,7 @@ export function ClientPortalPanel({
         {portal.portal_username && !loginCreated && (
           <p className="text-xs text-muted-foreground">
             Signs in with username{" "}
-            <span className="rounded bg-hover px-1 py-0.5 font-medium text-foreground-secondary">
+            <span className="rounded-md bg-hover px-1 py-0.5 font-medium text-foreground-secondary">
               {portal.portal_username}
             </span>{" "}
             — passwords aren&apos;t stored; use Reset to issue a new one anytime.
@@ -583,7 +583,7 @@ export function ClientPortalPanel({
         )}
 
         {loginCreated ? (
-          <div className="flex flex-col gap-2 rounded border border-success/30 bg-success/10 p-3">
+          <div className="flex flex-col gap-2 rounded-md border border-success/30 bg-success/10 p-3">
             <p className="text-xs font-medium text-success">
               {loginCreated.reset
                 ? "Password reset — share the new credentials with your client."
@@ -652,7 +652,7 @@ export function ClientPortalPanel({
       </div>
 
       {/* Updates */}
-      <div className="flex flex-col gap-2 rounded border border-border bg-raise p-3">
+      <div className="flex flex-col gap-2 rounded-md border border-border bg-raise p-3">
         <div className="flex items-center gap-2">
           <Megaphone className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="text-[13px] font-medium">Portal updates</span>
@@ -683,7 +683,7 @@ export function ClientPortalPanel({
       </div>
 
       {/* Messages */}
-      <div className="flex flex-col gap-2 rounded border border-border bg-raise p-3">
+      <div className="flex flex-col gap-2 rounded-md border border-border bg-raise p-3">
         <div className="flex items-center gap-2">
           <MessageSquare className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="text-[13px] font-medium">Messages</span>
@@ -738,7 +738,7 @@ export function ClientPortalPanel({
 
       {/* Call requests */}
       {requests.length > 0 && (
-        <div className="flex flex-col gap-2 rounded border border-warning/30 bg-warning/5 p-3">
+        <div className="flex flex-col gap-2 rounded-md border border-warning/30 bg-warning/5 p-3">
           <div className="flex items-center gap-2">
             <CalendarClock className="h-3.5 w-3.5 text-warning" />
             <span className="text-[13px] font-medium">Call requests</span>
@@ -760,7 +760,7 @@ export function ClientPortalPanel({
               <div className="mt-2 flex gap-2">
                 <Link
                   href="/schedule"
-                  className="flex flex-1 items-center justify-center gap-1.5 rounded border border-border bg-hover px-3 py-1.5 text-[11px] font-medium text-foreground-secondary transition-colors hover:bg-active hover:text-foreground"
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-border bg-hover px-3 py-1.5 text-[11px] font-medium text-foreground-secondary transition-colors hover:bg-active hover:text-foreground"
                 >
                   Open Schedule
                 </Link>
@@ -787,7 +787,7 @@ export function ClientPortalPanel({
       )}
 
       {/* Documents */}
-      <div className="flex flex-col gap-2 rounded border border-border bg-raise p-3">
+      <div className="flex flex-col gap-2 rounded-md border border-border bg-raise p-3">
         <div className="flex items-center gap-2">
           <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="text-[13px] font-medium">Documents</span>
@@ -845,7 +845,7 @@ export function ClientPortalPanel({
                   // still overwrite it above.
                   if (f && !docName.trim()) setDocName(f.name.replace(/\.[^.]+$/, ""));
                 }}
-                className="block w-full cursor-pointer rounded-md border border-border bg-transparent px-2.5 py-1.5 text-[12.5px] text-muted-foreground file:mr-2.5 file:rounded file:border-0 file:bg-active file:px-2 file:py-1 file:text-[12px] file:text-foreground hover:file:bg-white/15"
+                className="block w-full cursor-pointer rounded-md border border-border bg-transparent px-2.5 py-1.5 text-[12.5px] text-muted-foreground file:mr-2.5 file:rounded-md file:border-0 file:bg-active file:px-2 file:py-1 file:text-[12px] file:text-foreground hover:file:bg-white/15"
               />
               {docFile && (
                 <p className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-2">
@@ -932,7 +932,7 @@ export function ClientPortalPanel({
                   type="button"
                   aria-label={`Delete ${d.name}`}
                   onClick={() => deleteDocument(d.id)}
-                  className="shrink-0 rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-hover hover:text-danger group-hover:opacity-100"
+                  className="shrink-0 rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-hover hover:text-danger group-hover:opacity-100"
                 >
                   <Trash2 className="h-3 w-3" />
                 </button>
@@ -943,7 +943,7 @@ export function ClientPortalPanel({
       </div>
 
       {/* Invoices */}
-      <div className="flex flex-col gap-2 rounded border border-border bg-raise p-3">
+      <div className="flex flex-col gap-2 rounded-md border border-border bg-raise p-3">
         <div className="flex items-center gap-2">
           <Receipt className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="text-[13px] font-medium">Invoices</span>
@@ -1012,7 +1012,7 @@ export function ClientPortalPanel({
                 type="file"
                 accept="application/pdf,image/*"
                 onChange={(e) => setInvFile(e.target.files?.[0] ?? null)}
-                className="block w-full cursor-pointer rounded-md border border-border bg-transparent px-2.5 py-1.5 text-[12.5px] text-muted-foreground file:mr-2.5 file:rounded file:border-0 file:bg-active file:px-2 file:py-1 file:text-[12px] file:text-foreground hover:file:bg-white/15"
+                className="block w-full cursor-pointer rounded-md border border-border bg-transparent px-2.5 py-1.5 text-[12.5px] text-muted-foreground file:mr-2.5 file:rounded-md file:border-0 file:bg-active file:px-2 file:py-1 file:text-[12px] file:text-foreground hover:file:bg-white/15"
               />
               {invFile && (
                 <p className="mt-1 text-[11px] text-muted-2">
@@ -1098,7 +1098,7 @@ export function ClientPortalPanel({
                 type="button"
                 aria-label={`Delete ${inv.number}`}
                 onClick={() => deleteInvoice(inv.id)}
-                className="shrink-0 rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-hover hover:text-danger group-hover:opacity-100"
+                className="shrink-0 rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-hover hover:text-danger group-hover:opacity-100"
               >
                 <Trash2 className="h-3 w-3" />
               </button>

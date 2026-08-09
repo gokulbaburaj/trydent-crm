@@ -15,13 +15,29 @@ export function DatePicker({
   onChange,
   placeholder = "Pick a date",
   align = "left",
+  minDate,
+  maxDate,
 }: {
   value: string | null | undefined;
   onChange: (date: string | null) => void;
   placeholder?: string;
   align?: "left" | "right";
+  /**
+   * Bound the selectable range, as "yyyy-MM-dd".
+   *
+   * For pairs of dates that the database constrains — a task's start and due,
+   * a project's start and due. Greying out an impossible day is friendlier
+   * than accepting it and surfacing a check-constraint error after the write
+   * has already failed.
+   */
+  minDate?: string;
+  maxDate?: string;
 }) {
   const selected = value ? parseISO(value) : undefined;
+  const disabled = [
+    ...(minDate ? [{ before: parseISO(minDate) }] : []),
+    ...(maxDate ? [{ after: parseISO(maxDate) }] : []),
+  ];
 
   return (
     <Popover
@@ -44,7 +60,7 @@ export function DatePicker({
                 e.stopPropagation();
                 onChange(null);
               }}
-              className="rounded p-0.5 text-muted-foreground hover:bg-active hover:text-foreground"
+              className="rounded-md p-0.5 text-muted-foreground hover:bg-active hover:text-foreground"
             >
               <X className="h-3 w-3" />
             </span>
@@ -59,6 +75,7 @@ export function DatePicker({
             selected={selected}
             defaultMonth={selected ?? new Date()}
             weekStartsOn={1}
+            disabled={disabled.length ? disabled : undefined}
             onSelect={(d) => {
               onChange(d ? format(d, "yyyy-MM-dd") : null);
               close();
@@ -71,7 +88,7 @@ export function DatePicker({
                 onChange(format(new Date(), "yyyy-MM-dd"));
                 close();
               }}
-              className="rounded px-1.5 py-1 text-xs font-medium text-muted-foreground hover:bg-hover hover:text-foreground"
+              className="rounded-md px-1.5 py-1 text-xs font-medium text-muted-foreground hover:bg-hover hover:text-foreground"
             >
               Today
             </button>
@@ -81,7 +98,7 @@ export function DatePicker({
                 onChange(null);
                 close();
               }}
-              className="rounded px-1.5 py-1 text-xs text-muted-foreground hover:bg-hover hover:text-foreground"
+              className="rounded-md px-1.5 py-1 text-xs text-muted-foreground hover:bg-hover hover:text-foreground"
             >
               Clear
             </button>

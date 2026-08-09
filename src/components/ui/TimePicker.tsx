@@ -100,7 +100,7 @@ export function TimePicker({
               onChange(null);
               setOpen(false);
             }}
-            className="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-active hover:text-foreground"
+            className="shrink-0 rounded-md p-0.5 text-muted-foreground hover:bg-active hover:text-foreground"
           >
             <X className="h-3 w-3" />
           </span>
@@ -127,7 +127,7 @@ export function TimePicker({
                   setOpen(false);
                 }}
                 className={cn(
-                  "block w-full rounded px-2 py-1 text-left text-[13px] tabular-nums transition-colors",
+                  "block w-full rounded-md px-2 py-1 text-left text-[13px] tabular-nums transition-colors",
                   selected
                     ? "bg-primary/15 font-medium text-foreground"
                     : "text-foreground-secondary hover:bg-hover hover:text-foreground",

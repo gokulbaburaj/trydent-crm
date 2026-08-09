@@ -168,7 +168,7 @@ function TeamDetailInner() {
                 {p.title && (
                   <span className="truncate text-[11.5px] text-muted-2">{p.title}</span>
                 )}
-                <span className="shrink-0 rounded border border-border-subtle px-1.5 py-0.5 text-[11px] text-muted-foreground">
+                <span className="shrink-0 rounded-md border border-border-subtle px-1.5 py-0.5 text-[11px] text-muted-foreground">
                   {USER_ROLE_LABELS[p.role]}
                 </span>
               </Link>

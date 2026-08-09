@@ -47,7 +47,7 @@ export function MessageBody({
         const chip = (
           <span
             className={cn(
-              "mx-px inline-flex items-baseline gap-0.5 rounded px-1 py-px align-baseline text-[12.5px] font-medium transition-colors",
+              "mx-px inline-flex items-baseline gap-0.5 rounded-md px-1 py-px align-baseline text-[12.5px] font-medium transition-colors",
               isMe
                 ? "bg-warning/20 text-warning"
                 : "bg-primary/15 text-primary hover:bg-primary/25"

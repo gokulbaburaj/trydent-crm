@@ -541,7 +541,7 @@ function SelectBox({
       }}
       title={title}
       className={cn(
-        "flex h-4 w-4 items-center justify-center rounded border transition-[opacity,background-color,border-color]",
+        "flex h-4 w-4 items-center justify-center rounded-md border transition-[opacity,background-color,border-color]",
         checked
           ? "border-primary bg-primary opacity-100"
           : cn(

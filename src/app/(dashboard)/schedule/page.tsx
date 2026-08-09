@@ -407,7 +407,7 @@ export default function SchedulePage() {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-0.5 rounded border border-border bg-surface p-1">
+        <div className="flex items-center gap-0.5 rounded-md border border-border bg-surface p-1">
           <TabButton active={tab === "all"} onClick={() => setTab("all")} icon={List} label="All" />
           <TabButton active={tab === "mine"} onClick={() => setTab("mine")} icon={User} label="Mine" />
           <TabButton active={tab === "calendar"} onClick={() => setTab("calendar")} icon={Calendar} label="Calendar" />
@@ -449,7 +449,7 @@ export default function SchedulePage() {
               <span className="font-normal text-muted-foreground">{format(anchor, "yyyy")}</span>
             </h2>
             <div className="flex items-center gap-2">
-              <div className="flex items-center rounded border border-border bg-surface">
+              <div className="flex items-center rounded-md border border-border bg-surface">
                 <button
                   onClick={goPrev}
                   className="flex h-7 w-7 items-center justify-center text-muted-foreground hover:bg-hover hover:text-foreground"
@@ -471,10 +471,10 @@ export default function SchedulePage() {
                   <ChevronRight className="h-4 w-4" />
                 </button>
               </div>
-              <div className="flex items-center gap-0.5 rounded border border-border bg-surface p-0.5">
+              <div className="flex items-center gap-0.5 rounded-md border border-border bg-surface p-0.5">
                 <button
                   onClick={() => setCalView("week")}
-                  className={`rounded px-2.5 py-1 text-xs font-medium ${
+                  className={`rounded-md px-2.5 py-1 text-xs font-medium ${
                     calView === "week" ? "bg-active text-foreground" : "text-muted-foreground hover:text-foreground-secondary"
                   }`}
                 >
@@ -482,7 +482,7 @@ export default function SchedulePage() {
                 </button>
                 <button
                   onClick={() => setCalView("month")}
-                  className={`rounded px-2.5 py-1 text-xs font-medium ${
+                  className={`rounded-md px-2.5 py-1 text-xs font-medium ${
                     calView === "month" ? "bg-active text-foreground" : "text-muted-foreground hover:text-foreground-secondary"
                   }`}
                 >
@@ -787,7 +787,7 @@ function WeekGrid({
 
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-    <div className="overflow-x-auto rounded border border-border bg-surface">
+    <div className="overflow-x-auto rounded-md border border-border bg-surface">
       <div className="min-w-[680px]">
       {/* Day headers */}
       <div className="grid grid-cols-[3.5rem_repeat(7,1fr)] border-b border-border">
@@ -831,7 +831,7 @@ function WeekGrid({
                   key={p.id}
                   href={`/projects/${p.id}`}
                   title={`${p.name} — project deadline`}
-                  className="truncate rounded border border-danger/40 bg-danger/10 px-1.5 py-0.5 text-[11px] font-medium text-danger"
+                  className="truncate rounded-md border border-danger/40 bg-danger/10 px-1.5 py-0.5 text-[11px] font-medium text-danger"
                 >
                   ◆ {p.name}
                 </Link>
@@ -845,7 +845,7 @@ function WeekGrid({
                       ? ` · ${formatTimeRange(t.due_time, t.end_time)}`
                       : ""
                   }`}
-                  className="truncate rounded px-1.5 py-0.5 text-[11px] font-medium"
+                  className="truncate rounded-md px-1.5 py-0.5 text-[11px] font-medium"
                   style={{
                     background: "var(--event-indigo-bg)",
                     color: "var(--event-indigo-fg)",
@@ -1053,7 +1053,7 @@ function WeekEvent({
         // brightness() on a translucent dark fill is almost invisible — the
         // block is mostly the grid showing through. A white-alpha overlay is
         // the app's standard hover anyway (see design.md), so use that.
-        "group/ev absolute overflow-hidden rounded px-1.5 py-1 text-left transition-[box-shadow,background-color] duration-150 hover:shadow-md hover:shadow-black/30",
+        "group/ev absolute overflow-hidden rounded-md px-1.5 py-1 text-left transition-[box-shadow,background-color] duration-150 hover:shadow-md hover:shadow-black/30",
         "after:pointer-events-none after:absolute after:inset-0 after:bg-white/0 after:transition-colors hover:after:bg-hover",
         isDragging && "z-30 shadow-xl shadow-black/50 after:bg-active"
       )}
@@ -1174,7 +1174,7 @@ function MonthGridPro({
 
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-      <div className="overflow-x-auto rounded border border-border bg-surface">
+      <div className="overflow-x-auto rounded-md border border-border bg-surface">
         <div className="min-w-[760px]">
           <div className="grid grid-cols-7 border-b border-border text-center">
             {WEEKDAYS.map((d) => (
@@ -1392,7 +1392,7 @@ function TabButton({
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium ${
+      className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium ${
         active ? "bg-active text-foreground" : "text-muted-foreground hover:text-foreground-secondary"
       }`}
     >

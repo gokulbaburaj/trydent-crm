@@ -193,7 +193,7 @@ function DashCell({
         {...listeners}
         {...attributes}
         title="Drag to rearrange"
-        className="absolute left-1 top-1 z-10 cursor-grab rounded bg-surface/80 p-1 text-muted-foreground opacity-0 shadow-sm transition-opacity hover:bg-active hover:text-foreground active:cursor-grabbing group-hover/dash:opacity-100"
+        className="absolute left-1 top-1 z-10 cursor-grab rounded-md bg-surface/80 p-1 text-muted-foreground opacity-0 shadow-sm transition-opacity hover:bg-active hover:text-foreground active:cursor-grabbing group-hover/dash:opacity-100"
       >
         <GripVertical className="h-3.5 w-3.5" />
       </button>

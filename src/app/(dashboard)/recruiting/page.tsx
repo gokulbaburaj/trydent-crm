@@ -551,7 +551,7 @@ function Applicants({ onHired }: { onHired: (a: Applicant) => void }) {
                 key={id}
                 onClick={() => setView(id)}
                 className={cn(
-                  "flex items-center gap-1.5 rounded px-2.5 py-1 text-[12px] font-medium transition-colors",
+                  "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[12px] font-medium transition-colors",
                   view === id
                     ? "bg-active text-foreground"
                     : "text-muted-foreground hover:text-foreground-secondary"
@@ -689,7 +689,7 @@ function Applicants({ onHired }: { onHired: (a: Applicant) => void }) {
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
                         title="Open CV"
-                        className="rounded p-0.5 text-primary transition-colors hover:bg-hover"
+                        className="rounded-md p-0.5 text-primary transition-colors hover:bg-hover"
                       >
                         <FileText className="h-3.5 w-3.5" />
                       </a>
@@ -1106,7 +1106,7 @@ function Onboarding() {
                     const v = e.target.value.trim();
                     if (v) renameTemplate(t.id, v);
                   }}
-                  className="min-w-0 flex-1 rounded border border-transparent bg-transparent px-1 py-0.5 text-[13px] font-medium text-foreground hover:border-border focus:border-primary/60 focus:outline-none"
+                  className="min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-1 py-0.5 text-[13px] font-medium text-foreground hover:border-border focus:border-primary/60 focus:outline-none"
                 />
                 {t.is_default ? (
                   <Badge tone="green">Default</Badge>
@@ -1123,7 +1123,7 @@ function Onboarding() {
                   type="button"
                   aria-label={`Delete ${t.name}`}
                   onClick={() => deleteTemplate(t.id)}
-                  className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:text-danger"
+                  className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:text-danger"
                 >
                   <Trash2 className="h-3 w-3" />
                 </button>
@@ -1171,7 +1171,7 @@ function Onboarding() {
                       type="button"
                       aria-label={`Delete ${i.title}`}
                       onClick={() => deleteItem(i.id)}
-                      className="shrink-0 rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:text-danger group-hover:opacity-100"
+                      className="shrink-0 rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:text-danger group-hover:opacity-100"
                     >
                       <Trash2 className="h-3 w-3" />
                     </button>

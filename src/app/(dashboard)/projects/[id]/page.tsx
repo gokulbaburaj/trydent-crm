@@ -364,7 +364,7 @@ export default function ProjectDetailPage() {
           <Popover
             align="right"
             trigger={
-              <button className="rounded p-1 text-muted-foreground opacity-0 hover:bg-hover hover:text-foreground group-hover:opacity-100">
+              <button className="rounded-md p-1 text-muted-foreground opacity-0 hover:bg-hover hover:text-foreground group-hover:opacity-100">
                 <MoreHorizontal className="h-3.5 w-3.5" />
               </button>
             }
@@ -712,7 +712,7 @@ export default function ProjectDetailPage() {
     <div className="flex flex-col gap-5">
       {/* Migration / action errors */}
       {(migrationMissing || actionError) && (
-        <div className="flex items-start gap-2.5 rounded border border-warning/30 bg-warning/10 px-3 py-2.5 text-xs text-warning">
+        <div className="flex items-start gap-2.5 rounded-md border border-warning/30 bg-warning/10 px-3 py-2.5 text-xs text-warning">
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <div>
             {migrationMissing ? (
@@ -734,7 +734,7 @@ export default function ProjectDetailPage() {
       {/* Breadcrumb */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1 text-[13px] text-muted-foreground">
-          <Link href="/projects" className="rounded px-1 py-0.5 hover:bg-hover hover:text-foreground">
+          <Link href="/projects" className="rounded-md px-1 py-0.5 hover:bg-hover hover:text-foreground">
             Projects
           </Link>
           <ChevronRight className="h-3.5 w-3.5" />
@@ -743,7 +743,7 @@ export default function ProjectDetailPage() {
         <Popover
           align="right"
           trigger={
-            <button className="rounded p-1.5 text-muted-foreground hover:bg-hover hover:text-foreground">
+            <button className="rounded-md p-1.5 text-muted-foreground hover:bg-hover hover:text-foreground">
               <MoreHorizontal className="h-4 w-4" />
             </button>
           }
@@ -829,7 +829,7 @@ export default function ProjectDetailPage() {
               updateProject({ description });
             }
           }}
-          className="mt-3 w-full resize-none rounded border border-transparent bg-transparent px-1 py-0.5 text-sm leading-relaxed text-foreground-secondary placeholder:text-muted-2 hover:border-border focus:border-primary/60 focus:outline-none focus:ring-1 focus:ring-primary/30"
+          className="mt-3 w-full resize-none rounded-md border border-transparent bg-transparent px-1 py-0.5 text-sm leading-relaxed text-foreground-secondary placeholder:text-muted-2 hover:border-border focus:border-primary/60 focus:outline-none focus:ring-1 focus:ring-primary/30"
         />
         {/* Every control gets a label — an unlabelled chip row leaves you
             guessing which date is the start and who the person is. */}
@@ -1093,7 +1093,7 @@ export default function ProjectDetailPage() {
             <div className="mb-3 flex items-center justify-between">
               <h3 className="flex items-center gap-2 text-sm font-semibold">
                 Tasks
-                <span className="rounded bg-hover px-1.5 py-0.5 text-xs font-normal text-muted-foreground">
+                <span className="rounded-md bg-hover px-1.5 py-0.5 text-xs font-normal text-muted-foreground">
                   {active.length - done.length} open
                 </span>
               </h3>
@@ -1130,7 +1130,7 @@ export default function ProjectDetailPage() {
                   onMouseEnter={() => setHoverTask(t.id)}
                   onMouseLeave={() => setHoverTask(null)}
                   className={cn(
-                    "group flex items-center gap-2.5 rounded px-1.5 py-1.5 transition-colors",
+                    "group flex items-center gap-2.5 rounded-md px-1.5 py-1.5 transition-colors",
                     hoverTask === t.id ? "bg-hover" : "hover:bg-hover"
                   )}
                 >
@@ -1139,7 +1139,7 @@ export default function ProjectDetailPage() {
                       updateTask(t.id, { status: t.status === "Done" ? "Not Started" : "Done" })
                     }
                     className={cn(
-                      "flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors",
+                      "flex h-4 w-4 shrink-0 items-center justify-center rounded-md border transition-colors",
                       t.status === "Done"
                         ? "border-primary bg-primary"
                         : "border-muted-2 hover:border-muted-foreground"
@@ -1181,7 +1181,7 @@ export default function ProjectDetailPage() {
           <Card className="flex flex-col overflow-hidden">
             <h3 className="mb-3 flex shrink-0 items-center gap-2 text-sm font-semibold">
               Upcoming Meetings
-              <span className="rounded bg-hover px-1.5 py-0.5 text-xs font-normal text-muted-foreground">
+              <span className="rounded-md bg-hover px-1.5 py-0.5 text-xs font-normal text-muted-foreground">
                 {upcomingSchedule.length}
               </span>
               <button
@@ -1643,14 +1643,14 @@ function MiniCalendar({
         <div className="flex items-center gap-1">
           <button
             onClick={() => setMonth((m) => subMonths(m, 1))}
-            className="rounded p-1 text-muted-foreground hover:bg-hover hover:text-foreground"
+            className="rounded-md p-1 text-muted-foreground hover:bg-hover hover:text-foreground"
           >
             <ChevronLeft className="h-3.5 w-3.5" />
           </button>
           <span className="text-xs font-medium">{format(month, "MMM yyyy")}</span>
           <button
             onClick={() => setMonth((m) => addMonths(m, 1))}
-            className="rounded p-1 text-muted-foreground hover:bg-hover hover:text-foreground"
+            className="rounded-md p-1 text-muted-foreground hover:bg-hover hover:text-foreground"
           >
             <ChevronRight className="h-3.5 w-3.5" />
           </button>
@@ -1774,14 +1774,14 @@ function ProjectCalendar({
         <div className="mb-3 flex items-center justify-between">
           <button
             onClick={() => setMonth((m) => subMonths(m, 1))}
-            className="rounded p-1.5 text-muted-foreground hover:bg-hover hover:text-foreground"
+            className="rounded-md p-1.5 text-muted-foreground hover:bg-hover hover:text-foreground"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
           <h3 className="text-sm font-semibold">{format(month, "MMMM yyyy")}</h3>
           <button
             onClick={() => setMonth((m) => addMonths(m, 1))}
-            className="rounded p-1.5 text-muted-foreground hover:bg-hover hover:text-foreground"
+            className="rounded-md p-1.5 text-muted-foreground hover:bg-hover hover:text-foreground"
           >
             <ChevronRight className="h-4 w-4" />
           </button>
@@ -1812,7 +1812,7 @@ function ProjectCalendar({
               <button
                 onClick={() => setSelected(isSelected ? null : day)}
                 className={cn(
-                  "flex h-20 flex-col items-stretch gap-0.5 rounded border p-1 text-left transition-colors",
+                  "flex h-20 flex-col items-stretch gap-0.5 rounded-md border p-1 text-left transition-colors",
                   isSelected
                     ? "border-primary bg-primary/10"
                     : "border-transparent hover:bg-hover",
@@ -1837,7 +1837,7 @@ function ProjectCalendar({
                 {dayMeetings.slice(0, 2).map((m) => (
                   <span
                     key={m.id}
-                    className="truncate rounded px-1 py-px text-[11px] font-semibold"
+                    className="truncate rounded-md px-1 py-px text-[11px] font-semibold"
                     style={{
                       background: "var(--event-yellow-bg)",
                       color: "var(--event-yellow-fg)",
@@ -1850,7 +1850,7 @@ function ProjectCalendar({
                 {dayTasks.slice(0, Math.max(0, 2 - dayMeetings.length)).map((t) => (
                   <span
                     key={t.id}
-                    className="truncate rounded px-1 py-px text-[11px] font-semibold"
+                    className="truncate rounded-md px-1 py-px text-[11px] font-semibold"
                     style={{
                       background: "var(--event-indigo-bg)",
                       color: "var(--event-indigo-fg)",
@@ -1911,7 +1911,7 @@ function ProjectCalendar({
         </h3>
 
         {selected && (
-          <div className="mb-3 flex flex-col gap-2 rounded border border-border bg-raise p-2.5">
+          <div className="mb-3 flex flex-col gap-2 rounded-md border border-border bg-raise p-2.5">
             <Input
               placeholder={`Add on ${format(selected, "MMM d")}...`}
               value={quickName}
@@ -2177,7 +2177,7 @@ function LabelChip({ label }: { label: string }) {
   return (
     <span
       className={cn(
-        "inline-flex rounded px-1.5 py-0.5 text-[11px] font-medium",
+        "inline-flex rounded-md px-1.5 py-0.5 text-[11px] font-medium",
         labelChipClass(label)
       )}
     >
@@ -2201,7 +2201,7 @@ function PageTabButton({
     <button
       onClick={onClick}
       className={cn(
-        "flex items-center gap-1.5 rounded px-2.5 py-1.5 text-[13px] font-medium transition-colors",
+        "flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[13px] font-medium transition-colors",
         active
           ? "bg-active text-foreground"
           : "text-muted-foreground hover:bg-hover hover:text-foreground-secondary"

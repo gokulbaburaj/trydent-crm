@@ -276,7 +276,7 @@ function OnboardingInner() {
       <div>
         <h3 className="mb-2.5 text-sm font-semibold">
           In progress
-          <span className="ml-2 rounded bg-hover px-1.5 py-0.5 text-xs font-normal text-muted-foreground">
+          <span className="ml-2 rounded-md bg-hover px-1.5 py-0.5 text-xs font-normal text-muted-foreground">
             {inProgress.length}
           </span>
         </h3>
@@ -476,7 +476,7 @@ function OnboardingInner() {
                       type="button"
                       aria-label={`Remove ${t.title}`}
                       onClick={() => deleteStep(t.id)}
-                      className="shrink-0 rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:text-danger group-hover:opacity-100"
+                      className="shrink-0 rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:text-danger group-hover:opacity-100"
                     >
                       <Trash2 className="h-3 w-3" />
                     </button>

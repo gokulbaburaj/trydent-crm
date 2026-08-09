@@ -138,7 +138,7 @@ export default function DashboardLayout({
           <div className="hidden md:block">
             <TabBar />
           </div>
-          {/* The rounded panel inset is a desktop flourish: at 390px it spends ~24px
+          {/* The rounded-md panel inset is a desktop flourish: at 390px it spends ~24px
               of width and the border reads as a box around the whole app. Edge to
               edge on phones, inset from `md`. */}
           <div className="min-h-0 min-w-0 flex-1 md:px-2 md:pb-2 md:pl-0">

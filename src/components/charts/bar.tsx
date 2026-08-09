@@ -252,7 +252,7 @@ const BarInner = memo(function BarInner({
 
   // Calculate corner radius based on lineCap. Perspective bars force a flat
   // top (radius 0) so the 3D lid from `<BarDepthBack>` meets the bar with no
-  // gap — rounded corners would leave a wedge, so `perspective` overrides it.
+  // gap — rounded-md corners would leave a wedge, so `perspective` overrides it.
   const cornerRadius = useMemo(() => {
     if (perspective) {
       return 0;
@@ -388,7 +388,7 @@ const BarInner = memo(function BarInner({
         // Use categoryValue as key since it's the unique identifier from data
         const barKey = `bar-${dataKey}-${categoryValue}`;
 
-        // Apply rounded corners:
+        // Apply rounded-md corners:
         // - For non-stacked: always apply
         // - For stacked with gap: apply to all bars
         // - For stacked without gap: only apply to the last series

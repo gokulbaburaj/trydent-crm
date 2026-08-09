@@ -24,7 +24,7 @@ export function RecurrencePicker({
       align={align}
       fullWidth
       trigger={
-        <button className="flex w-full items-center gap-2 rounded border border-border bg-surface px-3 py-2 text-sm text-foreground hover:bg-hover">
+        <button className="flex w-full items-center gap-2 rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground hover:bg-hover">
           <Repeat
             className={cn("h-3.5 w-3.5 shrink-0", repeats ? "text-primary" : "text-muted-foreground")}
           />

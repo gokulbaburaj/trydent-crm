@@ -74,7 +74,7 @@ export function TabBar() {
                 either way. Better it opens and says so. */}
             <button
               className={cn(
-                "rounded p-1.5 text-muted-2 hover:bg-hover hover:text-foreground",
+                "rounded-md p-1.5 text-muted-2 hover:bg-hover hover:text-foreground",
                 recentlyClosed.length === 0 && "opacity-40"
               )}
             >
@@ -124,7 +124,7 @@ export function TabBar() {
       <Tip label="Back">
         <button
           onClick={() => router.back()}
-          className="rounded p-1.5 text-muted-foreground hover:bg-hover hover:text-foreground"
+          className="rounded-md p-1.5 text-muted-foreground hover:bg-hover hover:text-foreground"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
         </button>
@@ -132,7 +132,7 @@ export function TabBar() {
       <Tip label="Forward">
         <button
           onClick={() => router.forward()}
-          className="rounded p-1.5 text-muted-foreground hover:bg-hover hover:text-foreground"
+          className="rounded-md p-1.5 text-muted-foreground hover:bg-hover hover:text-foreground"
         >
           <ArrowRight className="h-3.5 w-3.5" />
         </button>
@@ -163,7 +163,7 @@ export function TabBar() {
                     close(tab.id);
                   }}
                   className={cn(
-                    "rounded p-0.5 text-muted-foreground hover:bg-active hover:text-foreground",
+                    "rounded-md p-0.5 text-muted-foreground hover:bg-active hover:text-foreground",
                     active ? "opacity-60 hover:opacity-100" : "opacity-0 group-hover:opacity-100"
                   )}
                 >
@@ -176,7 +176,7 @@ export function TabBar() {
         <Tip label="New tab">
           <button
             onClick={newTab}
-            className="rounded p-1.5 text-muted-foreground hover:bg-hover hover:text-foreground"
+            className="rounded-md p-1.5 text-muted-foreground hover:bg-hover hover:text-foreground"
           >
             <Plus className="h-3.5 w-3.5" />
           </button>

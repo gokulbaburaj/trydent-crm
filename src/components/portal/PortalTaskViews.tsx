@@ -221,7 +221,7 @@ export function PortalCalendar({ tasks, projects, projectName }: ViewProps) {
                     key={i}
                     title={e.label}
                     className={cn(
-                      "truncate rounded px-1 py-px text-[10px] leading-tight",
+                      "truncate rounded-md px-1 py-px text-[10px] leading-tight",
                       e.kind === "deadline"
                         ? "bg-warning/15 text-warning"
                         : e.done

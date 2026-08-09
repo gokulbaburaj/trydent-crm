@@ -177,7 +177,7 @@ export function BulkActionBar({
                       onSetDue(null);
                       close();
                     }}
-                    className="rounded px-1.5 py-1 text-xs text-muted-foreground hover:bg-hover hover:text-foreground"
+                    className="rounded-md px-1.5 py-1 text-xs text-muted-foreground hover:bg-hover hover:text-foreground"
                   >
                     Clear {dueLabel.toLowerCase()}
                   </button>
@@ -267,12 +267,12 @@ function LabelMenu({
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder="New label…"
-          className="h-7 w-32 min-w-0 flex-1 rounded border border-edge bg-transparent px-2 text-xs text-foreground placeholder:text-muted-2 focus:border-primary/60 focus:outline-none"
+          className="h-7 w-32 min-w-0 flex-1 rounded-md border border-edge bg-transparent px-2 text-xs text-foreground placeholder:text-muted-2 focus:border-primary/60 focus:outline-none"
         />
         <button
           type="submit"
           disabled={!draft.trim()}
-          className="rounded p-1.5 text-muted-foreground hover:bg-hover hover:text-foreground disabled:opacity-40"
+          className="rounded-md p-1.5 text-muted-foreground hover:bg-hover hover:text-foreground disabled:opacity-40"
           title="Apply label"
         >
           <Plus className="h-3.5 w-3.5" />

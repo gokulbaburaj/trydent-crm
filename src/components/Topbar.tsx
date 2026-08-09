@@ -39,15 +39,15 @@ export function Topbar({
       <div className="flex items-center gap-2">
         <button
           onClick={openCommandMenu}
-          className="hidden w-52 items-center gap-2 rounded border border-border bg-surface py-1.5 pl-2.5 pr-2 text-left text-[13px] text-muted-foreground hover:bg-hover hover:text-foreground-secondary sm:flex"
+          className="hidden w-52 items-center gap-2 rounded-md border border-border bg-surface py-1.5 pl-2.5 pr-2 text-left text-[13px] text-muted-foreground hover:bg-hover hover:text-foreground-secondary sm:flex"
         >
           <Search className="h-3.5 w-3.5 shrink-0" />
           <span className="flex-1">Search...</span>
-          <kbd className="rounded border border-border bg-hover px-1.5 py-0.5 text-[10px]">⌘K</kbd>
+          <kbd className="rounded-md border border-border bg-hover px-1.5 py-0.5 text-[10px]">⌘K</kbd>
         </button>
         <button
           onClick={openCommandMenu}
-          className="rounded p-1.5 text-muted-foreground hover:bg-hover hover:text-foreground sm:hidden"
+          className="rounded-md p-1.5 text-muted-foreground hover:bg-hover hover:text-foreground sm:hidden"
           title="Search"
         >
           <Search className="h-4 w-4" />
@@ -60,7 +60,7 @@ export function Topbar({
             align="right"
             className="w-56"
             trigger={
-              <button className="flex items-center rounded p-1 hover:bg-hover">
+              <button className="flex items-center rounded-md p-1 hover:bg-hover">
                 <Avatar name={profile.full_name} url={profile.avatar_url} size="sm" />
               </button>
             }
@@ -77,7 +77,7 @@ export function Topbar({
                   </div>
                 </div>
                 <div className="px-2 pb-1.5">
-                  <span className="inline-flex items-center gap-1.5 rounded bg-hover px-1.5 py-0.5 text-[11px] font-medium capitalize text-foreground-secondary">
+                  <span className="inline-flex items-center gap-1.5 rounded-md bg-hover px-1.5 py-0.5 text-[11px] font-medium capitalize text-foreground-secondary">
                     <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                     {profile.role}
                   </span>

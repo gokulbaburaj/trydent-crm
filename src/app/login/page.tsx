@@ -160,7 +160,7 @@ export default function LoginPage() {
             <div className="flex items-center gap-2.5">
               {/* Same mark as the sidebar and both portals — one brand, one
                   square, driven by the accent you set in Settings. */}
-              <span className="flex h-8 w-8 items-center justify-center rounded bg-primary text-[11px] font-medium text-primary-foreground">
+              <span className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-[11px] font-medium text-primary-foreground">
                 TL
               </span>
               <span className="text-[17px] font-semibold tracking-tight">Trydent Labs</span>

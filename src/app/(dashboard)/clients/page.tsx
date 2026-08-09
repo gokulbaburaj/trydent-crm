@@ -244,7 +244,7 @@ export default function ClientsPage() {
         <div className="flex items-center gap-0.5 rounded-md border border-border bg-surface p-1">
           <button
             onClick={() => setView("table")}
-            className={`flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium ${
+            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium ${
               view === "table" ? "bg-active text-foreground" : "text-muted-foreground hover:text-foreground-secondary"
             }`}
           >
@@ -252,7 +252,7 @@ export default function ClientsPage() {
           </button>
           <button
             onClick={() => setView("kanban")}
-            className={`flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium ${
+            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium ${
               view === "kanban" ? "bg-active text-foreground" : "text-muted-foreground hover:text-foreground-secondary"
             }`}
           >
@@ -454,13 +454,13 @@ function TagInput({ tags, onChange }: { tags: string[]; onChange: (tags: string[
       {tags.map((t) => (
         <span
           key={t}
-          className="inline-flex items-center gap-1 rounded bg-hover px-1.5 py-0.5 text-xs text-foreground-secondary"
+          className="inline-flex items-center gap-1 rounded-md bg-hover px-1.5 py-0.5 text-xs text-foreground-secondary"
         >
           {t}
           <button
             type="button"
             onClick={() => onChange(tags.filter((x) => x !== t))}
-            className="rounded text-muted-foreground hover:text-danger"
+            className="rounded-md text-muted-foreground hover:text-danger"
           >
             <X className="h-3 w-3" />
           </button>

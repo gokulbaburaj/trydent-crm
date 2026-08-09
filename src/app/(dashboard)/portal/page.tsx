@@ -470,14 +470,14 @@ function PortalInner() {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-background/80 px-6 py-3.5 backdrop-blur">
         <div className="flex items-center gap-2">
-          <div className="flex h-6 w-6 items-center justify-center rounded bg-primary text-[10px] font-medium text-primary-foreground">
+          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-[10px] font-medium text-primary-foreground">
             TL
           </div>
           <span className="text-[13px] font-medium text-foreground">Trydent Labs</span>
           <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="text-[13px] text-muted-foreground">{client?.company ?? "Client Portal"}</span>
           {isPreview && (
-            <span className="ml-2 inline-flex items-center gap-1 rounded border border-warning/30 bg-warning/10 px-1.5 py-0.5 text-[11px] font-medium text-warning">
+            <span className="ml-2 inline-flex items-center gap-1 rounded-md border border-warning/30 bg-warning/10 px-1.5 py-0.5 text-[11px] font-medium text-warning">
               <Eye className="h-3 w-3" /> Preview — what your client sees
             </span>
           )}
@@ -485,7 +485,7 @@ function PortalInner() {
         <button
           onClick={signOut}
           title="Sign out"
-          className="rounded p-2 text-muted-foreground hover:bg-hover hover:text-foreground"
+          className="rounded-md p-2 text-muted-foreground hover:bg-hover hover:text-foreground"
         >
           <LogOut className="h-4 w-4" />
         </button>

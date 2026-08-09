@@ -475,7 +475,7 @@ function ProjectsPageInner() {
                         <button
                           key={p.id}
                           onClick={() => openInNewTab(`/projects/${p.id}`, p.name)}
-                          className="rounded border border-border bg-raise p-3 text-left transition-[border-color,background-color,box-shadow,translate] duration-150 hover:-translate-y-px hover:border-edge hover:bg-hover hover:shadow-lg hover:shadow-black/20"
+                          className="rounded-md border border-border bg-raise p-3 text-left transition-[border-color,background-color,box-shadow,translate] duration-150 hover:-translate-y-px hover:border-edge hover:bg-hover hover:shadow-lg hover:shadow-black/20"
                         >
                           <div className="flex items-center justify-between gap-2">
                             <span className="truncate text-sm font-medium">{p.name}</span>
@@ -667,7 +667,7 @@ function PaidEditor({ deal, onSaved }: { deal: Deal; onSaved: (d: Deal) => void 
       trigger={
         <button
           className={cn(
-            "rounded px-1 py-0.5 transition-colors hover:bg-hover",
+            "rounded-md px-1 py-0.5 transition-colors hover:bg-hover",
             owed > 0 ? "text-warning" : "text-success"
           )}
           title="Record a payment"

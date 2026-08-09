@@ -253,6 +253,12 @@ export interface ProjectTask {
   project_id: string;
   name: string;
   status: TaskStatus;
+  /**
+   * Optional first day of a multi-day task. Null means the task lives entirely
+   * on `due_date`, which is every task created before 2026-08-08b. The database
+   * enforces `start_date <= due_date` when both are set.
+   */
+  start_date: string | null;
   due_date: string | null;
   /**
    * Optional clock time on `due_date`, as "HH:MM:SS". Null means all-day —

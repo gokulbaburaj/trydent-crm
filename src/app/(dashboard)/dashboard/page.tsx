@@ -397,7 +397,7 @@ export default function DashboardPage() {
                   onClick={() => setRevenueChart(c.id)}
                   title={c.hint}
                   className={cn(
-                    "rounded px-2.5 py-1 text-xs font-medium transition-colors",
+                    "rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
                     revenueChart === c.id
                       ? "bg-active text-foreground"
                       : "text-muted-foreground hover:text-foreground-secondary"
@@ -482,7 +482,7 @@ export default function DashboardPage() {
             const client = clients.find((c) => c.id === a.client_id);
             return (
               <div key={a.id} className="flex items-center gap-3 py-3">
-                <div className="flex w-11 shrink-0 flex-col items-center rounded bg-active py-1.5">
+                <div className="flex w-11 shrink-0 flex-col items-center rounded-md bg-active py-1.5">
                   <span className="text-sm font-bold">{formatDateFns(date, "d")}</span>
                   <span className="text-[10px] uppercase text-muted-foreground">{formatDateFns(date, "EEE")}</span>
                 </div>

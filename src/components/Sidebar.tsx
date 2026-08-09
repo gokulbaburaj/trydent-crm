@@ -179,8 +179,8 @@ export function Sidebar({
       )}
     >
       <div className="flex items-center justify-between gap-2 px-3 py-3.5">
-        <button className="flex min-w-0 items-center gap-1.5 rounded px-1 py-1 text-[13px] font-medium text-foreground hover:bg-hover">
-          <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-primary text-[10px] font-medium text-primary-foreground">
+        <button className="flex min-w-0 items-center gap-1.5 rounded-md px-1 py-1 text-[13px] font-medium text-foreground hover:bg-hover">
+          <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-primary text-[10px] font-medium text-primary-foreground">
             TL
           </div>
           <span className="truncate">Trydent Labs</span>
@@ -190,7 +190,7 @@ export function Sidebar({
           <button
             title="Search (⌘K)"
             onClick={openCommandMenu}
-            className="rounded p-1.5 text-muted-foreground hover:bg-hover hover:text-foreground"
+            className="rounded-md p-1.5 text-muted-foreground hover:bg-hover hover:text-foreground"
           >
             <Search className="h-3.5 w-3.5" />
           </button>
@@ -230,7 +230,7 @@ export function Sidebar({
               <button
                 onClick={createTeam}
                 title="New team"
-                className="mt-2.5 rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-hover hover:text-foreground group-hover/hdr:opacity-100"
+                className="mt-2.5 rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-hover hover:text-foreground group-hover/hdr:opacity-100"
               >
                 <Plus className="h-3.5 w-3.5" />
               </button>
@@ -262,14 +262,14 @@ export function Sidebar({
                     */}
                     <div
                       className={cn(
-                        "group/team flex items-center rounded pr-2 transition-colors hover:bg-hover",
+                        "group/team flex items-center rounded-md pr-2 transition-colors hover:bg-hover",
                         pathname === `/team/${teamId}` && "bg-hover"
                       )}
                     >
                       <button
                         onClick={() => toggleTeam(team)}
                         aria-label={expanded ? `Collapse ${team}` : `Expand ${team}`}
-                        className="shrink-0 rounded py-[7px] pl-2 pr-1 text-muted-foreground hover:text-foreground"
+                        className="shrink-0 rounded-md py-[7px] pl-2 pr-1 text-muted-foreground hover:text-foreground"
                       >
                         <ChevronRight
                           className={cn(
@@ -396,7 +396,7 @@ function SectionHeader({
   return (
     <button
       onClick={onToggle}
-      className="group flex items-center gap-1 rounded px-2 pb-1.5 pt-4 text-xs font-medium text-muted-foreground hover:text-foreground-secondary"
+      className="group flex items-center gap-1 rounded-md px-2 pb-1.5 pt-4 text-xs font-medium text-muted-foreground hover:text-foreground-secondary"
     >
       {label}
       <ChevronDown
@@ -479,7 +479,7 @@ function Section({
 
 const linkClass = (active: boolean) =>
   cn(
-    "flex items-center gap-2.5 rounded px-2 py-[7px] text-[13px] font-medium transition-colors",
+    "flex items-center gap-2.5 rounded-md px-2 py-[7px] text-[13px] font-medium transition-colors",
     active
       ? "bg-active text-foreground"
       : "text-foreground-secondary hover:bg-hover hover:text-foreground"
@@ -567,7 +567,7 @@ function SubLink({
       href={href}
       onClick={onNavigate}
       className={cn(
-        "flex items-center gap-2 rounded px-2 py-1.5 text-[13px] transition-colors",
+        "flex items-center gap-2 rounded-md px-2 py-1.5 text-[13px] transition-colors",
         active
           ? "bg-active text-foreground"
           : "text-muted-foreground hover:bg-hover hover:text-foreground-secondary"

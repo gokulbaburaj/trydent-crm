@@ -42,11 +42,11 @@ export function BarRow({
     <div className={cn("group/bar flex items-center gap-2.5", className)}>
       {leading}
       {/*
-        The fill is rounded on its own, not clipped by the track.
+        The fill is rounded-md on its own, not clipped by the track.
 
         `overflow-hidden` on the track squared the fill's right edge at every
         width below 100%, so a 3/5 bar ended in a hard vertical cut while the
-        full-width ones looked rounded — the shape changed with the data, which
+        full-width ones looked rounded-md — the shape changed with the data, which
         made short bars read as truncated rather than short.
       */}
       <div className="relative min-w-0 flex-1">

@@ -66,7 +66,7 @@ export function NotificationsBell() {
           <Tip label="Notifications">
             <button
               onClick={load}
-              className="relative rounded p-1.5 text-muted-foreground hover:bg-hover hover:text-foreground"
+              className="relative rounded-md p-1.5 text-muted-foreground hover:bg-hover hover:text-foreground"
             >
               <Bell className="h-4 w-4" />
               {unread > 0 && (
@@ -86,7 +86,7 @@ export function NotificationsBell() {
             {unread > 0 && (
               <button
                 onClick={() => markRead(items.filter((n) => !n.read_at).map((n) => n.id))}
-                className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground hover:bg-hover hover:text-foreground"
+                className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground hover:bg-hover hover:text-foreground"
               >
                 <Check className="h-3 w-3" /> Mark all read
               </button>

@@ -157,7 +157,7 @@ export function FilterBar({
           {filters.text && (
             <button
               onClick={() => set({ text: "" })}
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:text-foreground"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-md p-0.5 text-muted-foreground hover:text-foreground"
               title="Clear text"
             >
               <X className="h-3 w-3" />
@@ -263,7 +263,7 @@ export function FilterBar({
               <button
                 type="button"
                 onClick={() => set({ due: { from: null, to: null } })}
-                className="rounded px-1.5 py-1 text-xs text-muted-foreground hover:bg-hover hover:text-foreground"
+                className="rounded-md px-1.5 py-1 text-xs text-muted-foreground hover:bg-hover hover:text-foreground"
               >
                 Clear
               </button>
@@ -309,14 +309,14 @@ export function FilterBar({
                     <button
                       title="Rename view"
                       onClick={() => renameView(v)}
-                      className="rounded p-1 text-muted-foreground opacity-0 hover:text-foreground group-hover:opacity-100"
+                      className="rounded-md p-1 text-muted-foreground opacity-0 hover:text-foreground group-hover:opacity-100"
                     >
                       <Pencil className="h-3 w-3" />
                     </button>
                     <button
                       title="Delete view"
                       onClick={() => deleteView(v)}
-                      className="mr-1 rounded p-1 text-muted-foreground opacity-0 hover:text-danger group-hover:opacity-100"
+                      className="mr-1 rounded-md p-1 text-muted-foreground opacity-0 hover:text-danger group-hover:opacity-100"
                     >
                       <Trash2 className="h-3 w-3" />
                     </button>

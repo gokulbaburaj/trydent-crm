@@ -314,7 +314,7 @@ function AccountsInner() {
                   onClick={() =>
                     updateProject(project.id, { archived: !project.archived })
                   }
-                  className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
+                  className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
                 >
                   {project.archived ? (
                     <ArchiveRestore className="h-3.5 w-3.5" />
@@ -470,7 +470,7 @@ function AccountsInner() {
                                   )
                                 }
                                 className={cn(
-                                  "rounded px-1.5 py-0.5 text-[11px] transition-colors",
+                                  "rounded-md px-1.5 py-0.5 text-[11px] transition-colors",
                                   active
                                     ? "bg-active font-medium text-foreground"
                                     : "text-muted-foreground hover:text-foreground"
@@ -530,7 +530,7 @@ function AccountsInner() {
                           type="button"
                           aria-label="Remove allocation"
                           onClick={() => deleteAllocation(a.id)}
-                          className="rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:text-danger group-hover:opacity-100"
+                          className="rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:text-danger group-hover:opacity-100"
                         >
                           <Trash2 className="h-3 w-3" />
                         </button>
@@ -618,7 +618,7 @@ function AccountsInner() {
   );
 }
 
-/** Sum of the share-based lines, rounded for display. */
+/** Sum of the share-based lines, rounded-md for display. */
 function totalPercent(lines: ProjectAllocation[]) {
   return Math.round(
     lines.reduce((s, a) => s + (a.percent != null ? Number(a.percent) : 0), 0)

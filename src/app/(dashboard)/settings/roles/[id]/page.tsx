@@ -245,7 +245,7 @@ function RoleDetailInner() {
                 )}
                 <span
                   className={cn(
-                    "shrink-0 rounded border border-border-subtle px-1.5 py-0.5 text-[11px] text-muted-foreground"
+                    "shrink-0 rounded-md border border-border-subtle px-1.5 py-0.5 text-[11px] text-muted-foreground"
                   )}
                 >
                   {USER_ROLE_LABELS[p.role]}
