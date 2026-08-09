@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { resolveNavigation } from "@/lib/tabRouting";
 
 export interface AppTab {
   id: string;
@@ -118,18 +119,46 @@ export function TabsProvider({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Follow in-tab navigation: the active tab tracks the current route.
+  /**
+   * Follow navigation the tab strip didn't initiate.
+   *
+   * Browser back and forward, the TabBar arrows, a `router.push` from a card,
+   * a pasted URL — none of these go through `go()` or `openInNewTab`.
+   *
+   * This used to rewrite the active tab onto the new path unconditionally,
+   * which duplicated tabs on every back-out of a detail view: open Projects,
+   * click a project, press Back, and the detail tab became a SECOND "Projects"
+   * tab beside the one already open. A few rounds of that and the strip is
+   * nothing but duplicates. Reported from the Projects page, but this effect
+   * governs every surface, so it was happening on all of them.
+   *
+   * `resolveNavigation` applies the rule `go()` already used for the sidebar:
+   * if another tab is showing this path, focus it and leave the current tab
+   * alone. Only rewrite when nothing else is showing it.
+   */
   useEffect(() => {
     if (prevPath.current === pathname) return;
     prevPath.current = pathname;
     queueMicrotask(() => {
-      setTabs((prev) =>
-        prev.map((t) =>
-          t.id === activeIdRef.current && t.href !== pathname
+      setTabs((prev) => {
+        const decision = resolveNavigation(prev, activeIdRef.current, pathname);
+
+        if (decision.action === "none") return prev;
+
+        if (decision.action === "focus") {
+          // Focus only. The tab we're leaving keeps its href, so the detail
+          // view is still there when you want it back.
+          setActiveId(decision.id);
+          activeIdRef.current = decision.id;
+          return prev;
+        }
+
+        return prev.map((t) =>
+          t.id === activeIdRef.current
             ? { ...t, href: pathname, title: deriveTitle(pathname) }
             : t
-        )
-      );
+        );
+      });
     });
   }, [pathname]);
 
