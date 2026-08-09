@@ -153,6 +153,37 @@ export function InkButton({
 }
 
 /**
+ * The secondary pill that sits beside an InkButton.
+ *
+ * Uses `--wash-line` (black hairline), NOT `--wash-edge` (white). A control
+ * placed on top of a wash card is white-on-near-white with the white edge, and
+ * that shipped: "Mark complete" rendered as bare text with no button around
+ * it. The white edge is for where a card meets the gradient; anything sitting
+ * on a card needs the dark one.
+ */
+export function GhostPill({
+  className,
+  children,
+  ...props
+}: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      className={cn(
+        "inline-flex items-center justify-center gap-2 rounded-full px-4",
+        "min-h-9 text-[13px] font-medium",
+        "border border-[var(--wash-line)] bg-transparent text-foreground",
+        "transition-colors hover:bg-[var(--wash-card-strong)]",
+        "disabled:pointer-events-none disabled:opacity-40",
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+}
+
+/**
  * The small circular icon button that appears all over the reference —
  * toolbar, card corners, topbar.
  *
@@ -170,7 +201,7 @@ export function RoundButton({
     <button
       className={cn(
         "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full",
-        "border border-[var(--wash-edge)] bg-[var(--wash-card)]",
+        "border border-[var(--wash-line)] bg-[var(--wash-card)]",
         "text-foreground-secondary transition-colors",
         "hover:bg-[var(--wash-card-strong)] hover:text-foreground",
         className

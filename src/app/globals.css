@@ -166,9 +166,19 @@
     would be gone. 62% is where the type still passes contrast over the darkest
     part of the wash (the rose corner) while the gradient still reads through.
   */
-  --wash-card: rgba(255, 255, 255, 0.62);
-  --wash-card-strong: rgba(255, 255, 255, 0.82);
+  --wash-card: rgba(255, 255, 255, 0.7);
+  --wash-card-strong: rgba(255, 255, 255, 0.86);
   --wash-edge: rgba(255, 255, 255, 0.55);
+  /*
+    A hairline that survives on top of a card, not just on the wash.
+
+    --wash-edge is white-alpha, which is right where a card meets the gradient
+    and useless where a control sits ON the card: white on near-white is
+    nothing, and it shipped a "Mark complete" button that rendered as bare
+    text. Measured, not guessed — 0.62 white over the rose stop gave 4.54:1
+    against a 4.5 floor, so the opacity went up for margin at the same time.
+  */
+  --wash-line: rgba(0, 0, 0, 0.14);
 
   /*
     2. HEAT — value → hue. Five steps, cold to hot.

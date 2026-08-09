@@ -33,7 +33,7 @@ import {
   ToolbarButton,
   type Stage,
 } from "@/components/RecordPane";
-import { HeatChip, InkButton, WashCard } from "@/components/ui/Wash";
+import { GhostPill, HeatChip, InkButton, WashCard } from "@/components/ui/Wash";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge, statusTone } from "@/components/ui/Badge";
@@ -83,11 +83,22 @@ const STAGES: Stage[] = STAGE_ORDER.filter((s) => CLIENT_STATUSES.includes(s)).m
   (s) => ({ id: s, label: STAGE_LABELS[s] })
 );
 
+/**
+ * `clients.account_owner` stores a profile ID, not a name.
+ *
+ * The table resolves it through the page's `ownerName` before rendering; this
+ * view didn't, and shipped a raw UUID into the identity band where a person's
+ * name belongs. Taking the resolver as a prop rather than fetching profiles
+ * again here keeps one lookup on the page — two would drift the moment someone
+ * is renamed.
+ */
 export function ClientFocusView({
   clients,
+  ownerName = (id) => id ?? "Unassigned",
   onOpenFull,
 }: {
   clients: Client[];
+  ownerName?: (id: string | null) => string;
   onOpenFull?: (id: string) => void;
 }) {
   const { selectedId, select, close } = useRecordSelection();
@@ -198,6 +209,7 @@ export function ClientFocusView({
           <ClientRecord
             client={selected.client}
             score={selected.score}
+            ownerName={ownerName}
             onOpenFull={onOpenFull}
           />
         )
@@ -209,10 +221,12 @@ export function ClientFocusView({
 function ClientRecord({
   client,
   score,
+  ownerName,
   onOpenFull,
 }: {
   client: Client;
   score: number;
+  ownerName: (id: string | null) => string;
   onOpenFull?: (id: string) => void;
 }) {
   return (
@@ -255,7 +269,7 @@ function ClientRecord({
                 <HeatChip value={score} />
               </span>
             </MetaPair>
-            <MetaPair label="Owner">{client.account_owner ?? "Unassigned"}</MetaPair>
+            <MetaPair label="Owner">{ownerName(client.account_owner)}</MetaPair>
           </div>
         </div>
       }
@@ -305,9 +319,7 @@ function ClientRecord({
                 <Phone className="h-4 w-4" />
                 Call
               </InkButton>
-              <button className="min-h-9 rounded-full border border-[var(--wash-edge)] bg-[var(--wash-card-strong)] px-4 text-[13px] font-medium transition-colors hover:bg-white">
-                Mark complete
-              </button>
+              <GhostPill>Mark complete</GhostPill>
             </div>
           </div>
         </WashCard>
@@ -346,7 +358,9 @@ function ClientRecord({
                 : "No contact logged"}
             </HealthPoint>
             <HealthPoint ok={!!client.account_owner}>
-              {client.account_owner ? `Owned by ${client.account_owner}` : "No owner assigned"}
+              {client.account_owner
+                ? `Owned by ${ownerName(client.account_owner)}`
+                : "No owner assigned"}
             </HealthPoint>
           </ul>
         </WashCard>

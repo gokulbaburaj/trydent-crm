@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useSyncExternalStore } from "react";
+import { withViewTransition } from "@/lib/format";
 
 export interface AccentPreset {
   name: string;
@@ -67,13 +68,12 @@ export function applyAccent(hex: string) {
     root.style.setProperty("--primary", hex);
     root.style.setProperty("--primary-foreground", foregroundFor(hex));
   };
-  // Cross-fade the whole UI to the new color when supported.
-  const doc = document as Document & { startViewTransition?: (cb: () => void) => void };
-  if (typeof doc.startViewTransition === "function") {
-    doc.startViewTransition(apply);
-  } else {
-    apply();
-  }
+  // Cross-fade the whole UI to the new colour when supported.
+  //
+  // Was a second, hand-rolled copy of withViewTransition that (a) never caught
+  // the skip rejection and (b) ignored prefers-reduced-motion, so changing the
+  // accent animated for people who had asked it not to. One implementation.
+  withViewTransition(apply);
 }
 
 export function setAccent(hex: string) {

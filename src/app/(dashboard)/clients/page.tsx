@@ -304,6 +304,7 @@ export default function ClientsPage() {
         <div className="h-[calc(100vh-15rem)] min-h-[26rem] pb-[var(--mobile-nav-clear)] md:pb-0">
           <ClientFocusView
             clients={visibleClients}
+            ownerName={ownerName}
             onOpenFull={(id) => {
               const c = visibleClients.find((x) => x.id === id);
               if (c) openClient(c);
