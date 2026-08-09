@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   DndContext,
   DragEndEvent,
+  KeyboardSensor,
   PointerSensor,
   closestCenter,
   useSensor,
@@ -11,6 +12,7 @@ import {
 } from "@dnd-kit/core";
 import {
   SortableContext,
+  sortableKeyboardCoordinates,
   arrayMove,
   useSortable,
   verticalListSortingStrategy,
@@ -332,7 +334,27 @@ function DefaultViewsCard() {
   const ordered = useMemo(() => orderedViewPreferences(order), [order]);
 
   // Distance constraint so a click on the row still reaches the dropdown.
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  /*
+  KeyboardSensor alongside PointerSensor.
+
+  Every drag surface in this app shipped pointer-only, which means reordering
+  was impossible without a mouse — six surfaces, none of them keyboard
+  reachable. dnd-kit is accessible by design, but only if you register this
+  sensor; the accessibility isn't automatic, it's opt-in and we hadn't opted.
+
+  `sortableKeyboardCoordinates` is what makes arrow keys move an item BY LIST
+  POSITION rather than by pixels. Without it the default coordinate getter
+  moves 25px per press, which on a sortable list means several presses to
+  advance one row and no way to know when you've crossed a boundary.
+
+  Interaction: Tab to the item, Space to lift, arrows to move, Space to drop,
+  Escape to cancel. dnd-kit announces each step to screen readers using its
+  built-in announcements.
+*/
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
   function handleDragEnd(e: DragEndEvent) {
     const { active, over } = e;

@@ -256,6 +256,11 @@ function KanbanCardDraggable({
       {...listeners}
       {...attributes}
       className={cn(
+        // `touch-none` is a dnd-kit requirement, not a style choice: without it
+        // the browser claims the touch as a scroll and the card never lifts on
+        // a phone. Sidebar and Settings already had it; the board and the
+        // dashboard grid didn't, so drag was quietly desktop-only there.
+        "touch-none",
         "animate-row cursor-grab rounded-md border border-border bg-surface p-3 transition-[border-color,background-color,box-shadow,translate,opacity] duration-150 hover:-translate-y-px hover:border-edge hover:bg-hover hover:shadow-lg hover:shadow-black/20 active:cursor-grabbing",
         isDragging && "border-dashed border-edge bg-transparent"
       )}
