@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { WashPane, RoundButton } from "@/components/ui/Wash";
-import { Check, Lock } from "lucide-react";
+import { Check, Lock, X } from "lucide-react";
 
 /**
  * The record pane — everything to the right of the queue.
@@ -147,6 +147,15 @@ export interface Stage {
   label: string;
   /** Shown under the label on the active step, e.g. "3 D" or a due date. */
   hint?: string;
+  /**
+   * How the step reads when it's the current one.
+   *
+   * `negative` exists for terminal steps that were REACHED but not achieved —
+   * a lost deal. Filling that in `--primary` alongside a won one says the two
+   * outcomes are equivalent, which is the sort of thing a progress bar
+   * shouldn't be quietly asserting.
+   */
+  tone?: "neutral" | "positive" | "negative";
 }
 
 /**
@@ -189,8 +198,21 @@ export function StageStepper({
       {stages.map((stage, i) => {
         const done = currentIndex > -1 && i < currentIndex;
         const current = i === currentIndex;
-        const locked = currentIndex > -1 && i > currentIndex;
-        const interactive = !!onSelect && !locked;
+        /*
+          The NEXT step is reachable. Everything beyond it is not.
+
+          First version locked every step after the current one, which made the
+          stepper a rewind button: you could walk a deal backwards but never
+          forward, on the one surface built specifically to move deals forward.
+          Caught by clicking it, not by reading it.
+
+          One step at a time, though — dragging a deal from Lead straight to
+          Close skips the qualification that makes the pipeline mean anything,
+          and a progress bar is the wrong place to allow that.
+        */
+        const next = currentIndex > -1 && i === currentIndex + 1;
+        const locked = currentIndex > -1 && i > currentIndex + 1;
+        const interactive = !!onSelect && !locked && !current;
 
         return (
           <button
@@ -201,19 +223,40 @@ export function StageStepper({
             aria-current={current ? "step" : undefined}
             className={cn(
               "flex min-h-9 shrink-0 items-center gap-2 rounded-full px-3.5 transition-colors",
-              current && "bg-primary text-primary-foreground",
+              current &&
+                (stage.tone === "negative"
+                  ? "bg-destructive text-destructive-foreground"
+                  : stage.tone === "positive"
+                    ? "bg-success text-white"
+                    : "bg-primary text-primary-foreground"),
               done && "text-foreground-secondary",
+              next && !onSelect && "text-muted-2",
+              // A reachable next step is offered, not greyed: dashed outline
+              // rather than the padlock, so "you may do this" and "you can't
+              // get here yet" don't look the same.
+              next && onSelect && "border border-dashed border-[var(--wash-line)] text-foreground-secondary",
               locked && "text-muted-2",
-              interactive && !current && "hover:bg-[var(--wash-card-strong)]",
+              interactive && "hover:bg-[var(--wash-card-strong)]",
               !interactive && "cursor-default"
             )}
           >
             <span className="shrink-0">
               {done && <Check className="h-3.5 w-3.5" />}
               {locked && <Lock className="h-3.5 w-3.5" />}
-              {current && (
-                <span className="block h-2 w-2 rounded-full bg-primary-foreground" />
+              {next && !onSelect && <Lock className="h-3.5 w-3.5" />}
+              {next && onSelect && (
+                <span className="block h-2 w-2 rounded-full border border-current" />
               )}
+              {/* A reached terminal gets a tick or a cross, not the pulse dot
+                  used for "in progress" — the deal isn't going anywhere. */}
+              {current &&
+                (stage.tone === "positive" ? (
+                  <Check className="h-3.5 w-3.5" />
+                ) : stage.tone === "negative" ? (
+                  <X className="h-3.5 w-3.5" />
+                ) : (
+                  <span className="block h-2 w-2 rounded-full bg-current" />
+                ))}
             </span>
             <span className="whitespace-nowrap text-[13px] font-medium">
               {stage.label}

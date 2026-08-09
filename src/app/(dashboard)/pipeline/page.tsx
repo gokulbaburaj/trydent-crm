@@ -10,6 +10,7 @@ import {
   IndianRupee,
   LayoutGrid,
   List,
+  Columns2,
   Plus,
 } from "lucide-react";
 import { FilterBar } from "@/components/FilterBar";
@@ -29,6 +30,7 @@ import { KanbanBoard } from "@/components/KanbanBoard";
 import { DataTable, type Column } from "@/components/DataTable";
 import { StatusPicker } from "@/components/ui/StatusPicker";
 import { useViewPreference } from "@/lib/useViewPreference";
+import { DealFocusView } from "@/components/DealFocusView";
 import { Button } from "@/components/ui/Button";
 import { Badge, statusTone } from "@/components/ui/Badge";
 import { Drawer } from "@/components/ui/Drawer";
@@ -204,7 +206,7 @@ export default function PipelinePage() {
     [clients, base, currency]
   );
 
-  const [view, setView] = useViewPreference<"table" | "board">("pipeline", "table");
+  const [view, setView] = useViewPreference<"table" | "board" | "focus">("pipeline", "table");
 
   /**
    * How far back the chart looks.
@@ -450,7 +452,7 @@ export default function PipelinePage() {
            this list, and it belongs with the other controls over this list. */
         trailing={
           <div className="flex shrink-0 items-center gap-0.5 rounded-lg border border-border bg-surface p-0.5">
-            {([["table", "Table", List], ["board", "Board", LayoutGrid]] as const).map(
+            {([["table", "Table", List], ["board", "Board", LayoutGrid], ["focus", "Focus", Columns2]] as const).map(
               ([id, label, Icon]) => (
                 <button
                   key={id}
@@ -473,7 +475,18 @@ export default function PipelinePage() {
         }
       />
 
-      {deals.length > 0 && (
+      {/*
+        Hidden in Focus. Not a layout workaround — the two things want opposite
+        amounts of vertical space, and the chart wins by being first. It ate
+        ~350px and pushed the entire list-detail shell below the fold, so the
+        queue opened showing one and a half rows.
+
+        The deeper point is that they answer different questions. The chart is
+        an overview you read; Focus is a queue you work. Stacking a summary on
+        top of a working surface is how a screen ends up doing neither well.
+        Table and Board keep it.
+      */}
+      {deals.length > 0 && view !== "focus" && (
         <Card className="rounded-xl shadow-sm">
           <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
             <div>
@@ -610,7 +623,23 @@ export default function PipelinePage() {
         </Card>
       )}
 
-      {view === "table" ? (
+      {view === "focus" ? (
+        /* Explicit height, same reason as Clients: the page above is a
+           scrolling flex column, so h-full resolves against no fixed height
+           and collapses the shell to zero. Taller allowance than Clients
+           because the stage chart sits above this one. */
+        <div className="h-[calc(100vh-15rem)] min-h-[26rem]">
+          <DealFocusView
+            deals={visibleDeals}
+            clients={clients}
+            formatCurrency={(v, ccy) => formatCurrency(v, ccy)}
+            toBase={toBase}
+            ownerName={ownerName}
+            onStageChange={handleStageMove}
+            onOpenClient={(id) => openInNewTab(`/clients/${id}`)}
+          />
+        </div>
+      ) : view === "table" ? (
         <DataTable
           rows={visibleDeals}
           columns={dealColumns}

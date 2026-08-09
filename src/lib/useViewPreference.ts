@@ -55,6 +55,7 @@ export const VIEW_PREFERENCES = [
     options: [
       { id: "table", label: "Table" },
       { id: "board", label: "Board" },
+      { id: "focus", label: "Focus" },
     ],
     fallback: "table",
   },

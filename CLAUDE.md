@@ -11,8 +11,19 @@ not push, not checkout. When work is finished, hand him the command to paste.
 for it. The shape:
 
 ```
-npm run build && git add -A && git commit -m "<message>" && git push
+git add -A && git commit -m "<message>" && git push
 ```
+
+**No `npm run build` in that chain.** It used to lead, and it was silently
+breaking things: `next build` and `next dev` both write to `.next`, so building
+while the dev server runs corrupts the directory it's serving from. The dev
+server dies a few seconds later looking like a Turbopack fault. That happened
+six times in the 9 Aug session and every one of them was this command, not the
+bundler. Vercel builds on push anyway, so the local build only ever bought
+finding out about a break ~2 minutes earlier.
+
+If a build really needs checking locally, it's a separate, explicit step: stop
+dev, `npm run build`, restart dev. Never chained.
 
 Include `npm rm <pkg>` or `npm install` at the front when dependencies changed —
 Vercel builds with `npm ci`, which fails if `package.json` and the lockfile
@@ -56,6 +67,15 @@ Concretely:
   `tailwind-scrollbar-hide`).
 - Before "fixing" a UI element, read it. Several roadmap items dissolved on
   inspection because the thing described didn't exist or was deliberate.
+- **A wrong type annotation hides bugs that a wrong comment wouldn't.**
+  `withViewTransition` was carried across several handovers as "throws
+  InvalidStateError, pre-existing, unexplained". It took four minutes once
+  anyone opened it. What hid it: `startViewTransition` was locally declared as
+  returning `void` when it returns an object of promises — so there were no
+  promises to see, nothing to catch, and the rejection surfaced as an unhandled
+  one on every page load. It was also severe enough to make Fast Refresh do
+  full reloads, which had been blamed on the bundler. When hand-declaring a
+  browser API, check the real signature.
 - **Reproduce from the source data before writing code for a visual bug.** Get
   the screenshot next to the live view, and query the rows behind it. Punchlist
   item 5 read as "four meetings at 15:30 overflowing one day column"; the
