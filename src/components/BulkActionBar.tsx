@@ -204,7 +204,7 @@ export function BulkActionBar({
         <Divider />
         <button
           onClick={onDelete}
-          className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium text-danger transition-colors hover:bg-danger/10"
+          className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium text-[var(--danger-fg)] transition-colors hover:bg-danger/10"
         >
           <Trash2 className="h-3.5 w-3.5" /> Delete
         </button>

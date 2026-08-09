@@ -399,7 +399,7 @@ function TeamPageInner() {
                     onClick={() => removeMember(p)}
                     disabled={removingId === p.id}
                     title="Remove team member"
-                    className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-danger/10 hover:text-danger disabled:opacity-50"
+                    className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-danger/10 hover:text-[var(--danger-fg)] disabled:opacity-50"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -570,7 +570,7 @@ function TeamPageInner() {
                 onChange={(v) => setAdding({ ...adding, reports_to: v })}
               />
             </div>
-            {addError && <p className="text-xs text-danger">{addError}</p>}
+            {addError && <p className="text-xs text-[var(--danger-fg)]">{addError}</p>}
             <div className="flex gap-2 pt-2">
               <Button type="submit" disabled={savingMember} className="flex-1">
                 {savingMember ? "Adding..." : "Add member"}
@@ -628,11 +628,11 @@ function PaymentPlanEditor({
         </div>
         <div>
           <p className="text-[11px] text-muted-foreground">Paid</p>
-          <p className="mt-0.5 text-lg font-semibold tabular-nums text-success">{formatCurrency(paid)}</p>
+          <p className="mt-0.5 text-lg font-semibold tabular-nums text-[var(--success-fg)]">{formatCurrency(paid)}</p>
         </div>
         <div>
           <p className="text-[11px] text-muted-foreground">Outstanding</p>
-          <p className="mt-0.5 text-lg font-semibold tabular-nums text-warning">{formatCurrency(total - paid)}</p>
+          <p className="mt-0.5 text-lg font-semibold tabular-nums text-[var(--warning-fg)]">{formatCurrency(total - paid)}</p>
         </div>
       </div>
 
@@ -648,8 +648,8 @@ function PaymentPlanEditor({
               className={cn(
                 "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors",
                 l.status === "paid"
-                  ? "bg-success/15 text-success"
-                  : "bg-warning/15 text-warning"
+                  ? "bg-success/15 text-[var(--success-fg)]"
+                  : "bg-warning/15 text-[var(--warning-fg)]"
               )}
             >
               {l.status === "paid" ? "Paid" : "Pending"}
@@ -661,7 +661,7 @@ function PaymentPlanEditor({
             <span className="shrink-0 tabular-nums">{formatCurrency(Number(l.amount))}</span>
             <button
               onClick={() => onDelete(l.id)}
-              className="shrink-0 rounded-md p-1 text-muted-foreground hover:text-danger"
+              className="shrink-0 rounded-md p-1 text-muted-foreground hover:text-[var(--danger-fg)]"
               title="Delete"
             >
               <Trash2 className="h-3.5 w-3.5" />

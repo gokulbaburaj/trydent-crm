@@ -202,7 +202,25 @@
   --panel: #f4f5f2;                          /* main canvas between sidebar and cards */
   --border-subtle: rgba(0, 0, 0, 0.05);
   --foreground-secondary: #3f434a;
-  --muted-2: #8b9098;
+  /*
+    Was #8b9098, which measured 2.9–3.2:1 depending on surface — under the 4.5
+    floor on every page it appears, and it appears on all of them (dates,
+    captions, counts, "No tasks", the hour labels down the calendar).
+
+    ── The honest tradeoff ─────────────────────────────────────────────────────
+
+    This is meant to be a THIRD tier, quieter than --muted-foreground (#6b6f76).
+    On a light background there isn't room for three greys that all pass 4.5:1 —
+    the range between "passes contrast" and "reads as secondary" is only so
+    wide. So the tiers compress: muted-2 is now barely lighter than
+    muted-foreground rather than clearly lighter.
+
+    Compressing them is the right way to lose that argument. The information in
+    muted-2 is real — a date, a count, a status — and unreadable-but-elegant is
+    a worse outcome than two greys that look similar. If a genuinely quieter
+    tier is needed later, it has to come from size or weight, not lightness.
+  */
+  --muted-2: #6b7079;
 
   /*
     Room the floating mobile nav needs at the bottom of a scroller.
@@ -236,6 +254,36 @@
   --success: #4cb782;
   --warning: #f2994a;
   --danger: var(--destructive);
+
+  /*
+    ── Status TEXT colours ─────────────────────────────────────────────────────
+
+    The tokens above are for FILLS — a dot, a bar, a solid chip. They are the
+    wrong colours for text and always were; the light theme just made it
+    visible.
+
+    A badge renders as `bg-success/10 text-success`: mid-green type on a 10%
+    green tint. On a dark background that reads fine, which is why it shipped.
+    Over white it measures 2.28:1 against a 4.5 floor — the worst contrast
+    anywhere in the app, found by scanning the Projects page rather than by
+    looking at it.
+
+    These are the same hues taken down to where they pass on their own tint.
+    Measured against the composited background (10% of the hue over #ffffff),
+    not guessed:
+
+      green   4.89:1      amber  5.86:1
+      red     6.80:1      blue   6.10:1
+
+    This is the same class of bug as the `--event-*-fg` note further up: a
+    foreground tuned for a dark surface, inverted. That one got caught. The
+    badges didn't.
+  */
+  --success-fg: #1f7a4d;
+  --warning-fg: #8a5314;
+  --danger-fg: #a32020;
+  --info: #4ea7e0;
+  --info-fg: #1e4fa8;
 
   /*
     CATEGORY colours for the two fixed kinds of block in the project

@@ -297,7 +297,7 @@ function AccountsInner() {
                   <p
                     className={cn(
                       "text-[11px] font-medium",
-                      over ? "text-danger" : "text-muted-2"
+                      over ? "text-[var(--danger-fg)]" : "text-muted-2"
                     )}
                   >
                     {over
@@ -530,7 +530,7 @@ function AccountsInner() {
                           type="button"
                           aria-label="Remove allocation"
                           onClick={() => deleteAllocation(a.id)}
-                          className="rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:text-danger group-hover:opacity-100"
+                          className="rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:text-[var(--danger-fg)] group-hover:opacity-100"
                         >
                           <Trash2 className="h-3 w-3" />
                         </button>
@@ -596,7 +596,7 @@ function AccountsInner() {
                     <p
                       className={cn(
                         "text-[11px]",
-                        totalPercent(lines) > 100 ? "text-danger" : "text-muted-2"
+                        totalPercent(lines) > 100 ? "text-[var(--danger-fg)]" : "text-muted-2"
                       )}
                     >
                       {totalPercent(lines)}% of the fee allocated by share.
@@ -604,7 +604,7 @@ function AccountsInner() {
                   )}
 
                   {paidOut > 0 && (
-                    <p className="text-[11px] text-success">
+                    <p className="text-[11px] text-[var(--success-fg)]">
                       {formatMoney(paidOut, ccy(project))} already paid out.
                     </p>
                   )}
@@ -644,9 +644,9 @@ function Summary({
       <p
         className={cn(
           "mt-0.5 text-lg font-semibold tabular-nums",
-          tone === "success" && "text-success",
-          tone === "warning" && "text-warning",
-          tone === "danger" && "text-danger"
+          tone === "success" && "text-[var(--success-fg)]",
+          tone === "warning" && "text-[var(--warning-fg)]",
+          tone === "danger" && "text-[var(--danger-fg)]"
         )}
       >
         {/* Server render and the pre-hydration frame need a real value here,

@@ -243,10 +243,10 @@ export default function InvoicesPage() {
       render: (i) => {
         const late = daysOverdue(i);
         return (
-          <span className={cn("flex items-center gap-1.5", late != null && "text-danger")}>
+          <span className={cn("flex items-center gap-1.5", late != null && "text-[var(--danger-fg)]")}>
             {formatDate(i.due_date)}
             {late != null && (
-              <span className="text-[11px] text-danger/80">
+              <span className="text-[11px] text-[var(--danger-fg)]/80">
                 {late}d late
               </span>
             )}
@@ -313,7 +313,7 @@ export default function InvoicesPage() {
                 <p
                   className={cn(
                     "text-[15px] font-semibold tabular-nums",
-                    b !== "current" && totals.aging[b] > 0 && "text-danger"
+                    b !== "current" && totals.aging[b] > 0 && "text-[var(--danger-fg)]"
                   )}
                 >
                   {format(totals.aging[b], base)}
@@ -394,7 +394,7 @@ function SummaryCard({
       <p
         className={cn(
           "mt-1 text-[19px] font-semibold tabular-nums",
-          tone === "danger" && "text-danger"
+          tone === "danger" && "text-[var(--danger-fg)]"
         )}
       >
         {value}

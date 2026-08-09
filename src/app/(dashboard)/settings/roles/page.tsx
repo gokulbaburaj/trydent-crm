@@ -98,7 +98,7 @@ function RolesInner() {
 
                   <span
                     className={`flex shrink-0 items-center gap-1 text-[11.5px] ${
-                      r.is_admin ? "text-warning" : "text-muted-foreground"
+                      r.is_admin ? "text-[var(--warning-fg)]" : "text-muted-foreground"
                     }`}
                   >
                     <ShieldCheck className="h-3 w-3" />

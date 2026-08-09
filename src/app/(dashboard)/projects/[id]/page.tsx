@@ -287,7 +287,7 @@ export default function ProjectDetailPage() {
           <RecurrenceIndicator recurrence={t.recurrence} />
           {t.approved_at && (
             <span title="Approved by client">
-              <CheckCheck className="h-3.5 w-3.5 shrink-0 text-success" />
+              <CheckCheck className="h-3.5 w-3.5 shrink-0 text-[var(--success-fg)]" />
             </span>
           )}
           {t.label && <LabelChip label={t.label} />}
@@ -712,13 +712,13 @@ export default function ProjectDetailPage() {
     <div className="flex flex-col gap-5">
       {/* Migration / action errors */}
       {(migrationMissing || actionError) && (
-        <div className="flex items-start gap-2.5 rounded-md border border-warning/30 bg-warning/10 px-3 py-2.5 text-xs text-warning">
+        <div className="flex items-start gap-2.5 rounded-md border border-warning/30 bg-warning/10 px-3 py-2.5 text-xs text-[var(--warning-fg)]">
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <div>
             {migrationMissing ? (
               <>
                 <p className="font-medium">Tasks can&apos;t load — the database migration hasn&apos;t been run yet.</p>
-                <p className="mt-0.5 text-warning/80">
+                <p className="mt-0.5 text-[var(--warning-fg)]/80">
                   Open Supabase → SQL Editor, paste{" "}
                   <span className="font-medium">supabase/migrations/2026-07-15_project_tasks_and_portal_logins.sql</span>{" "}
                   from the project folder, and click Run. Then refresh this page.
@@ -806,11 +806,11 @@ export default function ProjectDetailPage() {
                   return (
                     <p className="mt-1 px-1 text-[11px]">
                       {owed > 0 ? (
-                        <span className="text-warning">
+                        <span className="text-[var(--warning-fg)]">
                           {formatCurrency(owed, projectDeal.currency)} outstanding
                         </span>
                       ) : (
-                        <span className="text-success">Paid in full</span>
+                        <span className="text-[var(--success-fg)]">Paid in full</span>
                       )}
                     </p>
                   );
@@ -920,7 +920,7 @@ export default function ProjectDetailPage() {
             <div className="col-span-2 min-w-0 sm:col-span-1">
               <Label>Last contact</Label>
               {isSameDayAsToday(projectClient.last_contact) ? (
-                <div className="flex h-9 items-center gap-1.5 text-[11px] text-success">
+                <div className="flex h-9 items-center gap-1.5 text-[11px] text-[var(--success-fg)]">
                   <Check className="h-3 w-3" /> Contacted today
                 </div>
               ) : (
@@ -1281,7 +1281,7 @@ export default function ProjectDetailPage() {
                       {t.approved_at && (
                         <span
                           title="Approved by client"
-                          className="inline-flex items-center gap-1 rounded-full bg-success/15 px-1.5 py-0.5 text-[10px] font-medium text-success"
+                          className="inline-flex items-center gap-1 rounded-full bg-success/15 px-1.5 py-0.5 text-[10px] font-medium text-[var(--success-fg)]"
                         >
                           <CheckCheck className="h-3 w-3" /> Approved
                         </span>
@@ -1522,7 +1522,7 @@ export default function ProjectDetailPage() {
               <button
                 type="button"
                 onClick={deleteMeeting}
-                className="rounded-md px-2.5 py-1.5 text-[12px] text-muted-foreground transition-colors hover:bg-danger/10 hover:text-danger"
+                className="rounded-md px-2.5 py-1.5 text-[12px] text-muted-foreground transition-colors hover:bg-danger/10 hover:text-[var(--danger-fg)]"
               >
                 Cancel meeting
               </button>
@@ -2159,12 +2159,12 @@ function TasksTimeline({
 
 /** Deterministic colored chip for free-text task labels. */
 const LABEL_STYLES = [
-  "bg-warning/15 text-warning",
-  "bg-success/15 text-success",
+  "bg-warning/15 text-[var(--warning-fg)]",
+  "bg-success/15 text-[var(--success-fg)]",
   "bg-blue-400/15 text-blue-400",
   "bg-primary/15 text-primary",
   "bg-pink-400/15 text-pink-400",
-  "bg-danger/15 text-danger",
+  "bg-danger/15 text-[var(--danger-fg)]",
 ];
 
 function labelChipClass(label: string) {

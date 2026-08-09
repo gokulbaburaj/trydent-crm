@@ -360,7 +360,7 @@ function GoalsInner() {
                   type="button"
                   aria-label="Delete goal"
                   onClick={() => deleteGoal(goal.id)}
-                  className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-hover hover:text-danger"
+                  className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-hover hover:text-[var(--danger-fg)]"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
@@ -409,7 +409,7 @@ function GoalsInner() {
                         type="button"
                         aria-label={`Delete ${kr.name}`}
                         onClick={() => deleteKeyResult(kr.id)}
-                        className="rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:text-danger group-hover:opacity-100"
+                        className="rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:text-[var(--danger-fg)] group-hover:opacity-100"
                       >
                         <Trash2 className="h-3 w-3" />
                       </button>

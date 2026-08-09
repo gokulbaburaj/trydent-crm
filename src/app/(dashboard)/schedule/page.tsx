@@ -831,7 +831,7 @@ function WeekGrid({
                   key={p.id}
                   href={`/projects/${p.id}`}
                   title={`${p.name} — project deadline`}
-                  className="truncate rounded-md border border-danger/40 bg-danger/10 px-1.5 py-0.5 text-[11px] font-medium text-danger"
+                  className="truncate rounded-md border border-danger/40 bg-danger/10 px-1.5 py-0.5 text-[11px] font-medium text-[var(--danger-fg)]"
                 >
                   ◆ {p.name}
                 </Link>

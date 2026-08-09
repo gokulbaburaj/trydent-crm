@@ -3,11 +3,19 @@ import { cn } from "@/lib/utils";
 
 type Tone = "green" | "yellow" | "red" | "blue" | "gray";
 
+/*
+  Fill from the status hue, TEXT from its darker `-fg` pair.
+
+  Was the plain hue for both fill and text, which is only legible on a dark
+  surface. Over white it measured 2.28:1 against a 4.5 floor.
+  The dot below still uses the plain hue: a dot is a fill, and fills don't have
+  a contrast requirement in the way text does.
+*/
 const toneClasses: Record<Tone, string> = {
-  green: "bg-success/10 text-success",
-  yellow: "bg-warning/10 text-warning",
-  red: "bg-danger/10 text-danger",
-  blue: "bg-blue-500/10 text-blue-400",
+  green: "bg-success/10 text-[var(--success-fg)]",
+  yellow: "bg-warning/10 text-[var(--warning-fg)]",
+  red: "bg-danger/10 text-[var(--danger-fg)]",
+  blue: "bg-[var(--info)]/10 text-[var(--info-fg)]",
   gray: "bg-hover text-foreground-secondary",
 };
 
@@ -15,7 +23,7 @@ const dotClasses: Record<Tone, string> = {
   green: "bg-success",
   yellow: "bg-warning",
   red: "bg-danger",
-  blue: "bg-blue-400",
+  blue: "bg-[var(--info)]",
   gray: "bg-muted-foreground",
 };
 

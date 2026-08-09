@@ -226,7 +226,7 @@ export default function SettingsPage() {
           />
         </div>
         {accentIsRisky(primary) && (
-          <p className="mt-2.5 text-xs text-warning">
+          <p className="mt-2.5 text-xs text-[var(--warning-fg)]">
             This accent is very close to white or black. It drives every chart series,
             progress bar and highlight, so on a dark background those will read as blank
             blocks. Pick a preset above if charts look empty.
@@ -266,12 +266,12 @@ export default function SettingsPage() {
               {ratesFetchedAt && <> · rates updated {formatDistanceToNow(ratesFetchedAt, { addSuffix: true })}</>}
             </>
           ) : (
-            <span className="text-warning">
+            <span className="text-[var(--warning-fg)]">
               Live rates unavailable right now — amounts are shown in {base} until they load.
             </span>
           )}
         </p>
-        <p className="mt-2 text-xs text-warning">
+        <p className="mt-2 text-xs text-[var(--warning-fg)]">
           Changing the base doesn&apos;t re-value existing records — it changes what the stored
           numbers mean. Only change this if your stored amounts really are in that currency.
         </p>
@@ -282,9 +282,9 @@ export default function SettingsPage() {
         <p className="text-sm">
           Supabase connection:{" "}
           {isSupabaseConfigured ? (
-            <span className="text-success">Connected</span>
+            <span className="text-[var(--success-fg)]">Connected</span>
           ) : (
-            <span className="text-warning">Not configured</span>
+            <span className="text-[var(--warning-fg)]">Not configured</span>
           )}
         </p>
       </Card>

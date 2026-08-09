@@ -251,7 +251,7 @@ function HireForm({
       className="flex flex-col gap-4"
     >
       <div className="rounded-lg border border-success/30 bg-success/10 p-3">
-        <p className="text-[13px] font-medium text-success">{applicant.full_name}</p>
+        <p className="text-[13px] font-medium text-[var(--success-fg)]">{applicant.full_name}</p>
         <p className="mt-0.5 text-[11px] text-foreground-secondary">
           {roles.find((r) => r.id === applicant.role_id)?.name ?? "No role recorded"}
           {applicant.location ? ` · ${applicant.location}` : ""}
@@ -340,7 +340,7 @@ function HireForm({
         }
       />
 
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {error && <p className="text-xs text-[var(--danger-fg)]">{error}</p>}
 
       <div className="flex gap-2 pt-1">
         <Button
@@ -677,7 +677,7 @@ function Applicants({ onHired }: { onHired: (a: Applicant) => void }) {
                       {APPLICANT_STAGE_LABELS[a.stage].toLowerCase()}
                     </Badge>
                     {a.shortlisted && (
-                      <Star className="h-3.5 w-3.5 fill-warning text-warning" />
+                      <Star className="h-3.5 w-3.5 fill-warning text-[var(--warning-fg)]" />
                     )}
                   </div>
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-[12.5px] text-muted-foreground">
@@ -710,7 +710,7 @@ function Applicants({ onHired }: { onHired: (a: Applicant) => void }) {
                     className={cn(
                       "flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-[12px] font-medium transition-colors",
                       a.shortlisted
-                        ? "border-warning/40 bg-warning/10 text-warning"
+                        ? "border-warning/40 bg-warning/10 text-[var(--warning-fg)]"
                         : "border-border text-foreground-secondary hover:bg-hover hover:text-foreground"
                     )}
                   >
@@ -1123,7 +1123,7 @@ function Onboarding() {
                   type="button"
                   aria-label={`Delete ${t.name}`}
                   onClick={() => deleteTemplate(t.id)}
-                  className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:text-danger"
+                  className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:text-[var(--danger-fg)]"
                 >
                   <Trash2 className="h-3 w-3" />
                 </button>
@@ -1171,7 +1171,7 @@ function Onboarding() {
                       type="button"
                       aria-label={`Delete ${i.title}`}
                       onClick={() => deleteItem(i.id)}
-                      className="shrink-0 rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:text-danger group-hover:opacity-100"
+                      className="shrink-0 rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:text-[var(--danger-fg)] group-hover:opacity-100"
                     >
                       <Trash2 className="h-3 w-3" />
                     </button>

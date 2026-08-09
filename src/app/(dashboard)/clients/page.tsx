@@ -493,7 +493,7 @@ function TagInput({ tags, onChange }: { tags: string[]; onChange: (tags: string[
           <button
             type="button"
             onClick={() => onChange(tags.filter((x) => x !== t))}
-            className="rounded-md text-muted-foreground hover:text-danger"
+            className="rounded-md text-muted-foreground hover:text-[var(--danger-fg)]"
           >
             <X className="h-3 w-3" />
           </button>

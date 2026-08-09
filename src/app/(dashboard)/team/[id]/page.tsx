@@ -176,7 +176,7 @@ function WorkloadCard({ workload }: { workload: MemberLoad[] }) {
             {(w.overdue > 0 || w.dueSoon > 0) && (
               <p className="mt-0.5 pl-7 text-[11px] text-muted-2">
                 {w.overdue > 0 && (
-                  <span className="text-danger">{w.overdue} overdue</span>
+                  <span className="text-[var(--danger-fg)]">{w.overdue} overdue</span>
                 )}
                 {w.overdue > 0 && w.dueSoon > 0 && " · "}
                 {w.dueSoon > 0 && `${w.dueSoon} due this week`}
@@ -370,7 +370,7 @@ function AwaitingApprovalCard({ d }: { d: Dash }) {
               <span
                 className={cn(
                   "shrink-0 text-[11.5px]",
-                  days >= 7 ? "text-warning" : "text-muted-2"
+                  days >= 7 ? "text-[var(--warning-fg)]" : "text-muted-2"
                 )}
               >
                 {days === 0 ? "today" : `${days}d`}
@@ -505,7 +505,7 @@ function QuietClientsCard({ d }: { d: Dash }) {
                 <span
                   className={cn(
                     "shrink-0 text-[11.5px]",
-                    days === null || days > 30 ? "text-warning" : "text-muted-2"
+                    days === null || days > 30 ? "text-[var(--warning-fg)]" : "text-muted-2"
                   )}
                 >
                   {days === null ? "never" : days === 0 ? "today" : `${days}d ago`}

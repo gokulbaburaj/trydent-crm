@@ -49,7 +49,7 @@ export function MessageBody({
             className={cn(
               "mx-px inline-flex items-baseline gap-0.5 rounded-md px-1 py-px align-baseline text-[12.5px] font-medium transition-colors",
               isMe
-                ? "bg-warning/20 text-warning"
+                ? "bg-warning/20 text-[var(--warning-fg)]"
                 : "bg-primary/15 text-primary hover:bg-primary/25"
             )}
           >

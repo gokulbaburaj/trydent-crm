@@ -136,7 +136,7 @@ function StaffPortalInner() {
           <span className="text-[13px] font-medium text-foreground">Trydent Labs</span>
           <span className="text-[13px] text-muted-foreground">· Staff portal</span>
           {isPreview && (
-            <span className="ml-2 inline-flex items-center gap-1 rounded-md border border-warning/30 bg-warning/10 px-1.5 py-0.5 text-[11px] font-medium text-warning">
+            <span className="ml-2 inline-flex items-center gap-1 rounded-md border border-warning/30 bg-warning/10 px-1.5 py-0.5 text-[11px] font-medium text-[var(--warning-fg)]">
               <Eye className="h-3 w-3" /> Preview — what {firstName} sees
             </span>
           )}
@@ -192,7 +192,7 @@ function StaffPortalInner() {
                     <h3
                       className={cn(
                         "mb-2 flex items-center gap-2 text-[13px] font-semibold",
-                        bucket === "Overdue" ? "text-danger" : "text-foreground-secondary"
+                        bucket === "Overdue" ? "text-[var(--danger-fg)]" : "text-foreground-secondary"
                       )}
                     >
                       {bucket}
@@ -265,11 +265,11 @@ function StaffPortalInner() {
               </div>
               <div>
                 <p className="text-[11px] text-muted-foreground">Paid</p>
-                <p className="mt-0.5 text-lg font-semibold tabular-nums text-success">{formatCurrency(payPaid)}</p>
+                <p className="mt-0.5 text-lg font-semibold tabular-nums text-[var(--success-fg)]">{formatCurrency(payPaid)}</p>
               </div>
               <div>
                 <p className="text-[11px] text-muted-foreground">Outstanding</p>
-                <p className="mt-0.5 text-lg font-semibold tabular-nums text-warning">{formatCurrency(outstanding)}</p>
+                <p className="mt-0.5 text-lg font-semibold tabular-nums text-[var(--warning-fg)]">{formatCurrency(outstanding)}</p>
               </div>
             </div>
             <div className="flex flex-col divide-y divide-border-subtle">

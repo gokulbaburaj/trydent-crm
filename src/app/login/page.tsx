@@ -185,7 +185,7 @@ export default function LoginPage() {
               </p>
 
               {!isSupabaseConfigured && (
-                <div className="mt-6 rounded-md border border-warning/30 bg-warning/10 px-4 py-3 text-xs text-warning">
+                <div className="mt-6 rounded-md border border-warning/30 bg-warning/10 px-4 py-3 text-xs text-[var(--warning-fg)]">
                   Supabase credentials aren&apos;t set. Add NEXT_PUBLIC_SUPABASE_URL and
                   NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local.
                 </div>
@@ -247,12 +247,12 @@ export default function LoginPage() {
                 </button>
 
                 {error && (
-                  <p className="rounded-md border border-danger/25 bg-danger/10 px-4 py-2.5 text-[13px] text-danger">
+                  <p className="rounded-md border border-danger/25 bg-danger/10 px-4 py-2.5 text-[13px] text-[var(--danger-fg)]">
                     {error}
                   </p>
                 )}
                 {notice && (
-                  <p className="rounded-md border border-success/25 bg-success/10 px-4 py-2.5 text-[13px] text-success">
+                  <p className="rounded-md border border-success/25 bg-success/10 px-4 py-2.5 text-[13px] text-[var(--success-fg)]">
                     {notice}
                   </p>
                 )}

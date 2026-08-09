@@ -217,7 +217,7 @@ export function OrgChartFlow({
                     onClick={() => onDeleteTeam(t)}
                     title={`Delete ${t}`}
                     aria-label={`Delete ${t}`}
-                    className="rounded-md p-0.5 text-muted-2 opacity-60 transition-opacity hover:text-danger group-hover:opacity-100"
+                    className="rounded-md p-0.5 text-muted-2 opacity-60 transition-opacity hover:text-[var(--danger-fg)] group-hover:opacity-100"
                   >
                     <Trash2 className="h-3 w-3" />
                   </button>

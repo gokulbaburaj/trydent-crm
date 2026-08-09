@@ -81,7 +81,7 @@ function TeamDetailInner() {
             type="button"
             onClick={remove}
             disabled={deleting}
-            className="ml-auto flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-[12px] text-muted-foreground transition-colors hover:border-danger/40 hover:text-danger disabled:pointer-events-none disabled:opacity-40"
+            className="ml-auto flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-[12px] text-muted-foreground transition-colors hover:border-danger/40 hover:text-[var(--danger-fg)] disabled:pointer-events-none disabled:opacity-40"
           >
             <Trash2 className="h-3.5 w-3.5" /> Delete team
           </button>
@@ -134,7 +134,7 @@ function TeamDetailInner() {
                   </span>
                   <span
                     className={`flex shrink-0 items-center gap-1 text-[11.5px] ${
-                      r.is_admin ? "text-warning" : "text-muted-foreground"
+                      r.is_admin ? "text-[var(--warning-fg)]" : "text-muted-foreground"
                     }`}
                   >
                     <ShieldCheck className="h-3 w-3" />

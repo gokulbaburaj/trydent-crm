@@ -515,11 +515,11 @@ function ProjectsPageInner() {
                                   {formatCurrency(value, deal.currency)}
                                 </span>
                                 {owed > 0 ? (
-                                  <span className="text-warning">
+                                  <span className="text-[var(--warning-fg)]">
                                     · {formatCurrency(owed, deal.currency)} due
                                   </span>
                                 ) : (
-                                  <span className="text-success">· paid</span>
+                                  <span className="text-[var(--success-fg)]">· paid</span>
                                 )}
                               </p>
                             );
@@ -668,7 +668,7 @@ function PaidEditor({ deal, onSaved }: { deal: Deal; onSaved: (d: Deal) => void 
         <button
           className={cn(
             "rounded-md px-1 py-0.5 transition-colors hover:bg-hover",
-            owed > 0 ? "text-warning" : "text-success"
+            owed > 0 ? "text-[var(--warning-fg)]" : "text-[var(--success-fg)]"
           )}
           title="Record a payment"
         >

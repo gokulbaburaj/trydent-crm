@@ -602,7 +602,7 @@ function MessageRow({
         <button
           onClick={onDelete}
           aria-label="Delete message"
-          className="shrink-0 self-start rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-hover hover:text-danger group-hover:opacity-100"
+          className="shrink-0 self-start rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-hover hover:text-[var(--danger-fg)] group-hover:opacity-100"
         >
           <Trash2 className="h-3 w-3" />
         </button>

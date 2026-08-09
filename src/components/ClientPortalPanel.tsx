@@ -566,7 +566,7 @@ export function ClientPortalPanel({
           <KeyRound className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="text-[13px] font-medium">Portal login</span>
           {portal.last_opened_at && (
-            <span className="ml-auto text-[11px] text-success">
+            <span className="ml-auto text-[11px] text-[var(--success-fg)]">
               Opened {formatDate(portal.last_opened_at)}
             </span>
           )}
@@ -584,7 +584,7 @@ export function ClientPortalPanel({
 
         {loginCreated ? (
           <div className="flex flex-col gap-2 rounded-md border border-success/30 bg-success/10 p-3">
-            <p className="text-xs font-medium text-success">
+            <p className="text-xs font-medium text-[var(--success-fg)]">
               {loginCreated.reset
                 ? "Password reset — share the new credentials with your client."
                 : "Login created — share these with your client."}{" "}
@@ -633,7 +633,7 @@ export function ClientPortalPanel({
                 </div>
               </div>
             </div>
-            {loginError && <p className="text-xs text-danger">{loginError}</p>}
+            {loginError && <p className="text-xs text-[var(--danger-fg)]">{loginError}</p>}
             <Button
               type="button"
               size="sm"
@@ -740,9 +740,9 @@ export function ClientPortalPanel({
       {requests.length > 0 && (
         <div className="flex flex-col gap-2 rounded-md border border-warning/30 bg-warning/5 p-3">
           <div className="flex items-center gap-2">
-            <CalendarClock className="h-3.5 w-3.5 text-warning" />
+            <CalendarClock className="h-3.5 w-3.5 text-[var(--warning-fg)]" />
             <span className="text-[13px] font-medium">Call requests</span>
-            <span className="ml-auto rounded-full bg-warning/15 px-1.5 py-px text-[11px] font-medium text-warning">
+            <span className="ml-auto rounded-full bg-warning/15 px-1.5 py-px text-[11px] font-medium text-[var(--warning-fg)]">
               {requests.length}
             </span>
           </div>
@@ -932,7 +932,7 @@ export function ClientPortalPanel({
                   type="button"
                   aria-label={`Delete ${d.name}`}
                   onClick={() => deleteDocument(d.id)}
-                  className="shrink-0 rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-hover hover:text-danger group-hover:opacity-100"
+                  className="shrink-0 rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-hover hover:text-[var(--danger-fg)] group-hover:opacity-100"
                 >
                   <Trash2 className="h-3 w-3" />
                 </button>
@@ -1098,7 +1098,7 @@ export function ClientPortalPanel({
                 type="button"
                 aria-label={`Delete ${inv.number}`}
                 onClick={() => deleteInvoice(inv.id)}
-                className="shrink-0 rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-hover hover:text-danger group-hover:opacity-100"
+                className="shrink-0 rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-hover hover:text-[var(--danger-fg)] group-hover:opacity-100"
               >
                 <Trash2 className="h-3 w-3" />
               </button>

@@ -317,7 +317,7 @@ export default function ClientDetailPage() {
                     button. A disabled button looks broken; a tick doesn't.
                   */}
                   {isToday(client.last_contact) ? (
-                    <p className="mt-1.5 flex items-center gap-1.5 text-[11px] text-success">
+                    <p className="mt-1.5 flex items-center gap-1.5 text-[11px] text-[var(--success-fg)]">
                       <Check className="h-3 w-3" /> Contacted today
                     </p>
                   ) : (
@@ -500,7 +500,7 @@ function TagInput({ tags, onChange }: { tags: string[]; onChange: (tags: string[
           <button
             type="button"
             onClick={() => onChange(tags.filter((x) => x !== t))}
-            className="rounded-md text-muted-foreground hover:text-danger"
+            className="rounded-md text-muted-foreground hover:text-[var(--danger-fg)]"
           >
             <X className="h-3 w-3" />
           </button>

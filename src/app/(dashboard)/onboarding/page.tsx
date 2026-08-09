@@ -348,7 +348,7 @@ function OnboardingInner() {
               >
                 <Avatar name={profile?.full_name ?? "Unknown"} url={profile?.avatar_url} size="xs" />
                 <span className="text-[13px]">{profile?.full_name ?? "Unknown member"}</span>
-                <span className="text-[11px] text-success">
+                <span className="text-[11px] text-[var(--success-fg)]">
                   {pTasks.length}/{pTasks.length}
                 </span>
               </button>
@@ -476,7 +476,7 @@ function OnboardingInner() {
                       type="button"
                       aria-label={`Remove ${t.title}`}
                       onClick={() => deleteStep(t.id)}
-                      className="shrink-0 rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:text-danger group-hover:opacity-100"
+                      className="shrink-0 rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:text-[var(--danger-fg)] group-hover:opacity-100"
                     >
                       <Trash2 className="h-3 w-3" />
                     </button>
@@ -556,7 +556,7 @@ function OnboardingInner() {
               </p>
             )}
             {startPerson && (tasksByProfile.get(startPerson)?.length ?? 0) > 0 && (
-              <p className="mt-1 text-[11px] text-warning">
+              <p className="mt-1 text-[11px] text-[var(--warning-fg)]">
                 This person already has a checklist. Starting another adds its steps on top.
               </p>
             )}

@@ -86,7 +86,7 @@ function RoleDetailInner() {
         <div className="mt-2 flex flex-wrap items-center gap-3">
           <h2 className="text-xl font-semibold tracking-tight">{role.name}</h2>
           {role.is_admin && (
-            <span className="flex items-center gap-1 rounded-md border border-warning/40 bg-warning/10 px-2 py-0.5 text-[11.5px] text-warning">
+            <span className="flex items-center gap-1 rounded-md border border-warning/40 bg-warning/10 px-2 py-0.5 text-[11.5px] text-[var(--warning-fg)]">
               <ShieldCheck className="h-3 w-3" /> Full admin
             </span>
           )}
@@ -99,7 +99,7 @@ function RoleDetailInner() {
                 ? "Someone still holds this role. Move them first."
                 : undefined
             }
-            className="ml-auto flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-[12px] text-muted-foreground transition-colors hover:border-danger/40 hover:text-danger disabled:pointer-events-none disabled:opacity-40"
+            className="ml-auto flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-[12px] text-muted-foreground transition-colors hover:border-danger/40 hover:text-[var(--danger-fg)] disabled:pointer-events-none disabled:opacity-40"
           >
             <Trash2 className="h-3.5 w-3.5" /> Delete role
           </button>
@@ -150,7 +150,7 @@ function RoleDetailInner() {
         <h3 className="text-sm font-semibold">Pages</h3>
         <p className="mt-0.5 text-xs text-muted-foreground">
           What someone in this role sees in the sidebar. Pages marked{" "}
-          <span className="text-warning">enforced</span> are also locked in the database —
+          <span className="text-[var(--warning-fg)]">enforced</span> are also locked in the database —
           granting one hands over the data, not just the menu item.
         </p>
 
@@ -176,7 +176,7 @@ function RoleDetailInner() {
                   <span className="flex items-center gap-1 text-[12.5px]">
                     {PAGE_LABELS[page]}
                     {ENFORCED_PAGES.includes(page) && (
-                      <span className="text-[9px] uppercase tracking-wide text-warning">
+                      <span className="text-[9px] uppercase tracking-wide text-[var(--warning-fg)]">
                         enforced
                       </span>
                     )}

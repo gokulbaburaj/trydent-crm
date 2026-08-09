@@ -316,7 +316,7 @@ export function FilterBar({
                     <button
                       title="Delete view"
                       onClick={() => deleteView(v)}
-                      className="mr-1 rounded-md p-1 text-muted-foreground opacity-0 hover:text-danger group-hover:opacity-100"
+                      className="mr-1 rounded-md p-1 text-muted-foreground opacity-0 hover:text-[var(--danger-fg)] group-hover:opacity-100"
                     >
                       <Trash2 className="h-3 w-3" />
                     </button>

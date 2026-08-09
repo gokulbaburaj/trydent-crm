@@ -10,8 +10,8 @@ export const PRIORITY_META: Record<
   TaskPriority,
   { label: string; className: string; fill: boolean }
 > = {
-  urgent: { label: "Urgent", className: "text-danger", fill: true },
-  high: { label: "High", className: "text-warning", fill: true },
+  urgent: { label: "Urgent", className: "text-[var(--danger-fg)]", fill: true },
+  high: { label: "High", className: "text-[var(--warning-fg)]", fill: true },
   normal: { label: "Normal", className: "text-blue-400", fill: false },
   low: { label: "Low", className: "text-muted-2", fill: false },
 };

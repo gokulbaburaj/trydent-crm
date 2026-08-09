@@ -154,7 +154,7 @@ export default function MyWorkPage() {
             <h3
               className={cn(
                 "mb-2 flex items-center gap-2 text-[13px] font-semibold",
-                bucket === "Overdue" ? "text-danger" : "text-foreground-secondary"
+                bucket === "Overdue" ? "text-[var(--danger-fg)]" : "text-foreground-secondary"
               )}
             >
               {bucket}

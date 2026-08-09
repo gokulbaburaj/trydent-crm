@@ -477,7 +477,7 @@ function PortalInner() {
           <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
           <span className="text-[13px] text-muted-foreground">{client?.company ?? "Client Portal"}</span>
           {isPreview && (
-            <span className="ml-2 inline-flex items-center gap-1 rounded-md border border-warning/30 bg-warning/10 px-1.5 py-0.5 text-[11px] font-medium text-warning">
+            <span className="ml-2 inline-flex items-center gap-1 rounded-md border border-warning/30 bg-warning/10 px-1.5 py-0.5 text-[11px] font-medium text-[var(--warning-fg)]">
               <Eye className="h-3 w-3" /> Preview — what your client sees
             </span>
           )}
@@ -705,13 +705,13 @@ function PortalInner() {
                                       </div>
                                     )}
                                     {t.approved_at ? (
-                                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-[10px] font-medium text-success">
+                                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-[10px] font-medium text-[var(--success-fg)]">
                                         <CheckCheck className="h-3 w-3" /> Approved
                                       </span>
                                     ) : t.status === "Done" && profile?.role === "client" ? (
                                       <button
                                         onClick={() => approveTask(t.id)}
-                                        className="shrink-0 rounded-md border border-success/40 bg-success/10 px-2.5 py-1 text-[11px] font-medium text-success transition-colors hover:bg-success/20"
+                                        className="shrink-0 rounded-md border border-success/40 bg-success/10 px-2.5 py-1 text-[11px] font-medium text-[var(--success-fg)] transition-colors hover:bg-success/20"
                                       >
                                         Approve
                                       </button>
@@ -872,7 +872,7 @@ function PortalInner() {
                       <div className="min-w-0 flex-1">
                         <p className="flex items-center gap-1.5 truncate text-sm font-medium">
                           {link.title}
-                          {task.approved_at && <CheckCheck className="h-3 w-3 shrink-0 text-success" />}
+                          {task.approved_at && <CheckCheck className="h-3 w-3 shrink-0 text-[var(--success-fg)]" />}
                         </p>
                         <p className="truncate text-xs text-muted-foreground">
                           {projectName(task.project_id)} · {task.name}
@@ -947,9 +947,9 @@ function PortalInner() {
                       key={r.id}
                       className="flex flex-wrap items-center gap-2 rounded-lg border border-warning/30 bg-warning/5 px-3 py-2 text-sm"
                     >
-                      <Clock className="h-3.5 w-3.5 shrink-0 text-warning" />
+                      <Clock className="h-3.5 w-3.5 shrink-0 text-[var(--warning-fg)]" />
                       <span className="min-w-0 flex-1 truncate">{r.topic}</span>
-                      <span className="text-xs text-warning">Awaiting a time from your team</span>
+                      <span className="text-xs text-[var(--warning-fg)]">Awaiting a time from your team</span>
                     </div>
                   ))}
                 </div>
@@ -1066,7 +1066,7 @@ function PortalInner() {
                     </span>
                   </div>
                   {overdueCount > 0 && (
-                    <p className="mb-1 text-xs font-medium text-danger">
+                    <p className="mb-1 text-xs font-medium text-[var(--danger-fg)]">
                       {overdueCount} invoice{overdueCount === 1 ? " is" : "s are"} past due.
                     </p>
                   )}
@@ -1083,7 +1083,7 @@ function PortalInner() {
                           <span
                             className={cn(
                               "text-xs",
-                              display === "overdue" ? "text-danger" : "text-muted-foreground"
+                              display === "overdue" ? "text-[var(--danger-fg)]" : "text-muted-foreground"
                             )}
                           >
                             {inv.due_date ? `Due ${formatDate(inv.due_date)}` : "No due date"}
@@ -1133,9 +1133,9 @@ function PortalInner() {
                 {awaitingApproval.length > 0 && (
                   <Card className="rounded-xl border-warning/30 shadow-sm">
                     <div className="mb-2.5 flex items-center gap-2">
-                      <CheckCheck className="h-4 w-4 text-warning" />
+                      <CheckCheck className="h-4 w-4 text-[var(--warning-fg)]" />
                       <h3 className="text-sm font-semibold">Awaiting your approval</h3>
-                      <span className="ml-auto rounded-full bg-warning/15 px-1.5 py-px text-[11px] font-medium text-warning">
+                      <span className="ml-auto rounded-full bg-warning/15 px-1.5 py-px text-[11px] font-medium text-[var(--warning-fg)]">
                         {awaitingApproval.length}
                       </span>
                     </div>
@@ -1149,7 +1149,7 @@ function PortalInner() {
                           {profile?.role === "client" ? (
                             <button
                               onClick={() => approveTask(t.id)}
-                              className="shrink-0 rounded-md border border-success/40 bg-success/10 px-2 py-1 text-[11px] font-medium text-success transition-colors hover:bg-success/20"
+                              className="shrink-0 rounded-md border border-success/40 bg-success/10 px-2 py-1 text-[11px] font-medium text-[var(--success-fg)] transition-colors hover:bg-success/20"
                             >
                               Approve
                             </button>
@@ -1325,9 +1325,9 @@ function Summary({
       <p
         className={cn(
           "mt-0.5 text-lg font-semibold tabular-nums",
-          tone === "success" && "text-success",
-          tone === "warning" && "text-warning",
-          tone === "danger" && "text-danger"
+          tone === "success" && "text-[var(--success-fg)]",
+          tone === "warning" && "text-[var(--warning-fg)]",
+          tone === "danger" && "text-[var(--danger-fg)]"
         )}
       >
         {value}

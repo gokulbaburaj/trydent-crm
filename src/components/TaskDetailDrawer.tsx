@@ -210,7 +210,7 @@ export function TaskDetailDrawer({
     <Drawer open={!!task} onClose={onClose} title="Task details" wide>
       <div className="flex flex-col gap-6">
         {task.approved_at && (
-          <div className="flex items-center gap-2 rounded-md border border-success/30 bg-success/10 px-3 py-2 text-[13px] text-success">
+          <div className="flex items-center gap-2 rounded-md border border-success/30 bg-success/10 px-3 py-2 text-[13px] text-[var(--success-fg)]">
             <CheckCheck className="h-4 w-4 shrink-0" />
             Approved by the client on {formatDate(task.approved_at)}
           </div>
@@ -276,7 +276,7 @@ export function TaskDetailDrawer({
                   onClose();
                 }
               }}
-              className="mt-1 shrink-0 rounded-md p-2 text-muted-foreground hover:bg-danger/10 hover:text-danger"
+              className="mt-1 shrink-0 rounded-md p-2 text-muted-foreground hover:bg-danger/10 hover:text-[var(--danger-fg)]"
             >
               <Trash2 className="h-4 w-4" />
             </button>
@@ -512,7 +512,7 @@ export function TaskDetailDrawer({
                 </a>
                 <button
                   onClick={() => removeLink(idx)}
-                  className="rounded-md p-1.5 text-muted-foreground opacity-0 hover:bg-hover hover:text-danger group-hover:opacity-100"
+                  className="rounded-md p-1.5 text-muted-foreground opacity-0 hover:bg-hover hover:text-[var(--danger-fg)] group-hover:opacity-100"
                   title="Remove link"
                 >
                   <X className="h-3.5 w-3.5" />
@@ -570,7 +570,7 @@ export function TaskDetailDrawer({
                       e.stopPropagation();
                       deleteSubtask(s.id);
                     }}
-                    className="rounded-md p-0.5 text-muted-foreground opacity-0 hover:text-danger group-hover/sub:opacity-100"
+                    className="rounded-md p-0.5 text-muted-foreground opacity-0 hover:text-[var(--danger-fg)] group-hover/sub:opacity-100"
                   >
                     <X className="h-3 w-3" />
                   </button>

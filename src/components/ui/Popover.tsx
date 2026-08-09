@@ -83,7 +83,7 @@ export function MenuItem({
       className={cn(
         "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors",
         danger
-          ? "text-danger hover:bg-danger/10"
+          ? "text-[var(--danger-fg)] hover:bg-danger/10"
           : "text-foreground-secondary hover:bg-hover hover:text-foreground"
       )}
     >

@@ -184,7 +184,7 @@ export default function PipelinePage() {
           if (paid === 0) return <span className="text-muted-2">—</span>;
           const settled = paid >= Number(d.deal_value);
           return (
-            <span className={settled ? "text-success" : "text-warning"}>
+            <span className={settled ? "text-[var(--success-fg)]" : "text-[var(--warning-fg)]"}>
               {formatCurrency(paid, dealCcy(d))}
             </span>
           );
@@ -658,7 +658,7 @@ export default function PipelinePage() {
           onMove={handleStageMove}
           columnMeta={(_, items) =>
             items.length > 0 ? (
-              <span className="text-xs font-medium tabular-nums text-success">
+              <span className="text-xs font-medium tabular-nums text-[var(--success-fg)]">
                 {formatCurrency(items.reduce((sum, d) => sum + toBase(Number(d.deal_value), dealCcy(d)), 0))}
               </span>
             ) : null
@@ -680,7 +680,7 @@ export default function PipelinePage() {
               <div className="flex items-center justify-between gap-2 text-[11.5px] text-muted-2">
                 <span className="min-w-0 truncate">{clientName(d.client_id)}</span>
                 {Number(d.paid) > 0 && Number(d.paid) < Number(d.deal_value) && (
-                  <span className="shrink-0 text-warning">
+                  <span className="shrink-0 text-[var(--warning-fg)]">
                     {Math.round((Number(d.paid) / Number(d.deal_value)) * 100)}% paid
                   </span>
                 )}
@@ -843,7 +843,7 @@ export default function PipelinePage() {
             className="flex flex-col gap-4"
           >
             <div className="rounded-lg border border-success/30 bg-success/10 p-3">
-              <p className="text-[13px] font-medium text-success">
+              <p className="text-[13px] font-medium text-[var(--success-fg)]">
                 {wonDeal.deal_name} · {formatCurrency(Number(wonDeal.deal_value), dealCcy(wonDeal))}
               </p>
               <p className="mt-0.5 text-[11px] text-foreground-secondary">

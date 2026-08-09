@@ -78,7 +78,7 @@ export function PortalBoard({ tasks, projectName, teamById }: ViewProps) {
                 <p className="flex items-start gap-1.5 text-[13px] font-medium leading-snug">
                   <span className="min-w-0 flex-1">{t.name}</span>
                   {t.approved_at && (
-                    <CheckCheck className="mt-0.5 h-3 w-3 shrink-0 text-success" />
+                    <CheckCheck className="mt-0.5 h-3 w-3 shrink-0 text-[var(--success-fg)]" />
                   )}
                 </p>
                 <div className="mt-1.5 flex items-center gap-2">
@@ -223,9 +223,9 @@ export function PortalCalendar({ tasks, projects, projectName }: ViewProps) {
                     className={cn(
                       "truncate rounded-md px-1 py-px text-[10px] leading-tight",
                       e.kind === "deadline"
-                        ? "bg-warning/15 text-warning"
+                        ? "bg-warning/15 text-[var(--warning-fg)]"
                         : e.done
-                          ? "bg-success/15 text-success"
+                          ? "bg-success/15 text-[var(--success-fg)]"
                           : "bg-primary/15 text-primary"
                     )}
                   >
