@@ -60,7 +60,7 @@ export function HoverCard({
           sideOffset={6}
           collisionPadding={8}
           className={cn(
-            "z-[130] w-64 rounded-lg border border-border bg-popover p-3 shadow-xl shadow-black/60",
+            "z-[130] w-64 rounded-lg border border-border bg-popover p-3 shadow-[var(--shadow-xl)]",
             "animate-in fade-in-0 zoom-in-95 duration-100",
             "data-[side=bottom]:slide-in-from-top-1 data-[side=left]:slide-in-from-right-1",
             "data-[side=right]:slide-in-from-left-1 data-[side=top]:slide-in-from-bottom-1",

@@ -502,7 +502,7 @@ function PortalInner() {
         ) : (
           <>
             {/* ============ HERO DASHBOARD ============ */}
-            <section className="relative overflow-hidden rounded-xl border border-primary/20 bg-gradient-to-br from-primary/15 via-card to-card p-6 shadow-sm">
+            <section className="relative overflow-hidden rounded-xl border border-primary/20 bg-gradient-to-br from-primary/15 via-card to-card p-6 shadow-[var(--shadow-sm)]">
               <div className="pointer-events-none absolute -right-10 -top-12 h-44 w-44 rounded-full bg-primary/20 blur-3xl" />
               <div className="relative">
                 <div className="flex items-center gap-1.5 text-primary">
@@ -546,7 +546,7 @@ function PortalInner() {
             <section>
               <SectionTitle icon={FolderKanban}>Projects</SectionTitle>
               {projects.length === 0 ? (
-                <Card className="rounded-xl shadow-sm">
+                <Card className="rounded-xl shadow-[var(--shadow-sm)]">
                   <p className="py-4 text-center text-sm text-muted-foreground">No projects yet.</p>
                 </Card>
               ) : (
@@ -568,7 +568,7 @@ function PortalInner() {
                               ?.scrollIntoView({ behavior: "smooth", block: "start" })
                           );
                         }}
-                        className="group rounded-xl border border-border bg-surface p-4 text-left lift shadow-sm hover:border-primary/30 hover:bg-surface-fill"
+                        className="group rounded-xl border border-border bg-surface p-4 text-left lift shadow-[var(--shadow-sm)] hover:border-primary/30 hover:bg-surface-fill"
                       >
                         <div className="flex items-center justify-between gap-2">
                           <span className="truncate text-sm font-medium">{p.name}</span>
@@ -646,7 +646,7 @@ function PortalInner() {
 
                 <div
                   className={cn(
-                    "overflow-hidden rounded-xl border border-border bg-surface shadow-sm",
+                    "overflow-hidden rounded-xl border border-border bg-surface shadow-[var(--shadow-sm)]",
                     view !== "list" && "hidden"
                   )}
                 >
@@ -864,7 +864,7 @@ function PortalInner() {
                       href={link.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="group flex items-center gap-3 rounded-xl border border-border bg-surface p-3.5 lift shadow-sm hover:border-primary/30 hover:bg-surface-fill"
+                      className="group flex items-center gap-3 rounded-xl border border-border bg-surface p-3.5 lift shadow-[var(--shadow-sm)] hover:border-primary/30 hover:bg-surface-fill"
                     >
                       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/15 text-primary">
                         <FileText className="h-4 w-4" />
@@ -910,7 +910,7 @@ function PortalInner() {
                     e.preventDefault();
                     requestMeeting();
                   }}
-                  className="mb-3 flex flex-col gap-2.5 rounded-xl border border-border bg-surface p-3.5 shadow-sm"
+                  className="mb-3 flex flex-col gap-2.5 rounded-xl border border-border bg-surface p-3.5 shadow-[var(--shadow-sm)]"
                 >
                   <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                     <div>
@@ -956,7 +956,7 @@ function PortalInner() {
               )}
 
               {upcomingMeetings.length === 0 ? (
-                <Card className="rounded-xl shadow-sm">
+                <Card className="rounded-xl shadow-[var(--shadow-sm)]">
                   <p className="py-6 text-center text-sm text-muted-foreground">
                     No meetings scheduled.
                   </p>
@@ -968,7 +968,7 @@ function PortalInner() {
                       .map((id) => teamById.get(id))
                       .filter((p): p is TeamMember => !!p);
                     return (
-                      <Card key={m.id} className="rounded-xl shadow-sm">
+                      <Card key={m.id} className="rounded-xl shadow-[var(--shadow-sm)]">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="min-w-0 flex-1 truncate text-sm font-medium">
                             {m.description}
@@ -1012,7 +1012,7 @@ function PortalInner() {
                             key={d.id}
                             type="button"
                             onClick={() => openDocument(d)}
-                            className="group flex items-center gap-3 rounded-xl border border-border bg-surface p-3.5 text-left lift shadow-sm hover:border-primary/30 hover:bg-surface-fill"
+                            className="group flex items-center gap-3 rounded-xl border border-border bg-surface p-3.5 text-left lift shadow-[var(--shadow-sm)] hover:border-primary/30 hover:bg-surface-fill"
                           >
                             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/15 text-primary">
                               <FileText className="h-4 w-4" />
@@ -1037,13 +1037,13 @@ function PortalInner() {
             <section>
               <SectionTitle icon={Wallet}>Payments</SectionTitle>
               {visibleInvoices.length === 0 ? (
-                <Card className="rounded-xl shadow-sm">
+                <Card className="rounded-xl shadow-[var(--shadow-sm)]">
                   <p className="py-6 text-center text-sm text-muted-foreground">
                     No invoices yet. Anything your team issues will appear here.
                   </p>
                 </Card>
               ) : (
-                <Card className="rounded-xl shadow-sm">
+                <Card className="rounded-xl shadow-[var(--shadow-sm)]">
                   {/* Summary */}
                   <div className="grid grid-cols-3 gap-3 border-b border-border-subtle pb-4">
                     <Summary label="Invoiced" value={formatCurrency(invoicedTotal)} />
@@ -1120,7 +1120,7 @@ function PortalInner() {
             </section>
 
             {portal?.notes && (
-              <Card className="rounded-xl shadow-sm">
+              <Card className="rounded-xl shadow-[var(--shadow-sm)]">
                 <h3 className="mb-1.5 text-sm font-semibold text-muted-foreground">Notes from your team</h3>
                 <p className="text-sm">{portal.notes}</p>
               </Card>
@@ -1131,7 +1131,7 @@ function PortalInner() {
               <aside className="flex flex-col gap-4 lg:sticky lg:top-[76px] lg:self-start">
                 {/* Awaiting your approval */}
                 {awaitingApproval.length > 0 && (
-                  <Card className="rounded-xl border-warning/30 shadow-sm">
+                  <Card className="rounded-xl border-warning/30 shadow-[var(--shadow-sm)]">
                     <div className="mb-2.5 flex items-center gap-2">
                       <CheckCheck className="h-4 w-4 text-[var(--warning-fg)]" />
                       <h3 className="text-sm font-semibold">Awaiting your approval</h3>
@@ -1163,7 +1163,7 @@ function PortalInner() {
                 )}
 
                 {/* Announcements */}
-                <Card className="rounded-xl shadow-sm">
+                <Card className="rounded-xl shadow-[var(--shadow-sm)]">
                   <div className="mb-2.5 flex items-center gap-2">
                     <Megaphone className="h-4 w-4 text-primary" />
                     <h3 className="text-sm font-semibold">Announcements</h3>
@@ -1190,7 +1190,7 @@ function PortalInner() {
                 </Card>
 
                 {/* Messages */}
-                <Card className="flex max-h-[440px] flex-col rounded-xl shadow-sm">
+                <Card className="flex max-h-[440px] flex-col rounded-xl shadow-[var(--shadow-sm)]">
                   <div className="mb-2.5 flex items-center gap-2">
                     <MessageSquare className="h-4 w-4 text-primary" />
                     <h3 className="text-sm font-semibold">Messages</h3>
@@ -1245,7 +1245,7 @@ function PortalInner() {
 
                 {/* Your team */}
                 {accountTeam.length > 0 && (
-                  <Card className="rounded-xl shadow-sm">
+                  <Card className="rounded-xl shadow-[var(--shadow-sm)]">
                     <div className="mb-2.5 flex items-center gap-2">
                       <Users className="h-4 w-4 text-muted-foreground" />
                       <h3 className="text-sm font-semibold">Your team</h3>

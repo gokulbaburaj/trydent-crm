@@ -73,7 +73,7 @@ export function PortalBoard({ tasks, projectName, teamById }: ViewProps) {
             {items.map((t) => (
               <div
                 key={t.id}
-                className="rounded-lg border border-border bg-surface p-2.5 shadow-sm"
+                className="rounded-lg border border-border bg-surface p-2.5 shadow-[var(--shadow-sm)]"
               >
                 <p className="flex items-start gap-1.5 text-[13px] font-medium leading-snug">
                   <span className="min-w-0 flex-1">{t.name}</span>
@@ -158,7 +158,7 @@ export function PortalCalendar({ tasks, projects, projectName }: ViewProps) {
   void projectName;
 
   return (
-    <div className="rounded-xl border border-border bg-surface p-3 shadow-sm">
+    <div className="rounded-xl border border-border bg-surface p-3 shadow-[var(--shadow-sm)]">
       <div className="mb-3 flex items-center gap-2">
         <span className="text-sm font-medium">{format(month, "MMMM yyyy")}</span>
         <div className="ml-auto flex items-center gap-1">
@@ -269,7 +269,7 @@ export function PortalTimeline({ tasks, projects }: ViewProps) {
 
   if (!range) {
     return (
-      <div className="rounded-xl border border-border bg-surface p-6 text-center text-sm text-muted-foreground shadow-sm">
+      <div className="rounded-xl border border-border bg-surface p-6 text-center text-sm text-muted-foreground shadow-[var(--shadow-sm)]">
         No dates scheduled yet.
       </div>
     );
@@ -279,7 +279,7 @@ export function PortalTimeline({ tasks, projects }: ViewProps) {
   const todayPct = pct(new Date().getTime());
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-3.5 shadow-sm">
+    <div className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-3.5 shadow-[var(--shadow-sm)]">
       <div className="flex items-center justify-between text-[10px] text-muted-2">
         <span>{format(new Date(range.min), "MMM d, yyyy")}</span>
         <span>{format(new Date(range.max), "MMM d, yyyy")}</span>

@@ -258,7 +258,7 @@ function AccountsInner() {
           return (
             <Card
             key={project.id}
-            className="animate-row rounded-xl shadow-sm"
+            className="animate-row rounded-xl shadow-[var(--shadow-sm)]"
             style={staggerDelay(rowIndex)}
           >
               <div className="flex flex-wrap items-center gap-3">
@@ -639,7 +639,7 @@ function Summary({
 }) {
   const ref = useCountUp(value, format);
   return (
-    <Card className="rounded-xl shadow-sm">
+    <Card className="rounded-xl shadow-[var(--shadow-sm)]">
       <p className="text-[11px] text-muted-foreground">{label}</p>
       <p
         className={cn(

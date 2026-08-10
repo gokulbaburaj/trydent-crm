@@ -265,7 +265,7 @@ export function QueueItem({
         selected
           ? heatBackground
             ? [
-                "shadow-sm",
+                "shadow-[var(--shadow-sm)]",
                 /*
                   Step the muted tiers up on a heat background.
 

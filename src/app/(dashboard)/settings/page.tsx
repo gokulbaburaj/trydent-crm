@@ -450,7 +450,7 @@ function SortableViewRow({
       style={{ transform: CSS.Transform.toString(transform), transition }}
       className={cn(
         "grid grid-cols-[auto_1fr] items-center gap-2 rounded-md border border-border-subtle px-2.5 py-2 sm:grid-cols-[auto_1fr_11rem]",
-        isDragging && "relative z-10 border-border bg-surface opacity-90 shadow-lg shadow-black/30"
+        isDragging && "relative z-10 border-border bg-surface opacity-90 shadow-[var(--shadow-lg)]"
       )}
     >
       <button

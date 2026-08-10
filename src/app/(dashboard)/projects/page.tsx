@@ -490,7 +490,7 @@ function ProjectsPageInner() {
                         <button
                           key={p.id}
                           onClick={() => openInNewTab(`/projects/${p.id}`, p.name)}
-                          className="rounded-md border border-border bg-raise p-3 text-left transition-[border-color,background-color,box-shadow,translate] duration-150 hover:-translate-y-px hover:border-edge hover:bg-hover hover:shadow-lg hover:shadow-black/20"
+                          className="rounded-md border border-border bg-raise p-3 text-left transition-[border-color,background-color,box-shadow,translate] duration-150 hover:-translate-y-px hover:border-edge hover:bg-hover hover:shadow-lg hover:"
                         >
                           <div className="flex items-center justify-between gap-2">
                             <span className="truncate text-sm font-medium">{p.name}</span>

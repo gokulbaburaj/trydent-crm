@@ -48,7 +48,7 @@ function PersonNode(props: NodeProps) {
   return (
     <div
       className={cn(
-        "flex items-center gap-2.5 rounded-xl border bg-surface px-3 py-2.5 shadow-lg shadow-black/30 transition-colors",
+        "flex items-center gap-2.5 rounded-xl border bg-surface px-3 py-2.5 shadow-[var(--shadow-lg)] transition-colors",
         data.isMe ? "border-primary/60 ring-1 ring-primary/30" : "border-border"
       )}
       style={{ width: NODE_W }}
@@ -265,7 +265,7 @@ export function OrgChartFlow({
             <Controls
               showInteractive={false}
               className={
-                "!rounded-lg !border !border-border !bg-surface !shadow-lg !shadow-black/30 " +
+                "!rounded-lg !border !border-border !bg-surface !shadow-[var(--shadow-lg)] ! " +
                 "[&_.react-flow\\_\\_controls-button]:!border-border " +
                 "[&_.react-flow\\_\\_controls-button]:!bg-surface " +
                 "[&_.react-flow\\_\\_controls-button]:!fill-foreground-secondary " +

@@ -74,6 +74,7 @@ import { cn } from "@/lib/utils";
 import { formatDate, initials } from "@/lib/format";
 import { useCurrency } from "@/lib/currency";
 import { useTabs } from "@/lib/tabs";
+import { taskSpan } from "@/lib/projectPhase";
 import type { Activity, Client, Deal, Project, ProjectTask, TaskItem, TaskPriority, TaskStatus } from "@/lib/types";
 import { PRIORITY_ORDER, PROJECT_STATUSES, TASK_STATUSES } from "@/lib/types";
 import { useViewPreference } from "@/lib/useViewPreference";
@@ -2032,11 +2033,29 @@ function TasksTimeline({
     .sort((a, b) => (a.due_date ?? "").localeCompare(b.due_date ?? ""))
     .slice(0, 6);
 
-  const spans = rows.map((t) => {
-    const due = startOfDay(parseISO(t.due_date as string));
-    const created = startOfDay(parseISO(t.created_at));
-    // A deadline can predate the record. Whichever is earlier is the real start.
-    return { task: t, start: created < due ? created : due, end: addDays(due, 1) };
+  /*
+    Bars come from the task's OWN dates, not from when the row was created.
+
+    This used to start every bar at `created_at` — the moment someone typed the
+    task in — and run it to the due date. With four tasks entered in one
+    sitting that draws four bars all starting on the same day, fanning out to
+    different ends, which looks like a schedule and is actually a record of
+    data entry. It was the reason the timeline never matched the dates printed
+    next to it in the Tasks card.
+
+    `taskSpan` is the tested helper from lib/projectPhase.ts (inclusive ranges,
+    local-time parsing, reversed rows, DST). A task with no `start_date` is a
+    single day on its due date — which is honest, and is what every task in the
+    database currently is. Set a start date and the bar grows to match.
+  */
+  const spans = rows.flatMap((t) => {
+    const span = taskSpan(t);
+    if (!span) return [];
+    const start = startOfDay(parseISO(span.start));
+    // `end` is exclusive for the geometry below, so a one-day task still has
+    // width. taskSpan's `end` is the last day INCLUSIVE.
+    const end = addDays(startOfDay(parseISO(span.end)), 1);
+    return [{ task: t, start, end }];
   });
 
   if (spans.length === 0) {
@@ -2115,7 +2134,7 @@ function TasksTimeline({
                 title={`${t.name} — due ${formatDate(t.due_date)}${overdue ? " (overdue)" : ""}`}
                 className={cn(
                   // Centred in the row now that the row's height varies.
-                  "absolute top-1/2 flex h-6 min-w-[3rem] -translate-y-1/2 items-center overflow-hidden rounded-full px-2.5 text-[11px] font-medium text-white shadow-sm transition-[opacity,box-shadow,transform] duration-150",
+                  "absolute top-1/2 flex h-6 min-w-[3rem] -translate-y-1/2 items-center overflow-hidden rounded-full px-2.5 text-[11px] font-medium text-white shadow-[var(--shadow-sm)] transition-[opacity,box-shadow,transform] duration-150",
                   t.status === "Done" && "opacity-60",
                   overdue && "ring-1 ring-danger",
                   // Fade the others rather than recolouring the target — the

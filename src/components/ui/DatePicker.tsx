@@ -46,7 +46,7 @@ export function DatePicker({
       trigger={
         <button
           type="button"
-          className="flex h-9 w-full items-center gap-2 rounded-md border border-edge bg-transparent px-3 py-1 text-sm text-foreground shadow-sm hover:bg-hover focus:outline-none focus:border-primary/60 focus:ring-[3px] focus:ring-primary/20"
+          className="flex h-9 w-full items-center gap-2 rounded-md border border-edge bg-transparent px-3 py-1 text-sm text-foreground shadow-[var(--shadow-sm)] hover:bg-hover focus:outline-none focus:border-primary/60 focus:ring-[3px] focus:ring-primary/20"
         >
           <CalendarIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
           <span className={cn("min-w-0 flex-1 truncate text-left", !selected && "text-muted-2")}>

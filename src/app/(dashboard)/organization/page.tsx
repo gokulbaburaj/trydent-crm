@@ -235,7 +235,7 @@ export default function OrganizationPage() {
         onto a lonely row of its own.
       */}
       {showGoals && (
-        <Card className="rounded-xl shadow-sm">
+        <Card className="rounded-xl shadow-[var(--shadow-sm)]">
           <h3 className="text-sm font-semibold">Goal progress</h3>
           <p className="mt-0.5 text-xs text-muted-foreground">
             Active objectives, rolled up from their key results.
@@ -276,7 +276,7 @@ export default function OrganizationPage() {
       {/* The three charts share one row so none of them ends up orphaned. */}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3">
         {showRecruiting && (
-          <Card className="flex flex-col rounded-xl shadow-sm">
+          <Card className="flex flex-col rounded-xl shadow-[var(--shadow-sm)]">
             <h3 className="text-sm font-semibold">Hiring funnel</h3>
             <p className="mt-0.5 text-xs text-muted-foreground">
               Where applicants sit right now. Rejected is excluded.
@@ -307,7 +307,7 @@ export default function OrganizationPage() {
         )}
 
         {showTeam && (
-          <Card className="flex flex-col rounded-xl shadow-sm">
+          <Card className="flex flex-col rounded-xl shadow-[var(--shadow-sm)]">
             <h3 className="text-sm font-semibold">Team composition</h3>
             <p className="mt-0.5 text-xs text-muted-foreground">
               Headcount split across teams.
@@ -352,7 +352,7 @@ export default function OrganizationPage() {
         )}
 
         {showOnboarding && (
-          <Card className="flex flex-col rounded-xl shadow-sm">
+          <Card className="flex flex-col rounded-xl shadow-[var(--shadow-sm)]">
             <h3 className="text-sm font-semibold">Onboarding</h3>
             <p className="mt-0.5 text-xs text-muted-foreground">
               Checklist steps across everyone still in progress.
@@ -399,7 +399,7 @@ export default function OrganizationPage() {
           <button
             key={card.label}
             onClick={() => openInNewTab(card.href, card.label)}
-            className="group rounded-xl border border-border bg-surface p-4 text-left lift shadow-sm hover:border-primary/30 hover:bg-surface-fill"
+            className="group rounded-xl border border-border bg-surface p-4 text-left lift shadow-[var(--shadow-sm)] hover:border-primary/30 hover:bg-surface-fill"
           >
             <div className="flex items-center gap-2">
               <card.icon className="h-4 w-4 text-muted-foreground" />
@@ -420,7 +420,7 @@ export default function OrganizationPage() {
       </div>
 
       {visible.length === 0 && (
-        <Card className="rounded-xl shadow-sm">
+        <Card className="rounded-xl shadow-[var(--shadow-sm)]">
           <p className="py-6 text-center text-sm text-muted-foreground">
             Nothing here for your role yet.
           </p>

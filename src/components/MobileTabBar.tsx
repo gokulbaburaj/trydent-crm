@@ -64,7 +64,7 @@ export function MobileTabBar({
         className={cn(
           "pointer-events-auto flex max-w-full items-center gap-1 rounded-full p-1.5",
           "bg-foreground/95 backdrop-blur-xl",
-          "shadow-xl shadow-black/20"
+          "shadow-[var(--shadow-xl)]"
         )}
       >
         {visible.map((tab) => {

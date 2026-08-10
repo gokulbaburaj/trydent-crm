@@ -568,7 +568,7 @@ function Applicants({ onHired }: { onHired: (a: Applicant) => void }) {
       </div>
 
       {formOpen && (
-        <Card className="rounded-xl shadow-sm">
+        <Card className="rounded-xl shadow-[var(--shadow-sm)]">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -1066,7 +1066,7 @@ function Onboarding() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 shadow-sm">
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 shadow-[var(--shadow-sm)]">
         <ListChecks className="h-4 w-4 shrink-0 text-muted-foreground" />
         <p className="min-w-0 flex-1 text-[13px] text-foreground-secondary">
           These are the guidelines — the steps a new hire should go through. Running one
@@ -1093,7 +1093,7 @@ function Onboarding() {
         {templates.map((t) => {
           const tItems = items.filter((i) => i.template_id === t.id);
           return (
-            <Card key={t.id} className="rounded-xl shadow-sm">
+            <Card key={t.id} className="rounded-xl shadow-[var(--shadow-sm)]">
               <div className="flex items-center gap-2">
                 <input
                   value={t.name}
@@ -1233,7 +1233,7 @@ function Onboarding() {
           );
         })}
 
-        <Card className="flex flex-col justify-center rounded-xl border-dashed shadow-sm">
+        <Card className="flex flex-col justify-center rounded-xl border-dashed shadow-[var(--shadow-sm)]">
           <form
             onSubmit={(e) => {
               e.preventDefault();

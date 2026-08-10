@@ -67,7 +67,7 @@ export function BlockCard({
         "group/block relative flex min-h-[9.5rem] flex-col justify-between rounded-2xl p-4",
         "transition-[transform,box-shadow] duration-150",
         onOpen && "cursor-pointer active:scale-[0.995]",
-        blocked ? "shadow-sm" : "shadow-xs",
+        blocked ? "shadow-[var(--shadow-sm)]" : "shadow-xs",
         TONES[tone],
         className
       )}

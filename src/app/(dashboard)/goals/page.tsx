@@ -272,7 +272,7 @@ function GoalsInner() {
       </div>
 
       {goalFormOpen && (
-        <Card className="rounded-xl shadow-sm">
+        <Card className="rounded-xl shadow-[var(--shadow-sm)]">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -326,7 +326,7 @@ function GoalsInner() {
         const pct = goalPct(krs, goal, src);
         const owner = ownerOf(goal.owner);
         return (
-          <Card key={goal.id} className="rounded-xl shadow-sm">
+          <Card key={goal.id} className="rounded-xl shadow-[var(--shadow-sm)]">
             <div className="flex flex-wrap items-start gap-3">
               <GoalRing pct={pct} />
               <div className="min-w-0 flex-1">

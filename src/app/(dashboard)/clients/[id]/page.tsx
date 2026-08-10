@@ -188,7 +188,7 @@ export default function ClientDetailPage() {
       </div>
 
       {/* Header card */}
-      <Card className="rounded-xl p-5 shadow-sm">
+      <Card className="rounded-xl p-5 shadow-[var(--shadow-sm)]">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/15">
@@ -268,7 +268,7 @@ export default function ClientDetailPage() {
       <div key={tab} className="animate-page">
         {tab === "overview" && (
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            <Card className="rounded-xl p-5 shadow-sm lg:col-span-2">
+            <Card className="rounded-xl p-5 shadow-[var(--shadow-sm)] lg:col-span-2">
               <h3 className="mb-4 text-sm font-semibold">Details</h3>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field label="Point of contact">
@@ -357,7 +357,7 @@ export default function ClientDetailPage() {
               </div>
             </Card>
 
-            <Card className="rounded-xl p-5 shadow-sm">
+            <Card className="rounded-xl p-5 shadow-[var(--shadow-sm)]">
               <h3 className="mb-4 text-sm font-semibold">Summary</h3>
               <div className="flex flex-col gap-3">
                 <SummaryRow icon={CreditCard} label="Deals" value={`${clientDeals.length}`} />
@@ -382,7 +382,7 @@ export default function ClientDetailPage() {
         )}
 
         {tab === "deals" && (
-          <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
+          <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-[var(--shadow-sm)]">
             {clientDeals.length === 0 && (
               <p className="py-8 text-center text-sm text-muted-foreground">No deals linked.</p>
             )}
@@ -405,12 +405,12 @@ export default function ClientDetailPage() {
         {tab === "activity" && (
           <div className="flex flex-col gap-2">
             {clientActivities.length === 0 && (
-              <Card className="rounded-xl shadow-sm">
+              <Card className="rounded-xl shadow-[var(--shadow-sm)]">
                 <p className="py-6 text-center text-sm text-muted-foreground">No activities linked.</p>
               </Card>
             )}
             {clientActivities.map((a) => (
-              <Card key={a.id} className="rounded-xl shadow-sm">
+              <Card key={a.id} className="rounded-xl shadow-[var(--shadow-sm)]">
                 <div className="flex items-start justify-between gap-3">
                   <p className="text-sm">{a.description}</p>
                   <span className="shrink-0 text-xs text-muted-foreground">{formatDate(a.activity_date)}</span>
@@ -490,7 +490,7 @@ function TagInput({ tags, onChange }: { tags: string[]; onChange: (tags: string[
   }
 
   return (
-    <div className="flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border border-edge bg-transparent px-2 py-1.5 shadow-sm focus-within:border-primary/60 focus-within:ring-[3px] focus-within:ring-primary/20">
+    <div className="flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border border-edge bg-transparent px-2 py-1.5 shadow-[var(--shadow-sm)] focus-within:border-primary/60 focus-within:ring-[3px] focus-within:ring-primary/20">
       {tags.map((t) => (
         <span
           key={t}

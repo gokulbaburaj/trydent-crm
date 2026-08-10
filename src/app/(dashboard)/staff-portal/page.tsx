@@ -154,7 +154,7 @@ function StaffPortalInner() {
 
       <main className="animate-page mx-auto flex max-w-4xl flex-col gap-6 p-6">
         {/* Hero */}
-        <section className="relative overflow-hidden rounded-xl border border-primary/20 bg-gradient-to-br from-primary/15 via-card to-card p-6 shadow-sm">
+        <section className="relative overflow-hidden rounded-xl border border-primary/20 bg-gradient-to-br from-primary/15 via-card to-card p-6 shadow-[var(--shadow-sm)]">
           <div className="pointer-events-none absolute -right-10 -top-12 h-44 w-44 rounded-full bg-primary/20 blur-3xl" />
           <div className="relative">
             <div className="flex items-center gap-1.5 text-primary">
@@ -179,7 +179,7 @@ function StaffPortalInner() {
             <CheckCircle2 className="h-4 w-4 text-muted-foreground" /> My tasks
           </h2>
           {openTasks.length === 0 ? (
-            <Card className="rounded-xl shadow-sm">
+            <Card className="rounded-xl shadow-[var(--shadow-sm)]">
               <p className="py-6 text-center text-sm text-muted-foreground">Nothing assigned right now.</p>
             </Card>
           ) : (
@@ -200,7 +200,7 @@ function StaffPortalInner() {
                         {items.length}
                       </span>
                     </h3>
-                    <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
+                    <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-[var(--shadow-sm)]">
                       {items.map((t) => (
                         <div
                           key={t.id}
@@ -238,7 +238,7 @@ function StaffPortalInner() {
           <h2 className="mb-3 flex items-center gap-2 text-[15px] font-semibold">
             <CalendarClock className="h-4 w-4 text-muted-foreground" /> My schedule
           </h2>
-          <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
+          <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-[var(--shadow-sm)]">
             {upcoming.length === 0 && (
               <p className="py-6 text-center text-sm text-muted-foreground">Nothing scheduled.</p>
             )}
@@ -257,7 +257,7 @@ function StaffPortalInner() {
           <h2 className="mb-3 flex items-center gap-2 text-[15px] font-semibold">
             <Wallet className="h-4 w-4 text-muted-foreground" /> My payment plan
           </h2>
-          <Card className="rounded-xl shadow-sm">
+          <Card className="rounded-xl shadow-[var(--shadow-sm)]">
             <div className="grid grid-cols-3 gap-3 border-b border-border-subtle pb-4 text-sm">
               <div>
                 <p className="text-[11px] text-muted-foreground">Total</p>

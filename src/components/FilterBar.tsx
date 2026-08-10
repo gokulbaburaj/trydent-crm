@@ -152,7 +152,7 @@ export function FilterBar({
             value={filters.text}
             onChange={(e) => set({ text: e.target.value })}
             placeholder={placeholder}
-            className="h-9 w-full rounded-md border border-edge sm:h-8 sm:w-52 bg-transparent pl-8 pr-7 text-[13px] text-foreground shadow-sm placeholder:text-muted-2 focus:border-primary/60 focus:outline-none focus:ring-[3px] focus:ring-primary/20"
+            className="h-9 w-full rounded-md border border-edge sm:h-8 sm:w-52 bg-transparent pl-8 pr-7 text-[13px] text-foreground shadow-[var(--shadow-sm)] placeholder:text-muted-2 focus:border-primary/60 focus:outline-none focus:ring-[3px] focus:ring-primary/20"
           />
           {filters.text && (
             <button

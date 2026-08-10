@@ -154,7 +154,7 @@ export function KanbanBoard<T extends { id: string }>({
           dropAnimation={{ duration: 200, easing: "cubic-bezier(0.16, 1, 0.3, 1)" }}
         >
           {activeItem ? (
-            <div className="rotate-2 scale-[1.03] cursor-grabbing rounded-md border border-primary/50 bg-surface p-3 shadow-2xl shadow-black/60">
+            <div className="rotate-2 scale-[1.03] cursor-grabbing rounded-md border border-primary/50 bg-surface p-3 shadow-[var(--shadow-xl)]">
               {renderCard(activeItem)}
             </div>
           ) : null}
@@ -261,7 +261,7 @@ function KanbanCardDraggable({
         // a phone. Sidebar and Settings already had it; the board and the
         // dashboard grid didn't, so drag was quietly desktop-only there.
         "touch-none",
-        "animate-row cursor-grab rounded-md border border-border bg-surface p-3 transition-[border-color,background-color,box-shadow,translate,opacity] duration-150 hover:-translate-y-px hover:border-edge hover:bg-hover hover:shadow-lg hover:shadow-black/20 active:cursor-grabbing",
+        "animate-row cursor-grab rounded-md border border-border bg-surface p-3 transition-[border-color,background-color,box-shadow,translate,opacity] duration-150 hover:-translate-y-px hover:border-edge hover:bg-hover hover:shadow-lg hover: active:cursor-grabbing",
         isDragging && "border-dashed border-edge bg-transparent"
       )}
     >

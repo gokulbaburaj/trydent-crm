@@ -1053,9 +1053,9 @@ function WeekEvent({
         // brightness() on a translucent dark fill is almost invisible — the
         // block is mostly the grid showing through. A white-alpha overlay is
         // the app's standard hover anyway (see design.md), so use that.
-        "group/ev absolute overflow-hidden rounded-md px-1.5 py-1 text-left transition-[box-shadow,background-color] duration-150 hover:shadow-md hover:shadow-black/30",
+        "group/ev absolute overflow-hidden rounded-md px-1.5 py-1 text-left transition-[box-shadow,background-color] duration-150 hover:shadow-md hover:",
         "after:pointer-events-none after:absolute after:inset-0 after:bg-white/0 after:transition-colors hover:after:bg-hover",
-        isDragging && "z-30 shadow-xl shadow-black/50 after:bg-active"
+        isDragging && "z-30 shadow-[var(--shadow-xl)] after:bg-active"
       )}
       style={{
         top: top + 1,
@@ -1250,7 +1250,7 @@ function MonthGridPro({
           }}
         >
           <div
-            className="animate-pop absolute rounded-md border border-border bg-surface p-2.5 shadow-xl shadow-black/60"
+            className="animate-pop absolute rounded-md border border-border bg-surface p-2.5 shadow-[var(--shadow-xl)]"
             style={{ top: Math.min(menu.y, window.innerHeight - 90), left: Math.min(menu.x, window.innerWidth - 220) }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -1355,7 +1355,7 @@ function MonthChip({
       className={cn(
         "flex items-center justify-between gap-1 rounded-md border px-1.5 py-0.5 text-left text-[11px] font-medium transition-[filter] hover:brightness-125",
         past && "line-through opacity-45",
-        isDragging && "z-30 opacity-90 shadow-lg shadow-black/50"
+        isDragging && "z-30 opacity-90 shadow-[var(--shadow-lg)]"
       )}
       style={
         {

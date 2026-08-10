@@ -63,7 +63,7 @@ function ToastCard({
     <div
       className={cn(
         "animate-pop flex w-[380px] max-w-[calc(100vw-2rem)] gap-3 rounded-lg",
-        "border border-border bg-elevated p-3.5 shadow-xl shadow-black/40"
+        "border border-border bg-elevated p-3.5 shadow-[var(--shadow-xl)]"
       )}
     >
       <span

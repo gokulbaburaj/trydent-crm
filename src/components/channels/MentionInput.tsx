@@ -99,7 +99,7 @@ export const MentionInput = forwardRef<
   return (
     <div className="relative flex-1">
       {open && (
-        <div className="absolute bottom-full z-30 mb-1 w-64 overflow-hidden rounded-md border border-border bg-panel shadow-lg">
+        <div className="absolute bottom-full z-30 mb-1 w-64 overflow-hidden rounded-md border border-border bg-panel shadow-[var(--shadow-lg)]">
           <p className="border-b border-border-subtle px-2 py-1 text-[11px] text-muted-2">
             {trigger!.trigger === PERSON_TRIGGER ? "People" : "Projects and clients"}
           </p>
@@ -175,7 +175,7 @@ export const MentionInput = forwardRef<
             submit();
           }
         }}
-        className="max-h-32 min-h-9 w-full resize-none rounded-md border border-edge bg-transparent px-3 py-2 text-sm text-foreground shadow-sm placeholder:text-muted-2 focus:border-primary/60 focus:outline-none focus:ring-[3px] focus:ring-primary/20"
+        className="max-h-32 min-h-9 w-full resize-none rounded-md border border-edge bg-transparent px-3 py-2 text-sm text-foreground shadow-[var(--shadow-sm)] placeholder:text-muted-2 focus:border-primary/60 focus:outline-none focus:ring-[3px] focus:ring-primary/20"
       />
     </div>
   );

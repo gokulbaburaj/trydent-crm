@@ -49,7 +49,7 @@ export function Avatar({
   return (
     <div
       className={cn(
-        "flex shrink-0 items-center justify-center rounded-full font-semibold text-white shadow-sm",
+        "flex shrink-0 items-center justify-center rounded-full font-semibold text-white shadow-[var(--shadow-sm)]",
         sizeClasses
       )}
       style={{ background: gradientFor(name) }}

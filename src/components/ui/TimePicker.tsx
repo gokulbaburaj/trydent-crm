@@ -84,7 +84,7 @@ export function TimePicker({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex h-9 w-full items-center gap-2 rounded-md border border-edge bg-transparent px-3 py-1 text-sm text-foreground shadow-sm transition-colors hover:bg-hover focus:border-primary/60 focus:outline-none focus:ring-[3px] focus:ring-primary/20"
+        className="flex h-9 w-full items-center gap-2 rounded-md border border-edge bg-transparent px-3 py-1 text-sm text-foreground shadow-[var(--shadow-sm)] transition-colors hover:bg-hover focus:border-primary/60 focus:outline-none focus:ring-[3px] focus:ring-primary/20"
       >
         <Clock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
         <span className={cn("min-w-0 flex-1 truncate text-left", !label && "text-muted-2")}>
@@ -110,7 +110,7 @@ export function TimePicker({
       {open && (
         <div
           ref={listRef}
-          className="absolute left-0 top-full z-50 mt-1 max-h-56 w-full min-w-[9rem] overflow-y-auto overscroll-contain rounded-lg border border-border bg-popover p-1 shadow-xl shadow-black/60"
+          className="absolute left-0 top-full z-50 mt-1 max-h-56 w-full min-w-[9rem] overflow-y-auto overscroll-contain rounded-lg border border-border bg-popover p-1 shadow-[var(--shadow-xl)]"
         >
           {SLOTS.map((slot) => {
             const mins = minutesOf(slot)!;

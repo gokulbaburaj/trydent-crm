@@ -53,7 +53,7 @@ export function Popover({
         sideOffset={4}
         onClick={(e) => e.stopPropagation()}
         className={cn(
-          "min-w-[190px] w-auto rounded-lg border-border bg-popover p-1 shadow-xl shadow-black/60",
+          "min-w-[190px] w-auto rounded-lg border-border bg-popover p-1 shadow-[var(--shadow-xl)]",
           fullWidth && "w-[var(--radix-popover-trigger-width)]",
           className
         )}

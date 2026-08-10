@@ -487,7 +487,7 @@ export default function PipelinePage() {
         Table and Board keep it.
       */}
       {deals.length > 0 && view !== "focus" && (
-        <Card className="rounded-xl shadow-sm">
+        <Card className="rounded-xl shadow-[var(--shadow-sm)]">
           <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
             <div>
               <h3 className="text-sm font-semibold">Deals by stage</h3>

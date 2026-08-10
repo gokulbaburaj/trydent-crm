@@ -299,7 +299,7 @@ function OnboardingInner() {
                 <Card
                   key={profileId}
                   onClick={() => setOpenPerson(profileId)}
-                  className="lift cursor-pointer rounded-xl shadow-sm hover:border-primary/30"
+                  className="lift cursor-pointer rounded-xl shadow-[var(--shadow-sm)] hover:border-primary/30"
                 >
                   <div className="flex items-center gap-2.5">
                     <Avatar name={name} url={profile?.avatar_url} size="sm" />
