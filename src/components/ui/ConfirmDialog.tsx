@@ -65,11 +65,29 @@ export interface ConfirmOptions {
   tone?: "danger" | "neutral";
 }
 
-interface PendingConfirm extends ConfirmOptions {
-  resolve: (ok: boolean) => void;
+/**
+ * ── Why `open` is separate from `options` ───────────────────────────────────
+ *
+ * The obvious store is one nullable `pending` object, nulled on settle. That
+ * ships a visible bug: Radix animates the dialog out over ~150ms, and for the
+ * whole of that animation `pending` is already null — so the card empties as
+ * it fades. The title disappears, the body disappears, and the confirm button
+ * falls back to its default label, so "Delete goal" flickers to "Delete" on
+ * the way out. Every dismissal ends on a blank dialog.
+ *
+ * Keeping the options after closing gives the exit animation something to
+ * render. They're replaced on the next call, never cleared.
+ */
+interface ConfirmState {
+  options: ConfirmOptions | null;
+  open: boolean;
 }
 
-let pending: PendingConfirm | null = null;
+let resolver: ((ok: boolean) => void) | null = null;
+// A stable object identity, swapped only when something actually changes —
+// useSyncExternalStore re-renders forever if getSnapshot returns a fresh
+// object each call.
+let snapshot: ConfirmState = { options: null, open: false };
 const listeners = new Set<() => void>();
 
 function emit() {
@@ -81,10 +99,9 @@ function subscribe(listener: () => void) {
   return () => listeners.delete(listener);
 }
 
-const getSnapshot = () => pending;
-// The host renders nothing on the server, so a stable null keeps
-// useSyncExternalStore from looping on a fresh object each call.
-const getServerSnapshot = () => null;
+const getSnapshot = () => snapshot;
+const SERVER_SNAPSHOT: ConfirmState = { options: null, open: false };
+const getServerSnapshot = () => SERVER_SNAPSHOT;
 
 /**
  * Ask, then resolve true if they confirmed.
@@ -94,18 +111,21 @@ const getServerSnapshot = () => null;
  * screen at once means neither is clearly about anything.
  */
 export function confirmAction(options: ConfirmOptions): Promise<boolean> {
-  pending?.resolve(false);
+  resolver?.(false);
   return new Promise<boolean>((resolve) => {
-    pending = { ...options, resolve };
+    resolver = resolve;
+    snapshot = { options, open: true };
     emit();
   });
 }
 
 function settle(ok: boolean) {
-  const current = pending;
-  pending = null;
+  const resolve = resolver;
+  resolver = null;
+  // Options deliberately retained — see the note on ConfirmState.
+  snapshot = { options: snapshot.options, open: false };
   emit();
-  current?.resolve(ok);
+  resolve?.(ok);
 }
 
 /**
@@ -113,7 +133,11 @@ function settle(ok: boolean) {
  * `confirmAction`.
  */
 export function ConfirmHost() {
-  const current = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const { options: current, open } = useSyncExternalStore(
+    subscribe,
+    getSnapshot,
+    getServerSnapshot
+  );
 
   // Radix calls onOpenChange(false) for Escape, the overlay and the X. All
   // three mean "no", which satisfies `escape-routes` and `modal-escape`
@@ -125,7 +149,7 @@ export function ConfirmHost() {
   const danger = current?.tone !== "neutral";
 
   return (
-    <Dialog open={current !== null} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[calc(100vw-1.5rem)] gap-0 border-border bg-background p-0 sm:max-w-md">
         <DialogHeader className="flex-row items-start gap-3 space-y-0 p-4 pb-3 text-left">
           <span

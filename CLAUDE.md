@@ -84,6 +84,22 @@ Concretely:
   A screenshot shows what rendered, never what it rendered *from*.
 - Test RLS with forged JWTs per role, not by clicking around. The pattern is in
   `docs/plan-channels.md` and it has caught real bugs.
+- **Never click destructive controls in the browser against production.** The
+  dev server points at the live database and there is no staging, so a click
+  test IS a production write. On 11 Aug, verifying the new confirm dialog cost
+  two real key results off two real goals plus a junk row — restored from
+  values that happened to be legible in earlier screenshots, which is luck,
+  not a recovery plan.
+  Clicking is still the only way to find some bugs (that same session found
+  three the test suite couldn't). The rule is what you click on:
+  - Create a throwaway row first and exercise the destructive path on that.
+  - `select` the affected table before and after, so damage is noticed in
+    seconds rather than three screenshots later.
+  - Hover-revealed controls (`opacity-0 group-hover:opacity-100`) are the real
+    hazard — a click that misses its target lands on a delete with nothing
+    visible under the cursor.
+  - Programmatic `.click()` from `javascript_tool` skips every guard a human
+    would see. Prefer real clicks on elements you can see in a screenshot.
 - Pure logic (date maths, parsers) gets a test, not a throwaway script. There
   is a suite now — `npm test`, Node's built-in runner, no dependencies. Files
   are `src/lib/*.test.ts` and import with an explicit `.ts` extension because

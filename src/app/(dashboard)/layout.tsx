@@ -126,7 +126,24 @@ export default function DashboardLayout({
       */}
       <a
         href="#main-content"
-        className="sr-only z-[var(--z-skip-link)] rounded-md bg-elevated px-3 py-2 text-[13px] font-medium text-foreground shadow-[var(--shadow-lg)] ring-2 ring-primary focus:not-sr-only focus:absolute focus:left-3 focus:top-3"
+        /*
+          Hidden by POSITION. Two more obvious spellings don't work, and both
+          needed a browser to catch — neither shows up in tsc, eslint or a
+          grep:
+
+          1. `sr-only focus:not-sr-only` + padding + background renders as bare
+             unstyled text. `not-sr-only` sets `padding: 0` as part of undoing
+             `sr-only`, cancelling the `px-3 py-2` that gives it its shape.
+
+          2. `-translate-y-[300%] focus:translate-y-0` left it off-screen with
+             `transform: none`. Tailwind v4 compiles these to the `translate`
+             property rather than `transform`, and the focus variant didn't
+             take.
+
+          A single `top` value has no such machinery behind it. Off-screen is
+          a number, on-screen is a number, and the transition is one property.
+        */
+        className="fixed left-3 top-[-100px] z-[var(--z-skip-link)] rounded-md bg-elevated px-3 py-2 text-[13px] font-medium text-foreground shadow-[var(--shadow-lg)] ring-2 ring-primary transition-[top] duration-150 ease-[var(--ease-out)] focus:top-3"
       >
         Skip to main content
       </a>
