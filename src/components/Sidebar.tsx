@@ -100,7 +100,7 @@ const SALES: NavItem[] = [
 
 const PERFORMANCE: NavItem[] = [
   { href: "/goals", label: "Goals", icon: Target, page: "goals" },
-  { href: "/accounts", label: "Accounts", icon: Wallet, page: "accounts" },
+  { href: "/payouts", label: "Payouts", icon: Wallet, page: "accounts" },
 ];
 
 const ORGANIZATION: NavItem[] = [

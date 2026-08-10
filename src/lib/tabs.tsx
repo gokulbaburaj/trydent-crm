@@ -33,7 +33,7 @@ const PAGE_TITLES: [string, string][] = [
   ["/channels", "Channels"],
   ["/activities", "Schedule"],
   ["/organization", "Organisation"],
-  ["/accounts", "Accounts"],
+  ["/payouts", "Payouts"],
   ["/goals", "Goals"],
   ["/recruiting", "Recruiting"],
   ["/onboarding", "Onboarding"],

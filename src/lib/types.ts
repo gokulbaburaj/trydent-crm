@@ -707,6 +707,38 @@ export interface StaffPayment {
   created_at: string;
 }
 
+/**
+ * One transfer to one person, covering one or more lines.
+ *
+ * Replaces `project_allocations.paid` as the record of payment: a boolean
+ * couldn't say when, and paying someone for three projects at once is one
+ * event, not three. See 2026-08-11e.
+ */
+export interface Payout {
+  id: string;
+  profile_id: string;
+  /** YYYY-MM-DD. The day the money moved, not the day it was entered. */
+  paid_on: string;
+  note: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+/**
+ * What a payout covered. `amount` and `label` are SNAPSHOTS, in the base
+ * currency at the time of paying — a percentage allocation recomputes when a
+ * deal value moves, and history must not move with it.
+ */
+export interface PayoutLine {
+  id: string;
+  payout_id: string;
+  /** Exactly one of these is set; the other is null. */
+  allocation_id: string | null;
+  staff_payment_id: string | null;
+  amount: number;
+  label: string | null;
+}
+
 export interface Project {
   id: string;
   name: string;
