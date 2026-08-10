@@ -72,6 +72,27 @@ test("a missing or malformed due date is never overdue", () => {
   assert.doesNotThrow(() => daysOverdue(inv("sent", "2026-13-45"), NOW));
 });
 
+test("daysUntilDue counts CALENDAR days, not elapsed hours", () => {
+  // Shipped wrong: ceiling the millisecond gap made an invoice due TOMORROW
+  // read as "due in 2d", because there are ~47 hours until end of tomorrow.
+  // Nobody counts that way. Caught by looking at a real invoice — the
+  // property test below passes happily on a function that's uniformly +1.
+  assert.equal(daysUntilDue(inv("sent", "2026-08-11"), NOW), 1, "tomorrow is 1 day");
+  assert.equal(daysUntilDue(inv("sent", "2026-08-10"), NOW), 0, "today is 0 days");
+  assert.equal(daysUntilDue(inv("sent", "2026-08-17"), NOW), 7);
+});
+
+test("daysUntilDue is stable across the time of day", () => {
+  // The whole point of counting calendar days: the answer must not change
+  // just because you looked at 9am instead of 11pm.
+  const morning = new Date("2026-08-10T09:00:00Z").getTime();
+  const night = new Date("2026-08-10T23:30:00Z").getTime();
+  assert.equal(
+    daysUntilDue(inv("sent", "2026-08-14"), morning),
+    daysUntilDue(inv("sent", "2026-08-14"), night)
+  );
+});
+
 test("daysOverdue and daysUntilDue are never both non-zero", () => {
   const dates = [null, "2026-07-01", "2026-08-10", "2026-08-11", "2026-12-01", "rubbish"];
   for (const d of dates) {

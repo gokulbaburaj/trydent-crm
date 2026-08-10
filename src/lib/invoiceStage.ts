@@ -106,7 +106,23 @@ export function daysUntilDue(
   if (invoice.status !== "sent" || !invoice.due_date) return 0;
   const end = new Date(`${invoice.due_date}T23:59:59`).getTime();
   if (!Number.isFinite(end) || end < now) return 0;
-  return Math.ceil((end - now) / DAY_MS);
+
+  /*
+    CALENDAR days, not elapsed time.
+
+    Ceiling the raw millisecond gap says an invoice due tomorrow is "due in 2
+    days" — there are ~47 hours until end-of-day tomorrow, so it rounds to 2.
+    Nobody counts that way. Tomorrow is one day away.
+
+    Found by looking at a real invoice rather than by the tests, which only
+    asserted that this and daysOverdue are never both non-zero. A property test
+    that never pins an actual value will pass on a function that's uniformly
+    one too high.
+  */
+  const startOfToday = new Date(now);
+  startOfToday.setHours(0, 0, 0, 0);
+  const dueDay = new Date(`${invoice.due_date}T00:00:00`);
+  return Math.max(0, Math.round((dueDay.getTime() - startOfToday.getTime()) / DAY_MS));
 }
 
 export type AgeingBucket =
