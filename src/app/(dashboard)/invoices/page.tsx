@@ -5,7 +5,9 @@ import {
   Building2,
   CalendarDays,
   CircleDot,
+  Columns2,
   ExternalLink,
+  List,
   Hash,
   Paperclip,
   Receipt,
@@ -21,6 +23,9 @@ import { toast } from "@/components/Toaster";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
+import { useViewPreference } from "@/lib/useViewPreference";
+import { InvoiceFocusView } from "@/components/InvoiceFocusView";
+import { useTabs } from "@/lib/tabs";
 import { openStoredFile } from "@/lib/storage";
 import { formatDate } from "@/lib/format";
 import { CURRENCIES, useCurrency } from "@/lib/currency";
@@ -98,6 +103,8 @@ export default function InvoicesPage() {
     ascending: false,
   });
   const { rows: clients } = useSupabaseTable<Client>("clients");
+  const { openInNewTab } = useTabs();
+  const [view, setView] = useViewPreference<"table" | "focus">("invoices", "table");
   const { currency, setCurrency, toBase, base, format, converted } = useCurrency();
 
   const [status, setStatus] = useState<StatusFilter>("all");
@@ -357,12 +364,47 @@ export default function InvoicesPage() {
         </p>
       )}
 
+      {/* Table / Focus. Same shape as Clients, Pipeline and Projects. */}
+      <div className="flex shrink-0 items-center gap-0.5 self-start rounded-lg border border-border bg-surface p-0.5">
+        {([["table", "Table", List], ["focus", "Focus", Columns2]] as const).map(
+          ([id, label, Icon]) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setView(id)}
+              className={cn(
+                "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs transition-colors",
+                view === id
+                  ? "bg-active font-medium text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Icon className="h-3.5 w-3.5" />
+              {label}
+            </button>
+          )
+        )}
+      </div>
+
       {invoices.length === 0 ? (
         <EmptyState
           icon={Receipt}
           title="No invoices yet"
           description="Invoices are raised from a client's portal panel. They'll collect here once they exist."
         />
+      ) : view === "focus" ? (
+        /* Explicit height, same reason as the other Focus views: the page above
+           is a scrolling flex column, so h-full resolves against no fixed
+           height and collapses the shell to zero. Taller allowance here than
+           on Clients because the summary cards sit above it. */
+        <div className="h-[calc(100vh-22rem)] min-h-[26rem]">
+          <InvoiceFocusView
+            invoices={visible}
+            clients={clients}
+            onStatusChange={(inv, status) => updateInvoice(inv.id, { status })}
+            onOpenClient={(id) => openInNewTab(`/clients/${id}`)}
+          />
+        </div>
       ) : (
         <DataTable
           columns={columns}

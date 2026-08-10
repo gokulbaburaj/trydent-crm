@@ -61,6 +61,15 @@ export const VIEW_PREFERENCES = [
     fallback: "table",
   },
   {
+    key: "invoices",
+    label: "Invoices",
+    options: [
+      { id: "table", label: "Table" },
+      { id: "focus", label: "Focus" },
+    ],
+    fallback: "table",
+  },
+  {
     key: "recruiting",
     label: "Recruiting",
     options: [

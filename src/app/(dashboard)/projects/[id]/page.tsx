@@ -1677,30 +1677,58 @@ function MiniCalendar({
           // Same clipping problem as the month cells below: this Card is
           // `overflow-hidden`, so an in-flow panel gets sliced at the card
           // edge. Portalled via HoverCard instead.
+          /*
+            ── Why the dots moved out of the circle ────────────────────────────
+
+            They were `absolute bottom-0.5` INSIDE the 32px circle, so on a day
+            with both a task and a meeting two dots landed on top of the digit.
+            At 12px type in a 32px circle there is no room underneath — the
+            number and the dots were fighting for the same six pixels.
+
+            Now the cell is a column: circle, then a dot row beneath it. The
+            week rows are `1fr` of the card's leftover height, so the space is
+            already there; it just wasn't being used.
+
+            Highlight also changed. `scale-110` grew the circle into its
+            neighbours, which is the overlap you can see between adjacent busy
+            days — a 32px circle at 110% in a grid with no gutter has nowhere to
+            go. And `ring-white/70` is a WHITE ring, left over from the dark
+            theme; on a white card it was invisible, so the highlight did
+            nothing except collide. Ring in `--primary` at a fixed size, no
+            scale.
+          */
           const circle = (
-            <span
-              className={cn(
-                // self-center keeps the circle vertically centred now that the
-                // week row can be taller than the circle itself.
-                "relative mx-auto flex h-8 w-8 shrink-0 items-center justify-center self-center rounded-full text-xs transition-[box-shadow,transform] duration-150",
-                isToday(day)
-                  ? "bg-primary font-semibold text-primary-foreground"
-                  : hasDue || hasMeeting
-                    ? "bg-primary/20 font-medium text-foreground"
-                    : isSameMonth(day, month)
-                      ? "text-foreground"
-                      : "text-muted-2",
-                highlightDay === key && "scale-110 ring-2 ring-white/70"
-              )}
-            >
-              {format(day, "d")}
-              {/* Two dots so a day with both reads as busy at a glance. */}
-              {!isToday(day) && (hasDue || hasMeeting) && (
-                <span className="absolute bottom-0.5 flex gap-0.5">
-                  {hasDue && <span className="h-1 w-1 rounded-full bg-primary" />}
-                  {hasMeeting && <span className="h-1 w-1 rounded-full bg-warning" />}
-                </span>
-              )}
+            <span className="flex h-full flex-col items-center justify-center gap-1">
+              <span
+                className={cn(
+                  "relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs",
+                  "transition-[box-shadow,background-color] duration-150",
+                  isToday(day)
+                    ? "bg-primary font-semibold text-primary-foreground"
+                    : hasDue || hasMeeting
+                      ? "bg-primary/20 font-medium text-foreground"
+                      : isSameMonth(day, month)
+                        ? "text-foreground"
+                        : "text-muted-2",
+                  highlightDay === key && "ring-2 ring-primary ring-offset-2 ring-offset-card"
+                )}
+              >
+                {format(day, "d")}
+              </span>
+
+              {/*
+                Fixed-height row whether or not there are dots, so the circles
+                stay on one baseline across the month. Without it a week with no
+                events sat 4px lower than the week above it.
+              */}
+              <span className="flex h-1 items-center gap-0.5">
+                {!isToday(day) && hasDue && (
+                  <span className="h-1 w-1 rounded-full bg-primary" />
+                )}
+                {!isToday(day) && hasMeeting && (
+                  <span className="h-1 w-1 rounded-full bg-warning" />
+                )}
+              </span>
             </span>
           );
 
