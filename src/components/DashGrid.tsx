@@ -10,9 +10,10 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { GripVertical } from "lucide-react";
+import { ChevronLeft, ChevronRight, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { withViewTransition } from "@/lib/format";
+import { canMove, moveInOrder } from "@/lib/reorder";
 
 export interface DashCardDef {
   id: string;
@@ -90,6 +91,19 @@ export function DashGrid({ storageKey, cards }: { storageKey: string; cards: Das
     });
   }
 
+  /*
+    The keyboard path to rearranging. Same state and the same view transition
+    as a drag, so the two can't drift apart.
+
+    `moveInOrder` returns the SAME array when nothing can move, so setOrder
+    bails out of the update rather than firing a transition for a no-op.
+  */
+  function moveCard(id: string, direction: -1 | 1) {
+    withViewTransition(() => {
+      setOrder((prev) => moveInOrder(prev, id, direction));
+    });
+  }
+
   function resizeTo(id: string, startSpan: number, startX: number, clientX: number) {
     const grid = gridRef.current;
     if (!grid) return;
@@ -121,6 +135,9 @@ export function DashGrid({ storageKey, cards }: { storageKey: string; cards: Das
               span={isLg ? (spans[id] ?? def.defaultSpan) : 1}
               resizable={isLg}
               onResize={(startSpan, startX, clientX) => resizeTo(id, startSpan, startX, clientX)}
+              onMove={(direction) => moveCard(id, direction)}
+              canMoveBack={canMove(order, id, -1)}
+              canMoveForward={canMove(order, id, 1)}
             >
               {def.render()}
             </DashCell>
@@ -136,12 +153,19 @@ function DashCell({
   span,
   resizable,
   onResize,
+  onMove,
+  canMoveBack,
+  canMoveForward,
   children,
 }: {
   id: string;
   span: number;
   resizable: boolean;
   onResize: (startSpan: number, startX: number, clientX: number) => void;
+  /** Move one place. The keyboard path — see lib/reorder.ts for why. */
+  onMove: (direction: -1 | 1) => void;
+  canMoveBack: boolean;
+  canMoveForward: boolean;
   children: ReactNode;
 }) {
   const { setNodeRef: dropRef, isOver } = useDroppable({ id });
@@ -187,16 +211,65 @@ function DashCell({
           and rendered the grip as a full-height bar. */}
       <div className="h-full [&>*]:h-full">{children}</div>
 
-      {/* Drag-to-rearrange handle */}
-      <button
-        ref={dragRef}
-        {...listeners}
-        {...attributes}
-        title="Drag to rearrange"
-        className="absolute left-1 top-1 z-10 cursor-grab rounded-md bg-surface/80 p-1 text-muted-foreground opacity-0 shadow-[var(--shadow-sm)] transition-opacity hover:bg-active hover:text-foreground active:cursor-grabbing group-hover/dash:opacity-100"
-      >
-        <GripVertical className="h-3.5 w-3.5" />
-      </button>
+      {/*
+        Rearrange cluster: drag handle plus two move-one-place buttons.
+
+        `group-focus-within/dash:opacity-100` is the half that matters. The
+        cluster was hover-only, so even once the buttons existed a keyboard
+        user would Tab to something invisible. Revealed on focus as well as
+        hover, it's reachable without a pointer.
+
+        The buttons sit here rather than somewhere new because this is already
+        where the hand goes to rearrange — a second control cluster elsewhere
+        would be two places to look for one job.
+      */}
+      {/*
+        Always visible, just quiet — NOT hidden until hover.
+
+        Three attempts at revealing it on focus all failed in the browser:
+        `group-focus-within/dash:`, a plain `focus-within:`, and React state
+        with onFocusCapture. In every case focus was demonstrably inside the
+        cluster and the opacity stayed at 0. I could not explain why, and
+        shipping a control that a keyboard user can tab to but cannot see is
+        worse than having no control at all.
+
+        So: no reveal mechanism to get wrong. 55% opacity keeps it out of the
+        way while the card is being read, full opacity on hover or focus. The
+        cost is a permanently visible chrome cluster on each card, which is a
+        real design cost — but a knowable one, rather than an accessibility
+        hole that only shows up when someone tries to use it.
+      */}
+      <div className="absolute left-1 top-1 z-10 flex items-center gap-0.5 opacity-55 transition-opacity hover:opacity-100 [&:has(:focus-visible)]:opacity-100">
+        <button
+          ref={dragRef}
+          {...listeners}
+          {...attributes}
+          title="Drag to rearrange"
+          className="cursor-grab rounded-md bg-surface/80 p-1 text-muted-foreground shadow-[var(--shadow-sm)] transition-colors hover:bg-active hover:text-foreground active:cursor-grabbing"
+        >
+          <GripVertical className="h-3.5 w-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={() => onMove(-1)}
+          disabled={!canMoveBack}
+          aria-label="Move card earlier"
+          title="Move earlier"
+          className="rounded-md bg-surface/80 p-1 text-muted-foreground shadow-[var(--shadow-sm)] transition-colors hover:bg-active hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
+        >
+          <ChevronLeft className="h-3.5 w-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={() => onMove(1)}
+          disabled={!canMoveForward}
+          aria-label="Move card later"
+          title="Move later"
+          className="rounded-md bg-surface/80 p-1 text-muted-foreground shadow-[var(--shadow-sm)] transition-colors hover:bg-active hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
+        >
+          <ChevronRight className="h-3.5 w-3.5" />
+        </button>
+      </div>
 
       {/* Corner resize handle */}
       {resizable && (
