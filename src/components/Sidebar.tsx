@@ -50,6 +50,7 @@ import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { useAuth } from "@/lib/useAuth";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "@/components/Toaster";
+import { reportError } from "@/lib/reportError";
 import { canAccess, type PageKey } from "@/lib/permissions";
 import type { Profile, Team } from "@/lib/types";
 
@@ -197,7 +198,7 @@ export function Sidebar({
     if (!supabase) return;
     const { data, error } = await supabase.from("teams").insert({ name }).select().single();
     if (error) {
-      toast.error(`Couldn't create team: ${error.message}`);
+      reportError("create team", error);
       return;
     }
     setTeamRows((prev) => [...prev, data as Team]);

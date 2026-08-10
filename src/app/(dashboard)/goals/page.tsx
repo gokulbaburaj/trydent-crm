@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Plus, Target, Trash2 } from "lucide-react";
 import { toast } from "@/components/Toaster";
+import { reportError } from "@/lib/reportError";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { StatusPicker } from "@/components/ui/StatusPicker";
@@ -151,7 +152,7 @@ function GoalsInner() {
       .single();
     setSaving(false);
     if (error || !data) {
-      toast.error(`Couldn't create: ${error?.message ?? "unknown error"}`);
+      reportError("create", error);
       return;
     }
     setGoals((prev) => [...prev, data as Goal]);
@@ -170,7 +171,7 @@ function GoalsInner() {
     const { error } = await supabase.from("goals").update(patch).eq("id", id);
     if (error) {
       setGoals(before);
-      toast.error(`Couldn't save: ${error.message}`);
+      reportError("save", error);
     }
   }
 
@@ -182,7 +183,7 @@ function GoalsInner() {
     const { error } = await supabase.from("goals").delete().eq("id", id);
     if (error) {
       setGoals(before);
-      toast.error(`Couldn't delete: ${error.message}`);
+      reportError("delete", error);
     }
   }
 
@@ -205,7 +206,7 @@ function GoalsInner() {
       .select()
       .single();
     if (error || !data) {
-      toast.error(`Couldn't add: ${error?.message ?? "unknown error"}`);
+      reportError("add", error);
       return;
     }
     setKeyResults((prev) => [...prev, data as KeyResult]);
@@ -224,7 +225,7 @@ function GoalsInner() {
     const { error } = await supabase.from("key_results").update(patch).eq("id", id);
     if (error) {
       setKeyResults(before);
-      toast.error(`Couldn't save: ${error.message}`);
+      reportError("save", error);
     }
   }
 
@@ -236,7 +237,7 @@ function GoalsInner() {
     const { error } = await supabase.from("key_results").delete().eq("id", id);
     if (error) {
       setKeyResults(before);
-      toast.error(`Couldn't delete: ${error.message}`);
+      reportError("delete", error);
     }
   }
 

@@ -22,6 +22,7 @@ import Link from "next/link";
 import { Check, ChevronRight, GripVertical, ShieldCheck, Users } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "@/components/Toaster";
+import { reportError } from "@/lib/reportError";
 import { Card } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
@@ -88,7 +89,7 @@ export default function SettingsPage() {
       .eq("id", profile.id);
     setSavingProfile(false);
     if (error) {
-      toast.error(`Couldn't save: ${error.message}`);
+      reportError("save", error);
       return;
     }
     toast.success("Profile updated");
@@ -103,7 +104,7 @@ export default function SettingsPage() {
     const { error } = await supabase.auth.updateUser({ password });
     setSavingPassword(false);
     if (error) {
-      toast.error(`Couldn't change password: ${error.message}`);
+      reportError("change password", error);
       return;
     }
     setPassword("");

@@ -47,6 +47,7 @@ import { createClient } from "@/lib/supabase/client";
 import { formatDate } from "@/lib/format";
 import { format } from "date-fns";
 import { toast } from "@/components/Toaster";
+import { reportError } from "@/lib/reportError";
 import { CURRENCIES, useCurrency } from "@/lib/currency";
 import type { CurrencyCode, Deal, Client, Project } from "@/lib/types";
 import { DEAL_STAGES } from "@/lib/types";
@@ -340,7 +341,7 @@ export default function PipelinePage() {
       .single();
     setProjBusy(false);
     if (error || !data) {
-      toast.error(`Couldn't create: ${error?.message ?? "unknown error"}`);
+      reportError("create", error);
       return;
     }
     setProjects((prev) => [data as Project, ...prev]);

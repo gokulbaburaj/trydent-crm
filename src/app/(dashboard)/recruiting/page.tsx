@@ -17,6 +17,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import { toast } from "@/components/Toaster";
+import { reportError } from "@/lib/reportError";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -450,7 +451,7 @@ function Applicants({ onHired }: { onHired: (a: Applicant) => void }) {
       .single();
     setSaving(false);
     if (error || !data) {
-      toast.error(`Couldn't add: ${error?.message ?? "unknown error"}`);
+      reportError("add", error);
       return;
     }
     setRows((prev) => [data as Applicant, ...prev]);
@@ -473,7 +474,7 @@ function Applicants({ onHired }: { onHired: (a: Applicant) => void }) {
     const { error } = await supabase.from("applicants").update({ stage }).eq("id", applicant.id);
     if (error) {
       setRows(before);
-      toast.error(`Couldn't move: ${error.message}`);
+      reportError("move", error);
       return;
     }
 
@@ -494,7 +495,7 @@ function Applicants({ onHired }: { onHired: (a: Applicant) => void }) {
     const { error } = await supabase.from("applicants").update(patch).eq("id", id);
     if (error) {
       setRows(before);
-      toast.error(`Couldn't save: ${error.message}`);
+      reportError("save", error);
     }
   }
 
@@ -506,7 +507,7 @@ function Applicants({ onHired }: { onHired: (a: Applicant) => void }) {
     const { error } = await supabase.from("applicants").delete().eq("id", id);
     if (error) {
       setRows(before);
-      toast.error(`Couldn't delete: ${error.message}`);
+      reportError("delete", error);
     }
   }
 
@@ -966,7 +967,7 @@ function Onboarding() {
       .select()
       .single();
     if (error || !data) {
-      toast.error(`Couldn't create: ${error?.message ?? "unknown error"}`);
+      reportError("create", error);
       return;
     }
     setTemplates((prev) => [...prev, data as OnboardingTemplate]);
@@ -1012,7 +1013,7 @@ function Onboarding() {
     const { error } = await supabase.from("onboarding_templates").delete().eq("id", id);
     if (error) {
       setTemplates(before);
-      toast.error(`Couldn't delete: ${error.message}`);
+      reportError("delete", error);
     }
   }
 
@@ -1029,7 +1030,7 @@ function Onboarding() {
       .select()
       .single();
     if (error || !data) {
-      toast.error(`Couldn't add: ${error?.message ?? "unknown error"}`);
+      reportError("add", error);
       return;
     }
     setItems((prev) => [...prev, data as OnboardingTemplateItem]);
@@ -1049,7 +1050,7 @@ function Onboarding() {
       .eq("id", id);
     if (error) {
       setItems(before);
-      toast.error(`Couldn't save: ${error.message}`);
+      reportError("save", error);
     }
   }
 

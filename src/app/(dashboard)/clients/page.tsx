@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "@/components/Toaster";
+import { reportError } from "@/lib/reportError";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { TableSkeleton } from "@/components/ui/Skeletons";
 import { BulkActionBar } from "@/components/BulkActionBar";
@@ -107,7 +108,7 @@ export default function ClientsPage() {
     const supabase = createClient();
     if (!supabase) return;
     const { error } = await supabase.from("clients").update(patch).in("id", ids);
-    if (error) toast.error(`Couldn't update: ${error.message}`);
+    if (error) reportError("update", error);
     else toast.success(`${what} set for ${ids.length} client${ids.length !== 1 ? "s" : ""}`);
   }
 
@@ -125,7 +126,7 @@ export default function ClientsPage() {
     const supabase = createClient();
     if (!supabase) return;
     const { error } = await supabase.from("clients").delete().in("id", ids);
-    if (error) toast.error(`Couldn't delete: ${error.message}`);
+    if (error) reportError("delete", error);
     else toast.success(`Deleted ${ids.length} client${ids.length !== 1 ? "s" : ""}`);
   }
 
@@ -210,7 +211,7 @@ export default function ClientsPage() {
         .eq("id", editing.id)
         .select()
         .single();
-      if (error) toast.error(`Couldn't save: ${error.message}`);
+      if (error) reportError("save", error);
       if (!error && data) {
         setRows((prev) => prev.map((c) => (c.id === data.id ? (data as Client) : c)));
         toast.success("Client updated");
@@ -221,7 +222,7 @@ export default function ClientsPage() {
         .insert(editing)
         .select()
         .single();
-      if (error) toast.error(`Couldn't save: ${error.message}`);
+      if (error) reportError("save", error);
       if (!error && data) {
         setRows((prev) => [data as Client, ...prev]);
         toast.success("Client created");

@@ -4,6 +4,7 @@ import { Suspense, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Briefcase, Building2, CalendarDays, CreditCard, Eye, Network, Plus, Trash2, User, UserPlus, Users } from "lucide-react";
 import { toast } from "@/components/Toaster";
+import { reportError } from "@/lib/reportError";
 import { DataTable, Column } from "@/components/DataTable";
 import { OrgChartFlow } from "@/components/OrgChartFlow";
 import { PersonCell } from "@/components/ui/Avatar";
@@ -132,7 +133,7 @@ function TeamPageInner() {
     const supabase = createClient();
     if (!supabase) return;
     const { error } = await supabase.from("profiles").update(patch).eq("id", id);
-    if (error) toast.error(`Couldn't save: ${error.message}`);
+    if (error) reportError("save", error);
   }
 
   async function removeMember(p: Profile) {
@@ -173,7 +174,7 @@ function TeamPageInner() {
     if (!supabase) return;
     const { data, error } = await supabase.from("teams").insert({ name }).select().single();
     if (error) {
-      toast.error(`Couldn't create team: ${error.message}`);
+      reportError("create team", error);
       return;
     }
     setTeamRows((prev) => [...prev, data as Team]);
@@ -192,7 +193,7 @@ function TeamPageInner() {
     // Rename the record, then carry everyone on it across.
     const { error } = await supabase.from("teams").update({ name }).eq("name", oldName);
     if (error) {
-      toast.error(`Couldn't rename: ${error.message}`);
+      reportError("rename", error);
       return;
     }
     // A team name lives in three places since the roles table landed:
@@ -222,7 +223,7 @@ function TeamPageInner() {
     // that did nothing until you reload the page.
     const { error } = await supabase.from("teams").delete().eq("name", name);
     if (error) {
-      toast.error(`Couldn't delete: ${error.message}`);
+      reportError("delete", error);
       return;
     }
     await supabase.from("profiles").update({ team: null }).eq("team", name);
@@ -272,7 +273,7 @@ function TeamPageInner() {
       .select()
       .single();
     if (error) {
-      toast.error(`Couldn't add: ${error.message}`);
+      reportError("add", error);
       return;
     }
     setPayments((prev) => [...prev, data as StaffPayment]);

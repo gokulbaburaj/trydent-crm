@@ -11,6 +11,7 @@ import { MenuItem, MenuSeparator, Popover } from "@/components/ui/Popover";
 import { formatDate } from "@/lib/format";
 import { isAdmin } from "@/lib/permissions";
 import { toast } from "@/components/Toaster";
+import { reportError } from "@/lib/reportError";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
@@ -185,7 +186,7 @@ function Channels() {
     if (!supabase) return;
     const { error } = await supabase.from("channels").update({ archived: true }).eq("id", c.id);
     if (error) {
-      toast.error(`Couldn't archive: ${error.message}`);
+      reportError("archive", error);
       return;
     }
     setChannels((prev) => prev.map((x) => (x.id === c.id ? { ...x, archived: true } : x)));

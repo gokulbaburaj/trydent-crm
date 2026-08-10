@@ -20,6 +20,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "@/components/Toaster";
+import { reportError } from "@/lib/reportError";
 import { ClientPortalPanel } from "@/components/ClientPortalPanel";
 import { Card } from "@/components/ui/Card";
 import { Badge, statusTone } from "@/components/ui/Badge";
@@ -117,7 +118,7 @@ export default function ClientDetailPage() {
     const supabase = createClient();
     if (!supabase) return;
     const { error } = await supabase.from("clients").update(patch).eq("id", client.id);
-    if (error) toast.error(`Couldn't save: ${error.message}`);
+    if (error) reportError("save", error);
   }
 
   async function deleteClient() {

@@ -30,6 +30,7 @@ import { StatusPicker } from "@/components/ui/StatusPicker";
 import { statusChangePatch } from "@/lib/projectPhase";
 import { Popover, MenuLabel } from "@/components/ui/Popover";
 import { toast } from "@/components/Toaster";
+import { reportError } from "@/lib/reportError";
 import { FilterBar } from "@/components/FilterBar";
 import { DataTable, type Column } from "@/components/DataTable";
 import { useViewPreference } from "@/lib/useViewPreference";
@@ -236,7 +237,7 @@ function ProjectsPageInner() {
     const { error } = await supabase.from("projects").update(patch).eq("id", id);
     if (error) {
       setRows(before);
-      toast.error(`Couldn't update: ${error.message}`);
+      reportError("update", error);
     }
   }
 
@@ -675,7 +676,7 @@ function PaidEditor({ deal, onSaved }: { deal: Deal; onSaved: (d: Deal) => void 
       .single();
     setBusy(false);
     if (error || !data) {
-      toast.error(`Couldn't save: ${error?.message ?? "unknown error"}`);
+      reportError("save", error);
       return;
     }
     onSaved(data as Deal);

@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { toast } from "@/components/Toaster";
+import { reportError } from "@/lib/reportError";
 import { Button } from "@/components/ui/Button";
 import { StatusPicker } from "@/components/ui/StatusPicker";
 import { Input, Label, Textarea } from "@/components/ui/Input";
@@ -212,7 +213,7 @@ export function ClientPortalPanel({
       .single();
     setPortalBusy(false);
     if (error) {
-      toast.error(`Couldn't set up portal: ${error.message}`);
+      reportError("set up portal", error);
       return;
     }
     onPortalChange(data as ClientPortal);
@@ -225,7 +226,7 @@ export function ClientPortalPanel({
     const supabase = createClient();
     if (!supabase) return;
     const { error } = await supabase.from("client_portals").update(patch).eq("id", portal.id);
-    if (error) toast.error(`Couldn't save: ${error.message}`);
+    if (error) reportError("save", error);
   }
 
   async function createLogin() {
@@ -266,7 +267,7 @@ export function ClientPortalPanel({
       .select()
       .single();
     if (error) {
-      toast.error(`Couldn't post: ${error.message}`);
+      reportError("post", error);
       return;
     }
     onUpdatePosted(data as PortalUpdate);
@@ -287,7 +288,7 @@ export function ClientPortalPanel({
       .select()
       .single();
     if (error) {
-      toast.error(`Couldn't send: ${error.message}`);
+      reportError("send", error);
       return;
     }
     setMessages((prev) => [...prev, data as PortalMessage]);
@@ -347,7 +348,7 @@ export function ClientPortalPanel({
       // The row failed but the object landed — clean up rather than leave a
       // file nothing points at.
       await removeStoredFile(storage_path);
-      toast.error(`Couldn't add: ${error.message}`);
+      reportError("add", error);
       return;
     }
     setDocuments((prev) => [data as ClientDocument, ...prev]);
@@ -376,7 +377,7 @@ export function ClientPortalPanel({
     const { error } = await supabase.from("client_documents").delete().eq("id", id);
     if (error) {
       setDocuments(before);
-      toast.error(`Couldn't delete: ${error.message}`);
+      reportError("delete", error);
       return;
     }
     await removeStoredFile(doc?.storage_path);
@@ -435,7 +436,7 @@ export function ClientPortalPanel({
     setInvBusy(false);
     if (error) {
       await removeStoredFile(storage_path);
-      toast.error(`Couldn't add: ${error.message}`);
+      reportError("add", error);
       return;
     }
     setInvoices((prev) => [data as Invoice, ...prev]);
@@ -457,7 +458,7 @@ export function ClientPortalPanel({
     const { error } = await supabase.from("invoices").update(patch).eq("id", id);
     if (error) {
       setInvoices(before);
-      toast.error(`Couldn't save: ${error.message}`);
+      reportError("save", error);
     }
   }
 
@@ -470,7 +471,7 @@ export function ClientPortalPanel({
     const { error } = await supabase.from("invoices").delete().eq("id", id);
     if (error) {
       setInvoices(before);
-      toast.error(`Couldn't delete: ${error.message}`);
+      reportError("delete", error);
       return;
     }
     await removeStoredFile(inv?.storage_path);
@@ -486,7 +487,7 @@ export function ClientPortalPanel({
     const { error } = await supabase.from("meeting_requests").update({ status }).eq("id", id);
     if (error) {
       setRequests(before);
-      toast.error(`Couldn't update: ${error.message}`);
+      reportError("update", error);
       return;
     }
     toast.success(status === "scheduled" ? "Marked as scheduled" : "Request declined");

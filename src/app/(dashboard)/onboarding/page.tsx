@@ -13,6 +13,7 @@ import {
   UsersRound,
 } from "lucide-react";
 import { toast } from "@/components/Toaster";
+import { reportError } from "@/lib/reportError";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { DatePicker } from "@/components/ui/DatePicker";
@@ -166,7 +167,7 @@ function OnboardingInner() {
       .select();
     setStartBusy(false);
     if (error || !data) {
-      toast.error(`Couldn't start: ${error?.message ?? "unknown error"}`);
+      reportError("start", error);
       return;
     }
     setTasks((prev) => [...prev, ...(data as OnboardingTask[])]);
@@ -201,7 +202,7 @@ function OnboardingInner() {
       .select()
       .single();
     if (error || !data) {
-      toast.error(`Couldn't add: ${error?.message ?? "unknown error"}`);
+      reportError("add", error);
       return;
     }
     setTasks((prev) => [...prev, data as OnboardingTask]);
@@ -224,7 +225,7 @@ function OnboardingInner() {
     const supabase = createClient();
     if (!supabase) return;
     const { error } = await supabase.from("profiles").update(patch).eq("id", id);
-    if (error) toast.error(`Couldn't save: ${error.message}`);
+    if (error) reportError("save", error);
   }
 
   async function clearChecklist(profileId: string) {
@@ -238,7 +239,7 @@ function OnboardingInner() {
       .eq("profile_id", profileId);
     if (error) {
       setTasks(before);
-      toast.error(`Couldn't clear: ${error.message}`);
+      reportError("clear", error);
     }
   }
 

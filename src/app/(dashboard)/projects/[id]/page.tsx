@@ -45,6 +45,7 @@ import {
   Users,
 } from "lucide-react";
 import { toast } from "@/components/Toaster";
+import { reportError } from "@/lib/reportError";
 import { BulkActionBar } from "@/components/BulkActionBar";
 import { DataTable, Column } from "@/components/DataTable";
 import { FilterBar } from "@/components/FilterBar";
@@ -200,7 +201,7 @@ export default function ProjectDetailPage() {
     const supabase = createClient();
     if (!supabase) return;
     const { error } = await supabase.from("activities").delete().eq("id", id);
-    if (error) toast.error(`Couldn't cancel: ${error.message}`);
+    if (error) reportError("cancel", error);
     else toast.success("Meeting cancelled");
   }
 
@@ -426,7 +427,7 @@ export default function ProjectDetailPage() {
     const supabase = createClient();
     if (!supabase) return;
     const { error } = await supabase.from("project_tasks").update(patch).in("id", ids);
-    if (error) toast.error(`Couldn't update: ${error.message}`);
+    if (error) reportError("update", error);
     else toast.success(`${what} set for ${ids.length} task${ids.length !== 1 ? "s" : ""}`);
   }
 
@@ -439,7 +440,7 @@ export default function ProjectDetailPage() {
     const supabase = createClient();
     if (!supabase) return;
     const { error } = await supabase.from("project_tasks").delete().in("id", ids);
-    if (error) toast.error(`Couldn't delete: ${error.message}`);
+    if (error) reportError("delete", error);
     else toast.success(`Deleted ${ids.length} task${ids.length !== 1 ? "s" : ""}`);
   }
 
@@ -484,7 +485,7 @@ export default function ProjectDetailPage() {
       .from("clients")
       .update({ last_contact: today })
       .eq("id", projectClient.id);
-    if (error) toast.error(`Couldn't save: ${error.message}`);
+    if (error) reportError("save", error);
     else toast.success(`Logged contact with ${projectClient.company}`);
   }
   const personName = (id: string | null) => profiles.find((p) => p.id === id)?.full_name ?? null;
@@ -552,7 +553,7 @@ export default function ProjectDetailPage() {
 
     setMeetingBusy(false);
     if (error || !data) {
-      toast.error(`Couldn't save: ${error?.message ?? "unknown error"}`);
+      reportError("save", error);
       return;
     }
     const saved = data as Activity;

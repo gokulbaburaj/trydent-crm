@@ -10,6 +10,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { toast } from "@/components/Toaster";
+import { reportError } from "@/lib/reportError";
 import { Card } from "@/components/ui/Card";
 import { BarRow } from "@/components/ui/BarRow";
 import { Badge } from "@/components/ui/Badge";
@@ -147,7 +148,7 @@ function AccountsInner() {
     const { error } = await supabase.from("projects").update(patch).eq("id", id);
     if (error) {
       setProjects(before);
-      toast.error(`Couldn't save: ${error.message}`);
+      reportError("save", error);
     }
   }
 
@@ -189,7 +190,7 @@ function AccountsInner() {
     const { error } = await supabase.from("project_allocations").update(patch).eq("id", id);
     if (error) {
       setAllocations(before);
-      toast.error(`Couldn't save: ${error.message}`);
+      reportError("save", error);
     }
   }
 
