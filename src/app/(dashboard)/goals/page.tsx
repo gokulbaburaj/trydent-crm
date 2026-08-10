@@ -1,63 +1,73 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, Target, Trash2 } from "lucide-react";
+import { Plus, Target } from "lucide-react";
 import { toast } from "@/components/Toaster";
 import { reportError } from "@/lib/reportError";
-import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { StatusPicker } from "@/components/ui/StatusPicker";
-import { Avatar } from "@/components/ui/Avatar";
-import { Input, Label, Textarea } from "@/components/ui/Input";
-import { Dropdown } from "@/components/ui/Dropdown";
-import { DatePicker } from "@/components/ui/DatePicker";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { TableSkeleton } from "@/components/ui/Skeletons";
 import { RequireAccess } from "@/components/RequireAccess";
+import { confirmAction } from "@/components/ui/ConfirmDialog";
+import { GoalRow } from "@/components/goals/GoalRow";
+import { GoalComposer, type DraftGoal } from "@/components/goals/GoalComposer";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/useAuth";
 import { useCurrency } from "@/lib/currency";
-import { cn } from "@/lib/utils";
+import { formatDate } from "@/lib/format";
 import {
   currentValue,
   goalPct,
   isMoneySource,
-  keyResultPct,
   type MetricSources,
 } from "@/lib/goals";
-import { formatCount, groupByPeriod } from "@/lib/goalPeriods";
-import { confirmAction } from "@/components/ui/ConfirmDialog";
+import { formatCount } from "@/lib/goalPeriods";
+import {
+  daysRemaining,
+  isStalled,
+  paceOf,
+  runRate,
+  shouldOfferRollover,
+  type Pace,
+} from "@/lib/goalPace";
+import {
+  nextQuarter,
+  parsePeriod,
+  periodBounds,
+  periodLabel,
+} from "@/lib/goalPeriod";
 import type {
   Client,
   Deal,
   Goal,
-  GoalStatus,
   Invoice,
   KeyResult,
-  KeyResultSource,
   Profile,
   ProjectTask,
 } from "@/lib/types";
-import {
-  GOAL_STATUSES,
-  GOAL_STATUS_LABELS,
-  KEY_RESULT_SOURCES,
-  KEY_RESULT_SOURCE_LABELS,
-} from "@/lib/types";
 
-const STATUS_TONES: Record<GoalStatus, "green" | "yellow" | "red" | "blue"> = {
-  on_track: "blue",
-  at_risk: "yellow",
-  off_track: "red",
-  achieved: "green",
-};
-
-/** "2026 Q3" style default so periods group sensibly out of the box. */
-function currentPeriod() {
-  const now = new Date();
-  return `${now.getFullYear()} Q${Math.floor(now.getMonth() / 3) + 1}`;
-}
+/**
+ * Company goals.
+ *
+ * ── What changed, and why it was a rebuild rather than a tidy-up ────────────
+ *
+ * The old page was a CRUD list: three cards, each ~230px tall, each showing a
+ * percentage and a status someone had picked from a dropdown. It could tell
+ * you a goal was at 13%. It could not tell you whether 13% was fine, and the
+ * status sitting next to that number said "On track" because it had said "On
+ * track" since July.
+ *
+ * Everything here answers the pace question instead. See lib/goalPace.ts for
+ * the maths and its stated limitation, lib/goalPeriod.ts for why dates are
+ * derived rather than typed, and lib/goalSentence.ts for why the objective
+ * writes itself.
+ *
+ * The two-level OKR model stays in the schema and is hidden in the UI: every
+ * goal created here gets exactly one measure. Nothing migrates, the split is
+ * still there if a goal ever genuinely needs two measures, and in the
+ * meantime nobody fills in two name fields for one idea.
+ */
 
 export default function GoalsPage() {
   return (
@@ -85,17 +95,16 @@ function GoalsInner() {
   const { rows: invoices } = useSupabaseTable<Invoice>("invoices");
   const { rows: profiles } = useSupabaseTable<Profile>("profiles");
 
-  const [goalFormOpen, setGoalFormOpen] = useState(false);
-  const [objective, setObjective] = useState("");
-  const [period, setPeriod] = useState(currentPeriod());
-  const [startDate, setStartDate] = useState<string | null>(null);
-  const [endDate, setEndDate] = useState<string | null>(null);
+  const [composerOpen, setComposerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [krFor, setKrFor] = useState<string | null>(null);
-  const [krName, setKrName] = useState("");
-  const [krSource, setKrSource] = useState<KeyResultSource>("manual");
-  const [krTarget, setKrTarget] = useState("");
-  const [krUnit, setKrUnit] = useState("");
+
+  /*
+    Frozen at mount. Reading Date.now() during render makes every goal's pace
+    a moving target between renders, and the tick would drift a pixel on each
+    keystroke in an unrelated input. A page open across midnight showing
+    yesterday's pace is the cheaper wrong.
+  */
+  const [now] = useState(() => Date.now());
 
   const src: MetricSources = useMemo(
     () => ({ deals, clients, tasks, invoices, toBase, base }),
@@ -112,132 +121,135 @@ function GoalsInner() {
     return map;
   }, [keyResults]);
 
-  const periods = useMemo(() => {
-    const set = new Set(goals.map((g) => g.period).filter(Boolean));
-    return Array.from(set).sort().reverse();
-  }, [goals]);
+  const ownerName = (id: string | null) =>
+    profiles.find((p) => p.id === id)?.full_name ?? null;
 
-  const [periodFilter, setPeriodFilter] = useState("");
-  const visibleGoals = useMemo(
-    () => (periodFilter ? goals.filter((g) => g.period === periodFilter) : goals),
-    [goals, periodFilter]
-  );
+  /**
+   * Everything the row needs, computed once.
+   *
+   * Bounds come from the PERIOD when it parses, falling back to the stored
+   * dates. That ordering is the fix for the drift already in the data: a goal
+   * labelled "2027 Q4" with dates spanning seventeen months should be read as
+   * the quarter it claims to be, and the reconciliation migration then makes
+   * the columns agree.
+   */
+  const rows = useMemo(() => {
+    return goals.map((goal) => {
+      const krs = krsByGoal.get(goal.id) ?? [];
+      const pct = goalPct(krs, goal, src);
+      const choice = parsePeriod(goal.period);
+      const bounds = choice
+        ? periodBounds(choice)
+        : { start: goal.start_date, end: goal.end_date };
 
-  // Grouped rather than filtered. The period dropdown still narrows, but with
-  // headings you no longer have to pick a period to get a coherent read.
-  const groups = useMemo(() => groupByPeriod(visibleGoals), [visibleGoals]);
+      const pace = paceOf(pct, bounds.start, bounds.end, now);
+      const primary = krs[0] ?? null;
+      const days = daysRemaining(bounds.end, now);
 
-  const ownerOf = (id: string | null) => profiles.find((p) => p.id === id) ?? null;
+      const current = primary ? currentValue(primary, goal, src) : 0;
+      const rate = primary ? runRate(current, Number(primary.target), days) : null;
+      const money = primary ? isMoneySource(primary.source) : false;
+      const fmt = (v: number) =>
+        money ? formatCurrency(v) : `${formatCount(v)}${primary?.unit ? ` ${primary.unit}` : ""}`;
 
-  function formatValue(kr: KeyResult, value: number) {
-    if (isMoneySource(kr.source)) return formatCurrency(value);
-    // Was String(rounded) — six unseparated digits next to six more is a
-    // counting exercise. formatCount only touches what's displayed; the
-    // input below still holds the raw number.
-    const shown = formatCount(value);
-    return kr.unit ? `${shown} ${kr.unit}` : shown;
-  }
+      /*
+        Run rates round UP to a whole unit for anything that isn't money.
+        Straight division produced "0.71/week needed" for five team-building
+        sessions across seven weeks — you cannot hold 0.71 of a session, and
+        rounding down would understate what it takes. Money keeps whole units
+        too: "8,332.92 a week" is a spurious precision nobody acts on.
+      */
+      const fmtRate = (v: number) => fmt(money ? Math.round(v) : Math.ceil(v));
 
-  async function createGoal() {
-    const text = objective.trim();
-    if (!text) return;
+      return {
+        goal,
+        krs,
+        primary,
+        pct,
+        pace,
+        choice,
+        days,
+        stalled: primary ? isStalled(primary.source, primary.updated_at, now) : false,
+        action: actionLine(pace, rate, fmtRate),
+        detail: detailLine(pace, primary ? current : 0, primary ? Number(primary.target) : 0, days, fmt),
+      };
+    });
+  }, [goals, krsByGoal, src, now, formatCurrency]);
+
+  /** Newest period first; undated last. Same ordering rule as the headings. */
+  const groups = useMemo(() => {
+    const map = new Map<string, typeof rows>();
+    for (const row of rows) {
+      const key = row.goal.period?.trim() || "No period set";
+      const list = map.get(key);
+      if (list) list.push(row);
+      else map.set(key, [row]);
+    }
+    return Array.from(map, ([period, items]) => ({ period, items })).sort((a, b) => {
+      if (a.period === "No period set") return 1;
+      if (b.period === "No period set") return -1;
+      return b.period.localeCompare(a.period);
+    });
+  }, [rows]);
+
+  async function createGoal(draft: DraftGoal) {
     setSaving(true);
     const supabase = createClient();
     if (!supabase) {
       setSaving(false);
       return;
     }
-    const { data, error } = await supabase
+
+    const { data: goal, error } = await supabase
       .from("goals")
       .insert({
-        objective: text,
-        period: period.trim(),
+        objective: draft.objective,
+        period: draft.period,
+        start_date: draft.start_date,
+        end_date: draft.end_date,
         owner: profile?.id ?? null,
-        start_date: startDate,
-        end_date: endDate,
         sort_order: goals.length,
       })
       .select()
       .single();
-    setSaving(false);
-    if (error || !data) {
-      reportError("create", error);
+
+    if (error || !goal) {
+      setSaving(false);
+      reportError("create the goal", error);
       return;
     }
-    setGoals((prev) => [...prev, data as Goal]);
-    setObjective("");
-    setStartDate(null);
-    setEndDate(null);
-    setGoalFormOpen(false);
-    toast.success("Goal created — add key results to track it");
-  }
 
-  async function updateGoal(id: string, patch: Partial<Goal>) {
-    const before = goals;
-    setGoals((prev) => prev.map((g) => (g.id === id ? { ...g, ...patch } : g)));
-    const supabase = createClient();
-    if (!supabase) return;
-    const { error } = await supabase.from("goals").update(patch).eq("id", id);
-    if (error) {
-      setGoals(before);
-      reportError("save", error);
-    }
-  }
-
-  async function deleteGoal(id: string) {
-    const goal = goals.find((g) => g.id === id);
-    const krCount = krsByGoal.get(id)?.length ?? 0;
-    const ok = await confirmAction({
-      title: `Delete "${goal?.objective ?? "this goal"}"?`,
-      body:
-        krCount > 0
-          ? `Its ${krCount} key result${krCount === 1 ? "" : "s"} ${krCount === 1 ? "is" : "are"} deleted too.`
-          : undefined,
-      confirmLabel: "Delete goal",
-    });
-    if (!ok) return;
-    const before = goals;
-    setGoals((prev) => prev.filter((g) => g.id !== id));
-    const supabase = createClient();
-    if (!supabase) return;
-    const { error } = await supabase.from("goals").delete().eq("id", id);
-    if (error) {
-      setGoals(before);
-      reportError("delete", error);
-    }
-  }
-
-  async function addKeyResult(goalId: string) {
-    const name = krName.trim();
-    const target = Number(krTarget);
-    if (!name || Number.isNaN(target)) return;
-    const supabase = createClient();
-    if (!supabase) return;
-    const { data, error } = await supabase
+    // The measure is part of creating a goal, not a second step. If it fails
+    // the goal is left unmeasurable, so the row is rolled back rather than
+    // leaving something that renders as 0% forever.
+    const { data: kr, error: krError } = await supabase
       .from("key_results")
       .insert({
-        goal_id: goalId,
-        name,
-        source: krSource,
-        target,
-        unit: krUnit.trim() || null,
-        sort_order: (krsByGoal.get(goalId)?.length ?? 0),
+        goal_id: goal.id,
+        name: draft.measureName,
+        source: draft.source,
+        target: draft.target,
+        unit: draft.unit,
+        sort_order: 0,
       })
       .select()
       .single();
-    if (error || !data) {
-      reportError("add", error);
+
+    setSaving(false);
+
+    if (krError || !kr) {
+      await supabase.from("goals").delete().eq("id", goal.id);
+      reportError("create the goal", krError);
       return;
     }
-    setKeyResults((prev) => [...prev, data as KeyResult]);
-    setKrName("");
-    setKrTarget("");
-    setKrUnit("");
-    setKrSource("manual");
-    setKrFor(null);
+
+    setGoals((prev) => [...prev, goal as Goal]);
+    setKeyResults((prev) => [...prev, kr as KeyResult]);
+    setComposerOpen(false);
+    toast.success("Goal created");
   }
 
-  async function updateKeyResult(id: string, patch: Partial<KeyResult>) {
+  async function updateMeasure(id: string, patch: Partial<KeyResult>) {
     const before = keyResults;
     setKeyResults((prev) => prev.map((k) => (k.id === id ? { ...k, ...patch } : k)));
     const supabase = createClient();
@@ -249,362 +261,217 @@ function GoalsInner() {
     }
   }
 
-  async function deleteKeyResult(id: string) {
-    const kr = keyResults.find((k) => k.id === id);
+  async function deleteGoal(goal: Goal) {
     const ok = await confirmAction({
-      title: `Delete "${kr?.name ?? "this key result"}"?`,
-      confirmLabel: "Delete",
+      title: `Delete "${goal.objective}"?`,
+      body: "Its measure goes with it. This can't be undone.",
+      confirmLabel: "Delete goal",
     });
     if (!ok) return;
-    const before = keyResults;
-    setKeyResults((prev) => prev.filter((k) => k.id !== id));
+
+    const beforeGoals = goals;
+    const beforeKrs = keyResults;
+    setGoals((prev) => prev.filter((g) => g.id !== goal.id));
+    setKeyResults((prev) => prev.filter((k) => k.goal_id !== goal.id));
+
     const supabase = createClient();
     if (!supabase) return;
-    const { error } = await supabase.from("key_results").delete().eq("id", id);
+    const { error } = await supabase.from("goals").delete().eq("id", goal.id);
     if (error) {
-      setKeyResults(before);
+      setGoals(beforeGoals);
+      setKeyResults(beforeKrs);
       reportError("delete", error);
     }
+  }
+
+  /** Move a missed goal into the next quarter rather than stranding it. */
+  async function rollOver(goal: Goal) {
+    const choice = parsePeriod(goal.period);
+    if (!choice || choice.kind !== "quarter") return;
+    const next = nextQuarter(choice);
+    const bounds = periodBounds(next);
+    const label = periodLabel(next);
+
+    const ok = await confirmAction({
+      title: `Move to ${label}?`,
+      body: "The target and progress so far carry over. Only the dates change.",
+      confirmLabel: `Move to ${label}`,
+      tone: "neutral",
+    });
+    if (!ok) return;
+
+    const patch = { period: label, start_date: bounds.start, end_date: bounds.end };
+    const before = goals;
+    setGoals((prev) => prev.map((g) => (g.id === goal.id ? { ...g, ...patch } : g)));
+    const supabase = createClient();
+    if (!supabase) return;
+    const { error } = await supabase.from("goals").update(patch).eq("id", goal.id);
+    if (error) {
+      setGoals(before);
+      reportError("move the goal", error);
+      return;
+    }
+    toast.success(`Moved to ${label}`);
   }
 
   if (loading) return <TableSkeleton rows={6} />;
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-5">
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-4">
       <div className="flex flex-wrap items-center gap-3">
-        <div>
-          {/* Title lives in the topbar; repeating it here just said the same
-              word twice on one screen. */}
-          <p className="text-sm text-muted-foreground">
-            Objectives and key results. Data-backed metrics update themselves.
-          </p>
-        </div>
-        <div className="ml-auto flex items-center gap-2">
-          {periods.length > 0 && (
-            <div className="w-36">
-              <Dropdown
-                value={periodFilter}
-                options={[
-                  { value: "", label: "All periods" },
-                  ...periods.map((p) => ({ value: p, label: p })),
-                ]}
-                onChange={setPeriodFilter}
-              />
-            </div>
-          )}
-          <Button size="sm" onClick={() => setGoalFormOpen((o) => !o)}>
+        <p className="text-sm text-muted-foreground">
+          Progress against where you should be today.
+        </p>
+        <div className="ml-auto">
+          <Button size="sm" onClick={() => setComposerOpen((o) => !o)}>
             <Plus className="h-3.5 w-3.5" /> New goal
           </Button>
         </div>
       </div>
 
-      {goalFormOpen && (
-        <Card className="rounded-xl shadow-[var(--shadow-sm)]">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              createGoal();
-            }}
-            className="flex flex-col gap-3"
-          >
-            <div>
-              <Label>Objective</Label>
-              <Textarea
-                rows={2}
-                placeholder="Double retainer revenue"
-                value={objective}
-                onChange={(e) => setObjective(e.target.value)}
-              />
-            </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <div>
-                <Label>Period</Label>
-                <Input value={period} onChange={(e) => setPeriod(e.target.value)} />
-              </div>
-              <div>
-                <Label>Starts</Label>
-                <DatePicker value={startDate} onChange={setStartDate} placeholder="Start" />
-              </div>
-              <div>
-                <Label>Ends</Label>
-                <DatePicker value={endDate} onChange={setEndDate} placeholder="End" />
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Dates scope the automatic metrics. A goal with no dates counts everything.
-            </p>
-            <Button type="submit" size="sm" disabled={saving || !objective.trim()}>
-              {saving ? "Creating..." : "Create goal"}
-            </Button>
-          </form>
-        </Card>
-      )}
-
-      {visibleGoals.length === 0 && (
-        <EmptyState
-          icon={Target}
-          title="No goals yet"
-          description="Set an objective, then attach key results. Revenue, deals, clients, tasks and invoices track themselves."
+      {composerOpen && (
+        <GoalComposer
+          formatCurrency={formatCurrency}
+          saving={saving}
+          onCancel={() => setComposerOpen(false)}
+          onCreate={createGoal}
         />
       )}
 
-      {groups.map(({ period, goals: periodGoals }) => (
-        <section key={period ?? "__none"} className="flex flex-col gap-2.5">
-          {/* The period was a chip repeated inside every card. As a heading it
-              is written once and does the sorting work visibly. */}
-          <div className="flex items-center gap-2.5 px-0.5">
+      {goals.length === 0 && !composerOpen && (
+        <EmptyState
+          icon={Target}
+          title="No goals yet"
+          description="Set a target and a period. Revenue, clients, tasks and invoices track themselves."
+        />
+      )}
+
+      {groups.map(({ period, items }) => (
+        <section key={period} className="flex flex-col">
+          <div className="flex items-center gap-2.5 px-1 pb-1.5">
+            {/* A custom range is stored as "2026-08-01 to 2027-12-30" so it
+                round-trips through parsePeriod. Raw ISO is a fine key and a
+                poor heading, so it's formatted for display only. */}
             <h2 className="text-[13px] font-semibold tracking-tight">
-              {period ?? "No period set"}
+              {headingFor(period)}
             </h2>
-            <span className="text-[11px] tabular-nums text-muted-2">
-              {periodGoals.length}
-            </span>
+            <span className="text-[11px] text-muted-foreground">{summarise(items)}</span>
             <div className="h-px flex-1 bg-border-subtle" />
           </div>
 
-      {periodGoals.map((goal) => {
-        const krs = krsByGoal.get(goal.id) ?? [];
-        const pct = goalPct(krs, goal, src);
-        const owner = ownerOf(goal.owner);
-        return (
-          <Card key={goal.id} className="rounded-xl shadow-[var(--shadow-sm)]">
-            <div className="flex flex-wrap items-center gap-3">
-              <GoalRing pct={pct} />
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold leading-snug">{goal.objective}</p>
-                {/* Period dropped from this line — it's the heading above now.
-                    Key-result count dropped too: the rows are directly below
-                    and countable, so it was narrating the next four pixels. */}
-                {owner && (
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1.5">
-                      <Avatar name={owner.full_name} url={owner.avatar_url} size="xs" />
-                      {owner.full_name}
+          <div className="divide-y divide-border-subtle overflow-hidden rounded-xl border border-border bg-elevated">
+            {items.map((row) => (
+              <div key={row.goal.id}>
+                <GoalRow
+                  title={row.goal.objective}
+                  pct={row.pct}
+                  pace={row.pace}
+                  detail={row.detail}
+                  action={row.action}
+                  stalled={row.stalled}
+                  onDelete={() => deleteGoal(row.goal)}
+                >
+                  {row.primary?.source === "manual" && (
+                    <ManualValue
+                      key={row.primary.id}
+                      value={Number(row.primary.current_manual) || 0}
+                      label={`Current value for ${row.goal.objective}`}
+                      onCommit={(next) =>
+                        updateMeasure(row.primary!.id, { current_manual: next })
+                      }
+                    />
+                  )}
+                </GoalRow>
+
+                {shouldOfferRollover(row.pace) && row.choice?.kind === "quarter" && (
+                  <div className="flex items-center gap-2 border-t border-border-subtle bg-raise px-4 py-2">
+                    <span className="text-[12px] text-muted-foreground">
+                      {period} is over and this didn&apos;t land.
                     </span>
+                    <button
+                      type="button"
+                      onClick={() => rollOver(row.goal)}
+                      className="rounded-md px-1.5 py-0.5 text-[12px] font-medium text-foreground underline-offset-2 hover:underline"
+                    >
+                      Move to {periodLabel(nextQuarter(row.choice))}
+                    </button>
+                  </div>
+                )}
+
+                {ownerName(row.goal.owner) && row.krs.length > 1 && (
+                  <div className="px-4 pb-2 pl-11 text-[11px] text-muted-2">
+                    {row.krs.length} measures · {ownerName(row.goal.owner)}
                   </div>
                 )}
               </div>
-              <div className="flex items-center gap-2">
-                {/* One control, not a badge next to a dropdown saying the same
-                    thing — the badge IS the trigger. */}
-                <StatusPicker
-                  align="right"
-                  value={goal.status}
-                  options={GOAL_STATUSES}
-                  label="Goal status"
-                  renderLabel={(s) => GOAL_STATUS_LABELS[s]}
-                  toneFor={(s) => STATUS_TONES[s]}
-                  onChange={(status) => updateGoal(goal.id, { status })}
-                />
-                <button
-                  type="button"
-                  aria-label="Delete goal"
-                  onClick={() => deleteGoal(goal.id)}
-                  className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-hover hover:text-[var(--danger-fg)]"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Key results */}
-            <div className="mt-4 flex flex-col gap-2.5 border-t border-border-subtle pt-3.5">
-              {krs.length === 0 && (
-                <p className="text-xs text-muted-foreground">
-                  No key results yet — this goal has nothing to measure.
-                </p>
-              )}
-              {/*
-                One line per key result, not two.
-
-                The old row was `name [flex-1] ......... numbers`, which on an
-                880px card left a ~500px void between a result and its own
-                figures — the two things you most need to read together were
-                the two furthest apart. The bar then sat on a second line
-                underneath, with the source label right-aligned at its far end
-                where it read as a caption for the bar rather than a note about
-                where the number comes from.
-
-                So: the bar moves INTO the gap. It's the only element here
-                that's happy to be any width, so letting it absorb the slack
-                removes the void instead of decorating it, and costs a line of
-                height per row.
-              */}
-              {krs.map((kr) => {
-                const value = currentValue(kr, goal, src);
-                const krPct = keyResultPct(kr, goal, src);
-                const auto = kr.source !== "manual";
-                return (
-                  <div
-                    key={kr.id}
-                    className="group grid grid-cols-[minmax(0,10rem)_minmax(3rem,1fr)_auto_auto] items-center gap-x-3 gap-y-1.5 text-[13px]"
-                  >
-                    <div className="min-w-0">
-                      <div className="truncate" title={kr.name}>
-                        {kr.name}
-                      </div>
-                      {/* Only auto-tracked rows say where the number comes
-                          from. On a manual row the editable field is the
-                          signal, so "Manual entry" was labelling the obvious
-                          on every line. */}
-                      {auto && (
-                        <div className="truncate text-[10px] text-muted-2">
-                          {KEY_RESULT_SOURCE_LABELS[kr.source]}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="h-1.5 overflow-hidden rounded-full bg-active">
-                      <div
-                        className={cn(
-                          "h-full rounded-full transition-[width] duration-300 ease-[var(--ease-out)]",
-                          krPct >= 100 ? "bg-success" : "bg-primary"
-                        )}
-                        style={{ width: `${krPct}%` }}
-                      />
-                    </div>
-
-                    <div className="flex items-center gap-1.5 tabular-nums">
-                      {auto ? (
-                        <span className="text-muted-foreground">
-                          {formatValue(kr, value)}
-                        </span>
-                      ) : (
-                        <ValueInput
-                          label={`Current value for ${kr.name}`}
-                          value={Number(kr.current_manual) || 0}
-                          onCommit={(next) =>
-                            updateKeyResult(kr.id, { current_manual: next })
-                          }
-                        />
-                      )}
-                      <span className="text-muted-2">/</span>
-                      <span className="text-foreground-secondary">
-                        {formatValue(kr, Number(kr.target))}
-                      </span>
-                      {/* Muted and smaller than the ring: with one key result
-                          this number equals the goal's, and the ring should
-                          read as the headline of the two. */}
-                      <span className="w-9 shrink-0 text-right text-[11px] font-medium text-muted-foreground">
-                        {krPct}%
-                      </span>
-                    </div>
-
-                    <button
-                      type="button"
-                      aria-label={`Delete ${kr.name}`}
-                      onClick={() => deleteKeyResult(kr.id)}
-                      className="rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:text-[var(--danger-fg)] focus-visible:opacity-100 group-hover:opacity-100"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </button>
-                  </div>
-                );
-              })}
-
-              {krFor === goal.id ? (
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    addKeyResult(goal.id);
-                  }}
-                  className="flex flex-col gap-2 rounded-lg border border-border-subtle bg-raise p-2.5"
-                >
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                    <div>
-                      <Label>Key result</Label>
-                      <Input
-                        placeholder="Reach $120k won"
-                        value={krName}
-                        onChange={(e) => setKrName(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label>Tracked by</Label>
-                      <Dropdown
-                        value={krSource}
-                        options={KEY_RESULT_SOURCES.map((s) => ({
-                          value: s,
-                          label: KEY_RESULT_SOURCE_LABELS[s],
-                        }))}
-                        onChange={(v) => setKrSource(v as KeyResultSource)}
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <Label>Target</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        placeholder="120000"
-                        value={krTarget}
-                        onChange={(e) => setKrTarget(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label>Unit (optional)</Label>
-                      <Input
-                        placeholder="clients"
-                        value={krUnit}
-                        onChange={(e) => setKrUnit(e.target.value)}
-                        disabled={isMoneySource(krSource)}
-                      />
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button type="submit" size="sm" disabled={!krName.trim() || krTarget === ""}>
-                      Add key result
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => setKrFor(null)}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </form>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setKrFor(goal.id)}
-                  className="flex items-center gap-1.5 self-start rounded-md px-1.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-hover hover:text-foreground"
-                >
-                  <Plus className="h-3.5 w-3.5" /> Add key result
-                </button>
-              )}
-            </div>
-          </Card>
-        );
-      })}
+            ))}
+          </div>
         </section>
       ))}
     </div>
   );
 }
 
+/** "₹25,000/week needed" — what to do, rather than how far along you are. */
+function actionLine(
+  pace: Pace,
+  rate: ReturnType<typeof runRate> | null,
+  fmt: (v: number) => string
+): string | null {
+  if (pace.status === "achieved") return "Done";
+  if (pace.status === "not_started") return null;
+  if (pace.status === "undated") return "No period set — pace can't be worked out";
+  if (pace.status === "missed") return "Period closed short of target";
+  if (!rate || rate.perWeek === null) return null;
+  if (pace.status === "on_track") return `On pace — ${fmt(rate.perWeek)}/week keeps it there`;
+  return `${fmt(rate.perWeek)}/week needed to still make it`;
+}
+
+function detailLine(
+  pace: Pace,
+  current: number,
+  target: number,
+  days: number | null,
+  fmt: (v: number) => string
+): string {
+  const progress = `${fmt(current)} of ${fmt(target)}`;
+  if (pace.status === "not_started") {
+    return days === null ? progress : `${progress} · not started`;
+  }
+  if (days === null) return progress;
+  if (days === 0) return `${progress} · ended`;
+  if (days < 14) return `${progress} · ${days} day${days === 1 ? "" : "s"} left`;
+  return `${progress} · ${Math.round(days / 7)} weeks left`;
+}
+
+function headingFor(period: string): string {
+  const choice = parsePeriod(period);
+  if (choice?.kind === "custom") {
+    return `${formatDate(choice.start)} to ${formatDate(choice.end)}`;
+  }
+  return period;
+}
+
+function summarise(items: { pct: number; pace: Pace }[]): string {
+  const count = `${items.length} goal${items.length === 1 ? "" : "s"}`;
+  const dated = items.filter((i) => i.pace.expected !== null);
+  if (dated.length === 0) return count;
+  const avg = Math.round(items.reduce((s, i) => s + i.pct, 0) / items.length);
+  const expected = Math.round(
+    (dated.reduce((s, i) => s + (i.pace.expected ?? 0), 0) / dated.length) * 100
+  );
+  return `${count} · ${avg}% average · ${expected}% expected`;
+}
+
 /**
- * A manual key result's current value.
+ * A manual measure's current value.
  *
- * ── Why this isn't a plain controlled input ─────────────────────────────────
- *
- * It used to be, writing straight to Postgres from `onChange`. Typing 25000
- * was five UPDATEs, four of them wrong (2, 25, 250, 2500) and each one
- * repainting a progress bar mid-keystroke.
- *
- * Worse, the value went through `Number(e.target.value) || 0`, so clearing the
- * field to retype wrote a real 0 — and because the input was controlled by
- * that same value, the 0 came straight back and sat in front of whatever you
- * typed next. You could only edit by selecting all first, which nobody
- * discovers.
- *
- * So the draft is local and commits on blur or Enter; Escape abandons it. No
- * effect syncing draft to prop — while `draft` is null the input simply shows
- * the prop, which is the pattern CLAUDE.md points at in `lib/useChannel.ts`.
+ * Local draft, committed on blur or Enter. Writing on every keystroke turned
+ * typing "25000" into five UPDATEs, four of them wrong, and `Number(v) || 0`
+ * meant clearing the field wrote a real zero that came straight back — so the
+ * only way to edit was select-all-then-type, which nobody discovers.
  */
-function ValueInput({
+function ManualValue({
   value,
   label,
   onCommit,
@@ -618,8 +485,6 @@ function ValueInput({
   function commit() {
     if (draft === null) return;
     const trimmed = draft.trim();
-    // An empty field means "I haven't finished typing", not "zero". Revert
-    // rather than writing a number the person never entered.
     const next = trimmed === "" ? value : Number(trimmed);
     setDraft(null);
     if (!Number.isFinite(next) || next === value) return;
@@ -643,49 +508,7 @@ function ValueInput({
           e.currentTarget.blur();
         }
       }}
-      /*
-        Spinners off. They step by 1, and every target on this page is in the
-        thousands — 600,000 clicks to fill one in. They also stole horizontal
-        room from the digits, which is the only thing in the field worth
-        seeing.
-      */
-      className="h-7 w-24 rounded-md border border-edge bg-transparent px-2 text-right text-xs tabular-nums [appearance:textfield] focus:border-primary/60 focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+      className="h-7 w-24 shrink-0 rounded-md border border-edge bg-transparent px-2 text-right text-xs tabular-nums [appearance:textfield] focus:border-primary/60 focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
     />
-  );
-}
-
-function GoalRing({ pct }: { pct: number }) {
-  const r = 20;
-  const c = 2 * Math.PI * r;
-  const color = pct >= 100 ? "var(--success)" : "var(--primary)";
-  return (
-    // 48px, down from 64. It was the largest object on the card while
-    // carrying one number, and for a single-key-result goal that number is
-    // the same one the row repeats.
-    <svg viewBox="0 0 48 48" className="h-12 w-12 shrink-0" role="img" aria-label={`${pct}% complete`}>
-      <circle cx="24" cy="24" r={r} fill="none" stroke="var(--border)" strokeWidth="5" />
-      <circle
-        cx="24"
-        cy="24"
-        r={r}
-        fill="none"
-        stroke={color}
-        strokeWidth="5"
-        strokeLinecap="round"
-        strokeDasharray={`${Math.max((pct / 100) * c, 0.01)} ${c}`}
-        transform="rotate(-90 24 24)"
-        style={{ transition: "stroke-dasharray 700ms var(--ease-out)" }}
-      />
-      <text
-        x="24"
-        y="28"
-        textAnchor="middle"
-        fill="var(--foreground)"
-        fontSize="13"
-        fontWeight="600"
-      >
-        {pct}%
-      </text>
-    </svg>
   );
 }
