@@ -92,19 +92,43 @@ const CUSTOMERS: NavItem[] = [
 
 const SALES: NavItem[] = [
   { href: "/pipeline", label: "Pipeline", icon: GitBranch, page: "pipeline" },
-  // Sits under Pipeline because that's the order the money moves: deal closes,
-  // invoice goes out. Shares the Clients grant — see ROUTE_KEYS in permissions.
-  { href: "/invoices", label: "Invoices", icon: Receipt, page: "clients" },
   { href: "/projects", label: "Projects", icon: FolderKanban, page: "projects" },
 ];
 
-const PERFORMANCE: NavItem[] = [
-  { href: "/goals", label: "Goals", icon: Target, page: "goals" },
+/*
+  ── Finance, 11 Aug ─────────────────────────────────────────────────────────
+
+  Invoices moved out of Sales and Payouts out of Performance, into one section
+  holding both directions of money: what comes in, and what goes out.
+
+  This reverses the note above about Sales being "the order the money moves:
+  Pipeline → Invoices → Projects". That ordering was true and still put
+  Invoices next to Projects, which is delivery, while the page it actually
+  belongs beside — Payouts — sat two sections away under a heading about
+  performance. Invoices and Payouts are the same job seen from two ends, and
+  answering "where's the money" meant looking in two places.
+
+  Performance is gone as a section: it held Goals and Payouts, which had
+  nothing to do with each other beyond both being numbers. Goals is a company
+  objective and now sits with Organisation.
+*/
+const FINANCE: NavItem[] = [
+  // Money in first — an invoice is what makes a payout affordable.
+  // Shares the Clients grant; see ROUTE_KEYS in permissions.
+  { href: "/invoices", label: "Invoices", icon: Receipt, page: "clients" },
   { href: "/payouts", label: "Payouts", icon: Wallet, page: "accounts" },
 ];
 
 const ORGANIZATION: NavItem[] = [
   { href: "/organization", label: "Organisation", icon: Building2, page: "organization" },
+  /*
+    Goals came here on 11 Aug, from a Performance section that no longer
+    exists. The 9 Aug note below argues it shouldn't be buried in the hub, and
+    that still holds — this is a direct link under a heading, not a hub entry.
+    Company objectives are an organisation-level thing; grouping them with
+    Payouts only ever meant "these are both charts".
+  */
+  { href: "/goals", label: "Goals", icon: Target, page: "goals" },
   { href: "/settings", label: "Settings", icon: Settings, page: "settings" },
 ];
 
@@ -296,9 +320,9 @@ export function Sidebar({
         />
 
         <Section
-          id="performance"
-          label="Performance"
-          items={allowed(PERFORMANCE)}
+          id="finance"
+          label="Finance"
+          items={allowed(FINANCE)}
           state={state}
           rail={rail}
           onToggle={toggleSection}
