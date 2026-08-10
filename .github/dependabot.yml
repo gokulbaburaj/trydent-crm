@@ -1,0 +1,73 @@
+# Dependabot — scheduled patching instead of patching when something breaks.
+#
+# ── The trap this config is shaped around ────────────────────────────────────
+#
+# CLAUDE.md documents that `npm audit fix --force` proposes next@9.3.3 — a
+# six-major downgrade from 16.x — because that's the only release satisfying
+# some transitive advisories. A naive Dependabot setup recreates that hazard in
+# PR form: it will happily open "bump next from 16.2.12 to 17.x" next to
+# fifteen patch bumps, and in a stack of similar-looking PRs the dangerous one
+# is the easy one to merge.
+#
+# So: majors are ignored for the framework packages and grouped everywhere
+# else, which turns a weekly stack of noise into two reviewable PRs.
+
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    # Small enough to actually review. Dependabot's default of 5 open PRs
+    # becomes wallpaper, and wallpaper gets merged unread.
+    open-pull-requests-limit: 4
+    labels:
+      - dependencies
+
+    groups:
+      # Patch and minor bumps across everything, in ONE PR. These are the ones
+      # that are usually safe and always tedious; batching them means the
+      # interesting PR isn't buried among them.
+      safe-updates:
+        applies-to: version-updates
+        update-types:
+          - patch
+          - minor
+
+      # Security fixes get their own PR regardless of size, so an advisory is
+      # never sitting inside a twenty-package bump nobody opened.
+      security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+
+    ignore:
+      # Majors on the framework and its peers are never a "just merge it"
+      # change — they're a planned migration with a build and a browser pass.
+      # Dependabot proposing one alongside routine bumps is how a six-major
+      # downgrade gets clicked through.
+      - dependency-name: next
+        update-types: [version-update:semver-major]
+      - dependency-name: react
+        update-types: [version-update:semver-major]
+      - dependency-name: react-dom
+        update-types: [version-update:semver-major]
+      - dependency-name: tailwindcss
+        update-types: [version-update:semver-major]
+      - dependency-name: "@supabase/*"
+        update-types: [version-update:semver-major]
+      # Vendored from a registry and hand-edited (see CLAUDE.md on shadcn and
+      # the bklit charts) — an automated bump would silently overwrite local
+      # changes, so these move by hand or not at all.
+      - dependency-name: radix-ui
+        update-types: [version-update:semver-major]
+
+  # The Actions themselves, on the same cadence. Rarely urgent, but a stale
+  # checkout action is still a supply-chain surface.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    labels:
+      - dependencies
