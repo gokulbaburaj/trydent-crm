@@ -739,6 +739,47 @@ export interface PayoutLine {
   label: string | null;
 }
 
+/**
+ * A charge on an invoice. `amount` is a generated column — quantity ×
+ * unit_price — so a line can never disagree with its own arithmetic.
+ *
+ * Rate and quantity are stored separately even though every invoice so far is
+ * a single line at quantity 1: a flat amount can't be decomposed later, a rate
+ * can always be collapsed. See 2026-08-11f.
+ */
+export interface InvoiceLine {
+  id: string;
+  invoice_id: string;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  /** Read-only: the database computes it. */
+  amount: number;
+  sort_order: number;
+  created_at: string;
+}
+
+/**
+ * The single settings row. `id` is a boolean primary key pinned to true —
+ * there is one company, and a table would invite a second row nothing knows
+ * how to choose between.
+ */
+export interface AppSettings {
+  id: boolean;
+  base_currency: CurrencyCode;
+  company_name: string | null;
+  /** Newline-separated; the invoice renders one line each. */
+  company_address: string | null;
+  company_email: string | null;
+  company_phone: string | null;
+  bank_account_number: string | null;
+  bank_ifsc: string | null;
+  bank_branch: string | null;
+  upi_id: string | null;
+  invoice_footer_note: string | null;
+  updated_at: string;
+}
+
 export interface Project {
   id: string;
   name: string;
