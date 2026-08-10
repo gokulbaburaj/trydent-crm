@@ -11,7 +11,11 @@ import { RequireAccess } from "@/components/RequireAccess";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { GoalRow } from "@/components/goals/GoalRow";
 import { GoalComposer, type DraftGoal } from "@/components/goals/GoalComposer";
-import { GoalPanel, type GoalEdits } from "@/components/goals/GoalPanel";
+import {
+  GoalPanel,
+  type ContributionEdits,
+  type GoalEdits,
+} from "@/components/goals/GoalPanel";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/useAuth";
@@ -315,10 +319,52 @@ function GoalsInner() {
       reportError("log the contribution", error);
       return;
     }
-    setContributions((prev) => [data as GoalContribution, ...prev]);
+    /*
+      Inserted in date order, not prepended. The list is sorted newest-first
+      by the query, so a plain unshift put a backdated entry — or one restored
+      by Undo — at the top until the next refetch, where it sat above rows that
+      happened after it.
+    */
+    setContributions((prev) =>
+      [data as GoalContribution, ...prev].sort((a, b) =>
+        b.occurred_on.localeCompare(a.occurred_on)
+      )
+    );
     await refreshMeasure(keyResultId);
   }
 
+  /** Correct a logged entry. The trigger recomputes the total either way. */
+  async function updateContribution(id: string, edits: ContributionEdits) {
+    const before = contributions;
+    setContributions((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, ...edits } : c))
+    );
+    const supabase = createClient();
+    if (!supabase) return;
+    const { error } = await supabase.from("goal_contributions").update(edits).eq("id", id);
+    if (error) {
+      setContributions(before);
+      reportError("save the entry", error);
+      return;
+    }
+    const entry = before.find((c) => c.id === id);
+    if (entry) await refreshMeasure(entry.key_result_id);
+  }
+
+  /**
+   * Remove a logged entry, with an undo.
+   *
+   * Deleting a goal asks first; deleting one of its entries used to be silent
+   * and permanent, sitting behind an `opacity-0` control that only appears on
+   * hover. Two entries went missing from a production goal that way, and the
+   * only reason the values were recoverable is that they happened to be
+   * legible in an earlier screenshot.
+   *
+   * A confirm dialog per entry would be too much friction for a list you tidy
+   * — the log is meant to be cheap to correct. An undo is the right weight:
+   * nothing to click through in the normal case, and a way back when the
+   * click was wrong. The re-insert gets a new id, which nothing references.
+   */
   async function removeContribution(id: string) {
     const entry = contributions.find((c) => c.id === id);
     const before = contributions;
@@ -331,7 +377,20 @@ function GoalsInner() {
       reportError("remove the entry", error);
       return;
     }
-    if (entry) await refreshMeasure(entry.key_result_id);
+    if (!entry) return;
+    await refreshMeasure(entry.key_result_id);
+    toast.success("Entry removed", {
+      action: {
+        label: "Undo",
+        onClick: () =>
+          addContribution(
+            entry.key_result_id,
+            Number(entry.amount),
+            entry.occurred_on,
+            entry.note
+          ),
+      },
+    });
   }
 
   /** Read back the trigger's work rather than guessing at it. */
@@ -524,8 +583,10 @@ function GoalsInner() {
                     onAddContribution={(amount, occurredOn, note) =>
                       row.primary && addContribution(row.primary.id, amount, occurredOn, note)
                     }
+                    onUpdateContribution={updateContribution}
                     onDeleteContribution={removeContribution}
                     onSaveGoal={(edits) => saveGoal(row.goal, row.primary, edits)}
+                    onCancelEdit={() => setOpen(null)}
                   />
                 )}
 
