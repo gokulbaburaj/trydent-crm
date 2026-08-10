@@ -36,6 +36,7 @@ import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/format";
 import { staggerDelay } from "@/lib/motion";
 import { useViewPreference } from "@/lib/useViewPreference";
+import { confirmAction } from "@/components/ui/ConfirmDialog";
 import type {
   Applicant,
   ApplicantStage,
@@ -500,6 +501,13 @@ function Applicants({ onHired }: { onHired: (a: Applicant) => void }) {
   }
 
   async function deleteApplicant(id: string) {
+    const person = applicants.find((a) => a.id === id);
+    const ok = await confirmAction({
+      title: `Delete ${person?.full_name ?? "this applicant"}?`,
+      body: "Their application, notes and stage history go with them.",
+      confirmLabel: "Delete applicant",
+    });
+    if (!ok) return;
     const before = applicants;
     setRows((prev) => prev.filter((a) => a.id !== id));
     const supabase = createClient();
@@ -1006,6 +1014,13 @@ function Onboarding() {
   }
 
   async function deleteTemplate(id: string) {
+    const tpl = templates.find((t) => t.id === id);
+    const ok = await confirmAction({
+      title: `Delete the “${tpl?.name ?? "this"}” checklist?`,
+      body: "Its steps go too. People already onboarding keep the copy they were given.",
+      confirmLabel: "Delete checklist",
+    });
+    if (!ok) return;
     const before = templates;
     setTemplates((prev) => prev.filter((t) => t.id !== id));
     const supabase = createClient();
@@ -1054,6 +1069,8 @@ function Onboarding() {
     }
   }
 
+  // Not confirmed on purpose — one step in a checklist being edited. See the
+  // note on deleteSubtask in TaskDetailDrawer for the reasoning.
   async function deleteItem(id: string) {
     const before = items;
     setItems((prev) => prev.filter((i) => i.id !== id));

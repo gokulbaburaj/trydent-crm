@@ -42,6 +42,7 @@ import {
   uploadClientFile,
 } from "@/lib/storage";
 import { generatePassword } from "@/lib/password";
+import { confirmAction } from "@/components/ui/ConfirmDialog";
 import type {
   Client,
   ClientDocument,
@@ -370,6 +371,12 @@ export function ClientPortalPanel({
 
   async function deleteDocument(id: string) {
     const doc = documents.find((d) => d.id === id) ?? null;
+    const ok = await confirmAction({
+      title: `Delete “${doc?.name ?? "this document"}”?`,
+      body: "The client loses access to it immediately, and the stored file is removed.",
+      confirmLabel: "Delete document",
+    });
+    if (!ok) return;
     const before = documents;
     setDocuments((prev) => prev.filter((d) => d.id !== id));
     const supabase = createClient();
@@ -464,6 +471,15 @@ export function ClientPortalPanel({
 
   async function deleteInvoice(id: string) {
     const inv = invoices.find((i) => i.id === id) ?? null;
+    const ok = await confirmAction({
+      title: inv?.number ? `Delete invoice ${inv.number}?` : "Delete this invoice?",
+      body:
+        inv && inv.status !== "draft"
+          ? "This invoice has been sent. Deleting it removes it from the client's portal and from every revenue total."
+          : "This can't be undone.",
+      confirmLabel: "Delete invoice",
+    });
+    if (!ok) return;
     const before = invoices;
     setInvoices((prev) => prev.filter((i) => i.id !== id));
     const supabase = createClient();

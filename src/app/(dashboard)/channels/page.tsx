@@ -21,6 +21,7 @@ import { useChannel } from "@/lib/useChannel";
 import { MentionInput, type MentionInputHandle } from "@/components/channels/MentionInput";
 import { MessageBody } from "@/components/channels/MessageBody";
 import type { Channel, ChannelMember, Message, Team } from "@/lib/types";
+import { confirmAction } from "@/components/ui/ConfirmDialog";
 
 /**
  * Channels — team chat.
@@ -181,7 +182,15 @@ function Channels() {
     isAdmin(access) || (!!c.created_by && c.created_by === profile?.id);
 
   async function archiveChannel(c: Channel) {
-    if (!confirm(`Archive #${c.name}? It disappears from the list; messages are kept.`)) return;
+    const ok = await confirmAction({
+      title: `Archive #${c.name}?`,
+      body: "It disappears from the channel list. Messages are kept.",
+      confirmLabel: "Archive",
+      // Archiving is reversible and keeps the data — it doesn't warrant the
+      // red button that deleting a client does.
+      tone: "neutral",
+    });
+    if (!ok) return;
     const supabase = createClient();
     if (!supabase) return;
     const { error } = await supabase.from("channels").update({ archived: true }).eq("id", c.id);
@@ -385,7 +394,7 @@ function Channels() {
       {/* Phone: the same list as a slide-over. Matches the shell's nav drawer
           so every overlay in the app opens the same way. */}
       {listOpen && (
-        <div className="fixed inset-0 z-[110] sm:hidden">
+        <div className="fixed inset-0 z-[var(--z-sheet)] sm:hidden">
           <div
             className="animate-fade absolute inset-0 bg-black/60"
             onClick={() => setListOpen(false)}

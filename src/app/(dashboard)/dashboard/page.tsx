@@ -16,6 +16,7 @@ import { BarXAxis } from "@/components/charts/bar-x-axis";
 import { XAxis } from "@/components/charts/x-axis";
 import { ChartTooltip } from "@/components/charts/tooltip/chart-tooltip";
 import { TooltipContent } from "@/components/charts/tooltip/tooltip-content";
+import { ChartSummary } from "@/components/charts/ChartSummary";
 import { cn } from "@/lib/utils";
 import { ArrowRight } from "lucide-react";
 import { Card } from "@/components/ui/Card";
@@ -357,6 +358,12 @@ export default function DashboardPage() {
           <h3 className="text-sm font-semibold text-muted-foreground">Deals by Stage</h3>
           {stageData.length > 0 ? (
             <div className="flex min-h-[200px] flex-1 items-center justify-center py-2">
+              <ChartSummary
+                label="Deals by stage"
+                keyHeader="Stage"
+                valueHeader="Deals"
+                rows={stageData.map((s) => [s.label, String(s.value)])}
+              />
               <PieChart
                 data={stageData}
                 size={200}
@@ -408,6 +415,15 @@ export default function DashboardPage() {
               ))}
             </div>
           </div>
+          {/* One summary for all three renderings — bar, line and area are the
+              same numbers, so the alternative shouldn't be repeated inside
+              each branch. */}
+          <ChartSummary
+            label="Monthly revenue from won deals"
+            keyHeader="Month"
+            valueHeader="Revenue"
+            rows={monthlyRevenue.map((m) => [m.month, formatCurrency(m.revenue)])}
+          />
           {monthlyRevenue.length > 0 ? (
             revenueChart === "bar" ? (
               <BarChart

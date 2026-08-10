@@ -24,6 +24,7 @@ import {
 } from "@/lib/permissions";
 import { USER_ROLE_LABELS } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { confirmAction } from "@/components/ui/ConfirmDialog";
 
 export default function RoleDetailPage() {
   return (
@@ -64,12 +65,12 @@ function RoleDetailInner() {
 
   async function remove() {
     if (!role) return;
-    if (
-      !confirm(
-        `Delete the "${role.name}" role? Nothing else is removed — this only takes the job off the list.`
-      )
-    )
-      return;
+    const confirmed = await confirmAction({
+      title: `Delete the "${role.name}" role?`,
+      body: "Nothing else is removed — this only takes the job off the list.",
+      confirmLabel: "Delete role",
+    });
+    if (!confirmed) return;
     setDeleting(true);
     const ok = await deleteRole(role.id);
     setDeleting(false);
@@ -195,16 +196,18 @@ function RoleDetailInner() {
         <div className="mt-4 border-t border-border-subtle pt-3">
           <Checkbox
             checked={role.is_admin}
-            onChange={(next) => {
-              if (
-                next &&
-                !confirm(
-                  `Give everyone with the "${role.name}" role full admin rights? ` +
-                    `They'll see what people are paid, and be able to change roles ` +
-                    `and access — including yours.`
-                )
-              ) {
-                return;
+            onChange={async (next) => {
+              // Granting only. Taking admin away needs no ceremony — the
+              // dangerous direction is the one that hands out access.
+              if (next) {
+                const ok = await confirmAction({
+                  title: `Give the "${role.name}" role full admin rights?`,
+                  body:
+                    "Everyone with this role will see what people are paid, and be " +
+                    "able to change roles and access — including yours.",
+                  confirmLabel: "Grant admin",
+                });
+                if (!ok) return;
               }
               updateRole(role.id, { is_admin: next });
             }}

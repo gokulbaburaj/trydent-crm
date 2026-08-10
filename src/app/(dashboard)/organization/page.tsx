@@ -13,6 +13,7 @@ import { Grid } from "@/components/charts/grid";
 import { BarXAxis } from "@/components/charts/bar-x-axis";
 import { ChartTooltip } from "@/components/charts/tooltip/chart-tooltip";
 import { TooltipContent } from "@/components/charts/tooltip/tooltip-content";
+import { ChartSummary } from "@/components/charts/ChartSummary";
 import { cn } from "@/lib/utils";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { useAuth } from "@/lib/useAuth";
@@ -287,6 +288,12 @@ export default function OrganizationPage() {
               </p>
             ) : (
               <div className="mt-3">
+                <ChartSummary
+                  label="Applicants by stage"
+                  keyHeader="Stage"
+                  valueHeader="Applicants"
+                  rows={funnelData.map((f) => [f.stage, String(f.count)])}
+                />
                 <BarChart
                   data={funnelData}
                   xDataKey="stage"
@@ -319,6 +326,12 @@ export default function OrganizationPage() {
             ) : (
               <>
                 <div className="flex flex-1 items-center justify-center py-3">
+                  <ChartSummary
+                    label="Staff by team"
+                    keyHeader="Team"
+                    valueHeader="People"
+                    rows={teamSplit.map((t) => [t.label, String(t.value)])}
+                  />
                   <PieChart
                     data={teamSplit}
                     size={180}
@@ -363,6 +376,12 @@ export default function OrganizationPage() {
               </p>
             ) : (
             <div className="flex flex-1 items-center justify-center py-3">
+              <ChartSummary
+                label="Onboarding progress"
+                keyHeader="State"
+                valueHeader="Steps"
+                rows={onboardingSplit.map((o) => [o.label, String(o.value)])}
+              />
               <PieChart
                 data={onboardingSplit}
                 size={180}

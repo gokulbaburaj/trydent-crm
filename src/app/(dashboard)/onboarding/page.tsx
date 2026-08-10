@@ -39,6 +39,7 @@ import type {
   Role,
 } from "@/lib/types";
 import { ONBOARDING_SECTIONS } from "@/lib/types";
+import { confirmAction } from "@/components/ui/ConfirmDialog";
 
 /** Steps bucketed by phase, phases in canonical order. */
 function groupBySection<T extends { section: string }>(rows: T[]): [string, T[]][] {
@@ -210,6 +211,12 @@ function OnboardingInner() {
   }
 
   async function deleteStep(id: string) {
+    const step = tasks.find((t) => t.id === id);
+    const ok = await confirmAction({
+      title: `Delete “${step?.title ?? "this step"}”?`,
+      confirmLabel: "Delete step",
+    });
+    if (!ok) return;
     const before = tasks;
     setTasks((prev) => prev.filter((t) => t.id !== id));
     const supabase = createClient();

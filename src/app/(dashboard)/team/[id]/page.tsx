@@ -26,6 +26,7 @@ import { BarXAxis } from "@/components/charts/bar-x-axis";
 import { Grid } from "@/components/charts/grid";
 import { ChartTooltip } from "@/components/charts/tooltip/chart-tooltip";
 import { TooltipContent } from "@/components/charts/tooltip/tooltip-content";
+import { ChartSummary } from "@/components/charts/ChartSummary";
 import { useTeamDashboard, type MemberLoad } from "@/lib/useTeamDashboard";
 import { useAuth } from "@/lib/useAuth";
 import { isAdmin as hasAdminRights } from "@/lib/permissions";
@@ -317,6 +318,12 @@ function ThroughputCard({ data }: { data: { week: string; done: number }[] }) {
          * min-h stops it collapsing when the row happens to be short.
          */
         <div className="mt-2 flex min-h-[260px] flex-1 flex-col">
+          <ChartSummary
+            label="Tasks completed per week, last eight weeks"
+            keyHeader="Week"
+            valueHeader="Completed"
+            rows={data.map((d) => [d.week, String(d.done)])}
+          />
           <BarChart
             className="h-full flex-1"
             data={data}

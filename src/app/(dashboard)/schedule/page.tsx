@@ -66,6 +66,8 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/useAuth";
 import { formatDate } from "@/lib/format";
 import type { Activity, Client, Deal, Project, ProjectTask } from "@/lib/types";
+import { confirmAction } from "@/components/ui/ConfirmDialog";
+import { CATEGORICAL_HUES, hueFor } from "@/lib/palette";
 
 type Tab = "all" | "mine" | "calendar";
 type CalView = "week" | "month";
@@ -102,28 +104,23 @@ const EVENT_MINUTES = 60;
  * look at `a.color` at all, so right-click → recolour in the month view
  * appeared to do nothing when you switched to Week.
  *
- * Kept in TS rather than as CSS tokens because both consumers need string
- * arithmetic on the hue — the month chip builds `${hue}55` / `${hue}14`, and a
- * user-chosen `activities.color` is an arbitrary hex that no fixed token set
- * can name. `color-mix` does the tinting so one hue drives fill, bar and text.
+ * The list has since moved out to `lib/palette.ts`, because the project
+ * timeline kept its own near-identical copy — four hues the same, two quietly
+ * different — and the same project came out two shades of indigo depending on
+ * which page you were on. Same class of bug as the one above, one level up.
+ *
+ * Why these stay hex rather than becoming CSS tokens is argued in that file:
+ * both consumers do string arithmetic on the hue (`color-mix(in oklab,
+ * ${hue} 16%, ...)`), and a user-chosen `activities.color` is an arbitrary
+ * value no fixed token set can name.
  */
-const EVENT_HUES = [
-  "#4ea7e0", // blue
-  "#7e87e2", // purple
-  "#d9a53f", // amber
-  "#d95c8a", // pink
-  "#4cb782", // green
-  "#eb5757", // red
-];
+const EVENT_HUES = CATEGORICAL_HUES;
 
 /** The single source of truth for "what colour is this event". */
 function eventHue(a: Activity): string {
   // An explicit choice always wins over the automatic one.
   if (a.color) return a.color;
-  const key = a.client_id ?? a.id;
-  let hash = 0;
-  for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) | 0;
-  return EVENT_HUES[Math.abs(hash) % EVENT_HUES.length];
+  return hueFor(a.client_id ?? a.id);
 }
 
 /**
@@ -317,7 +314,11 @@ export default function SchedulePage() {
   async function handleDelete(id: string) {
     const supabase = createClient();
     if (!supabase) return;
-    if (!confirm("Delete this schedule item?")) return;
+    const ok = await confirmAction({
+      title: "Delete this schedule item?",
+      confirmLabel: "Delete",
+    });
+    if (!ok) return;
     await supabase.from("activities").delete().eq("id", id);
     setRows((prev) => prev.filter((a) => a.id !== id));
     setEditing(null);
@@ -1242,7 +1243,7 @@ function MonthGridPro({
       {/* Right-click color menu */}
       {menu && (
         <div
-          className="fixed inset-0 z-[140]"
+          className="fixed inset-0 z-[var(--z-scrim)]"
           onClick={() => setMenu(null)}
           onContextMenu={(e) => {
             e.preventDefault();

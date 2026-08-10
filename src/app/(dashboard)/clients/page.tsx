@@ -41,6 +41,7 @@ import type { Client, ClientPortal } from "@/lib/types";
 import { CLIENT_STATUSES, LEAD_SOURCES } from "@/lib/types";
 import { useViewPreference } from "@/lib/useViewPreference";
 import { ClientFocusView } from "@/components/ClientFocusView";
+import { confirmAction } from "@/components/ui/ConfirmDialog";
 
 type View = "table" | "kanban" | "focus";
 
@@ -115,12 +116,12 @@ export default function ClientsPage() {
   async function bulkDelete() {
     const ids = selectedIds;
     if (ids.length === 0) return;
-    if (
-      !confirm(
-        `Delete ${ids.length} client${ids.length !== 1 ? "s" : ""}? This will remove linked deals/activities.`
-      )
-    )
-      return;
+    const ok = await confirmAction({
+      title: `Delete ${ids.length} client${ids.length !== 1 ? "s" : ""}?`,
+      body: "Linked deals and activities are removed with them. This can't be undone.",
+      confirmLabel: `Delete ${ids.length}`,
+    });
+    if (!ok) return;
     setRows((prev) => prev.filter((c) => !ids.includes(c.id)));
     clear();
     const supabase = createClient();
@@ -513,6 +514,17 @@ function TagInput({ tags, onChange }: { tags: string[]; onChange: (tags: string[
         }}
         onBlur={commit}
         placeholder={tags.length === 0 ? "Type a tag, press Enter" : ""}
+        /*
+          `outline-none` here is correct and not a missing focus state. The
+          ring lives on the WRAPPER via `focus-within:` — the visible control
+          is the tag box, so a ring on the bare input would draw inside the
+          border around only the caret's column.
+
+          Noted because an audit flagged this line as a stripped focus ring:
+          a grep for `focus-visible:` or `focus:ring` in this file finds
+          nothing, because the styling is one element up and uses a third
+          prefix. Check the parent before believing that result.
+        */
         className="min-w-[100px] flex-1 bg-transparent py-0.5 text-sm text-foreground placeholder:text-muted-2 focus:outline-none"
       />
     </div>

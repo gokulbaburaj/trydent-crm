@@ -29,6 +29,7 @@ import { generatePassword } from "@/lib/password";
 import { STAFF_TYPES, USER_ROLE_LABELS } from "@/lib/types";
 import type { Profile, ProfileEmail, StaffPayment, Team, UserRole } from "@/lib/types";
 import { useViewPreference } from "@/lib/useViewPreference";
+import { confirmAction } from "@/components/ui/ConfirmDialog";
 
 const roleTone: Record<UserRole, "green" | "blue" | "gray"> = {
   admin: "green",
@@ -137,7 +138,12 @@ function TeamPageInner() {
   }
 
   async function removeMember(p: Profile) {
-    if (!confirm(`Remove ${p.full_name}? This deletes their login and access for good.`)) return;
+    const ok = await confirmAction({
+      title: `Remove ${p.full_name}?`,
+      body: "Their login is deleted and their access ends immediately. This can't be undone.",
+      confirmLabel: "Remove member",
+    });
+    if (!ok) return;
     setRemovingId(p.id);
     const res = await fetch("/api/team-users", {
       method: "DELETE",
@@ -209,14 +215,15 @@ function TeamPageInner() {
 
   async function deleteTeam(name: string) {
     const count = allStaff.filter((p) => p.team === name).length;
-    if (
-      !confirm(
+    const ok = await confirmAction({
+      title: `Delete team "${name}"?`,
+      body:
         count > 0
-          ? `Delete team "${name}"? ${count} member${count !== 1 ? "s" : ""} will be left without a team (nobody is removed).`
-          : `Delete team "${name}"?`
-      )
-    )
-      return;
+          ? `${count} member${count !== 1 ? "s" : ""} will be left without a team. Nobody is removed.`
+          : undefined,
+      confirmLabel: "Delete team",
+    });
+    if (!ok) return;
     const supabase = createClient();
     if (!supabase) return;
     // Checked, because a delete that fails silently just looks like a delete
@@ -288,6 +295,12 @@ function TeamPageInner() {
   }
 
   async function deletePayment(id: string) {
+    const ok = await confirmAction({
+      title: "Delete this payment record?",
+      body: "It comes off the pay history and off every total that includes it.",
+      confirmLabel: "Delete record",
+    });
+    if (!ok) return;
     setPayments((prev) => prev.filter((x) => x.id !== id));
     const supabase = createClient();
     if (!supabase) return;

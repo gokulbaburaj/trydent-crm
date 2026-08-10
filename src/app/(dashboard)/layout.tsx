@@ -8,6 +8,7 @@ import { TabBar } from "@/components/TabBar";
 import { MobileTabBar } from "@/components/MobileTabBar";
 import { Toaster } from "@/components/Toaster";
 import { CommandMenu } from "@/components/CommandMenu";
+import { ConfirmHost } from "@/components/ui/ConfirmDialog";
 import { TabsProvider } from "@/lib/tabs";
 import { PageTitleContext, type PageTitleOverride } from "@/lib/pageTitle";
 import { TooltipProvider } from "@/components/ui/Tooltip";
@@ -117,6 +118,18 @@ export default function DashboardLayout({
         made you wait again. See the Tip component for the animation half.
       */}
       <TooltipProvider delayDuration={350} skipDelayDuration={400}>
+      {/*
+        Skip link. Off-screen until focused, first thing in the tab order.
+        Without it, reaching page content by keyboard means tabbing through
+        every sidebar item, every team, and the whole tab strip — on every
+        single page.
+      */}
+      <a
+        href="#main-content"
+        className="sr-only z-[var(--z-skip-link)] rounded-md bg-elevated px-3 py-2 text-[13px] font-medium text-foreground shadow-[var(--shadow-lg)] ring-2 ring-primary focus:not-sr-only focus:absolute focus:left-3 focus:top-3"
+      >
+        Skip to main content
+      </a>
       <div className="flex h-screen overflow-hidden bg-background">
         <Suspense fallback={<div className="hidden w-[220px] shrink-0 md:block" />}>
           <Sidebar />
@@ -124,7 +137,7 @@ export default function DashboardLayout({
 
         {/* Mobile slide-in navigation */}
         {mobileNav && (
-          <div className="fixed inset-0 z-[120] md:hidden">
+          <div className="fixed inset-0 z-[var(--z-overlay)] md:hidden">
             <div
               className="animate-fade absolute inset-0 bg-black/60"
               onClick={() => setMobileNav(false)}
@@ -157,6 +170,13 @@ export default function DashboardLayout({
                 title={title}
               />
               <main
+                id="main-content"
+                // Focusable so the skip link can actually land here — an
+                // anchor to a non-focusable element moves the scroll position
+                // but leaves the keyboard focus back in the nav, which is the
+                // usual way skip links get shipped broken. -1 keeps it out of
+                // the tab order otherwise.
+                tabIndex={-1}
                 key={pathname}
                 // Bottom clearance comes from --mobile-nav-clear so the pill's
                 // real height and the safe area stay in one place. See globals.css.
@@ -171,6 +191,7 @@ export default function DashboardLayout({
         <MobileTabBar access={access} onOpenMenu={() => setMobileNav(true)} />
 
         <Toaster />
+        <ConfirmHost />
         <CommandMenu />
       </div>
       </TooltipProvider>

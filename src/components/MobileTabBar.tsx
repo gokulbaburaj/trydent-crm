@@ -53,7 +53,7 @@ export function MobileTabBar({
   return (
     <div
       className={cn(
-        "pointer-events-none fixed inset-x-0 bottom-0 z-[100] flex justify-center md:hidden",
+        "pointer-events-none fixed inset-x-0 bottom-0 z-[var(--z-mobile-nav)] flex justify-center md:hidden",
         // Clear of the home indicator, plus a little air so it reads as floating
         // rather than jammed against the bezel.
         "px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]"

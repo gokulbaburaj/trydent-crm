@@ -22,6 +22,7 @@ import { formatDate } from "@/lib/format";
 import { dayOrder, formatTime } from "@/lib/taskTime";
 import type { Project, ProjectTask } from "@/lib/types";
 import { PRIORITY_ORDER, TASK_STATUSES } from "@/lib/types";
+import { confirmAction } from "@/components/ui/ConfirmDialog";
 
 type Bucket = "Overdue" | "Today" | "This Week" | "Later";
 
@@ -117,6 +118,12 @@ export default function MyWorkPage() {
   }
 
   async function deleteTask(id: string) {
+    const task = allTasks.find((t) => t.id === id);
+    const ok = await confirmAction({
+      title: `Delete “${task?.name ?? "this task"}”?`,
+      confirmLabel: "Delete task",
+    });
+    if (!ok) return;
     setTasks((prev) => prev.filter((t) => t.id !== id));
     const supabase = createClient();
     if (!supabase) return;

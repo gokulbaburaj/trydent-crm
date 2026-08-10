@@ -29,6 +29,7 @@ import { CURRENCIES, formatMoney, useCurrency } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 import { staggerDelay, useCountUp } from "@/lib/motion";
 import type { Client, CurrencyCode, Deal, Project, ProjectAllocation } from "@/lib/types";
+import { confirmAction } from "@/components/ui/ConfirmDialog";
 
 /**
  * Accounts — money allotted per project, and how much of it is committed to
@@ -195,6 +196,12 @@ function AccountsInner() {
   }
 
   async function deleteAllocation(id: string) {
+    const ok = await confirmAction({
+      title: "Remove this allocation?",
+      body: "The budget it accounted for comes off the project's totals.",
+      confirmLabel: "Remove",
+    });
+    if (!ok) return;
     const before = allocations;
     setAllocations((prev) => prev.filter((a) => a.id !== id));
     const supabase = createClient();

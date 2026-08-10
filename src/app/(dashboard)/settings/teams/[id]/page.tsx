@@ -14,6 +14,7 @@ import { RequireAdmin } from "@/components/RequireAdmin";
 import { SettingsBackLink } from "@/components/SettingsBackLink";
 import { useOrgAdmin } from "@/lib/useOrgAdmin";
 import { USER_ROLE_LABELS } from "@/lib/types";
+import { confirmAction } from "@/components/ui/ConfirmDialog";
 
 export default function TeamDetailPage() {
   return (
@@ -54,14 +55,14 @@ function TeamDetailInner() {
     ]
       .filter(Boolean)
       .join(" and ");
-    if (
-      !confirm(
-        affected
-          ? `Delete "${team.name}"? ${affected} will be left without a team. Nobody is removed and no role is deleted.`
-          : `Delete "${team.name}"?`
-      )
-    )
-      return;
+    const confirmed = await confirmAction({
+      title: `Delete "${team.name}"?`,
+      body: affected
+        ? `${affected} will be left without a team. Nobody is removed and no role is deleted.`
+        : undefined,
+      confirmLabel: "Delete team",
+    });
+    if (!confirmed) return;
     setDeleting(true);
     const ok = await deleteTeam(team);
     setDeleting(false);

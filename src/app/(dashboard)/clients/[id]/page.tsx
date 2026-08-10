@@ -45,6 +45,7 @@ import type {
   PortalUpdate,
   } from "@/lib/types";
 import { CLIENT_STATUSES, LEAD_SOURCES } from "@/lib/types";
+import { confirmAction } from "@/components/ui/ConfirmDialog";
 
 type PageTab = "overview" | "portal" | "deals" | "activity";
 
@@ -123,7 +124,12 @@ export default function ClientDetailPage() {
 
   async function deleteClient() {
     if (!client) return;
-    if (!confirm("Delete this client? This will remove linked deals/activities.")) return;
+    const ok = await confirmAction({
+      title: `Delete ${client.company}?`,
+      body: "Linked deals and activities are removed with it. This can't be undone.",
+      confirmLabel: "Delete client",
+    });
+    if (!ok) return;
     const supabase = createClient();
     if (!supabase) return;
     await supabase.from("clients").delete().eq("id", client.id);

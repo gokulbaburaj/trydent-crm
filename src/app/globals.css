@@ -389,6 +389,32 @@
   --chart-scale-05: var(--primary);
   --chart-scale-pattern-color: oklch(0 0 0 / 0.15);
   --highlight: oklch(0.852 0.199 91.936);
+
+  /*
+    ── Stacking order ────────────────────────────────────────────────────────
+
+    These values were already in use as bare Tailwind arbitraries — z-[100],
+    z-[110], z-[120], z-[130], z-[140] — scattered across six files with
+    nothing recording what sits above what. Reading the order meant grepping
+    for every one and sorting them by hand, so the next overlay gets its
+    number by guessing, and two things eventually claim the same layer.
+
+    Naming them doesn't change a single rendered pixel. It makes the order
+    reviewable, which is the whole of `z-index-management`.
+
+    Below 100 is in-page: sticky table headers (10), the calendar's now-line
+    (20), toolbars pinned over scrolling content (30), Radix's own popper
+    layer (50). Those are Tailwind's built-in steps and stay as they are.
+
+    100+ is app chrome that must clear all of it. The gaps are 10 wide so a
+    new layer can land between two without renumbering anything.
+  */
+  --z-mobile-nav: 100;    /* bottom tab pill */
+  --z-sheet: 110;         /* full-screen sheets on small viewports */
+  --z-overlay: 120;       /* mobile nav drawer, bulk action bar */
+  --z-hovercard: 130;     /* must clear the overlay it's summoned from */
+  --z-scrim: 140;         /* click-catcher behind a transient popover */
+  --z-skip-link: 200;     /* above everything: it's the escape hatch */
 }
 
 @theme inline {

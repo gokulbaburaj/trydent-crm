@@ -27,6 +27,7 @@ import {
   type MetricSources,
 } from "@/lib/goals";
 import { formatCount, groupByPeriod } from "@/lib/goalPeriods";
+import { confirmAction } from "@/components/ui/ConfirmDialog";
 import type {
   Client,
   Deal,
@@ -184,6 +185,17 @@ function GoalsInner() {
   }
 
   async function deleteGoal(id: string) {
+    const goal = goals.find((g) => g.id === id);
+    const krCount = krsByGoal.get(id)?.length ?? 0;
+    const ok = await confirmAction({
+      title: `Delete "${goal?.objective ?? "this goal"}"?`,
+      body:
+        krCount > 0
+          ? `Its ${krCount} key result${krCount === 1 ? "" : "s"} ${krCount === 1 ? "is" : "are"} deleted too.`
+          : undefined,
+      confirmLabel: "Delete goal",
+    });
+    if (!ok) return;
     const before = goals;
     setGoals((prev) => prev.filter((g) => g.id !== id));
     const supabase = createClient();
@@ -238,6 +250,12 @@ function GoalsInner() {
   }
 
   async function deleteKeyResult(id: string) {
+    const kr = keyResults.find((k) => k.id === id);
+    const ok = await confirmAction({
+      title: `Delete "${kr?.name ?? "this key result"}"?`,
+      confirmLabel: "Delete",
+    });
+    if (!ok) return;
     const before = keyResults;
     setKeyResults((prev) => prev.filter((k) => k.id !== id));
     const supabase = createClient();

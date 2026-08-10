@@ -81,6 +81,8 @@ import { PRIORITY_ORDER, PROJECT_STATUSES, TASK_STATUSES } from "@/lib/types";
 import { useViewPreference } from "@/lib/useViewPreference";
 import { PriorityFlag } from "@/components/ui/PriorityPicker";
 import { RecurrenceIndicator } from "@/components/ui/RecurrencePicker";
+import { confirmAction } from "@/components/ui/ConfirmDialog";
+import { CATEGORICAL_HUES } from "@/lib/palette";
 
 /** True when a yyyy-MM-dd string is today's date. */
 function isSameDayAsToday(date: string | null | undefined) {
@@ -194,7 +196,13 @@ export default function ProjectDetailPage() {
 
   async function deleteMeeting() {
     if (!editingMeetingId) return;
-    if (!confirm("Cancel this meeting?")) return;
+    const ok = await confirmAction({
+      title: "Cancel this meeting?",
+      body: "It's removed from the schedule. If the client could see it, it disappears from their portal too.",
+      confirmLabel: "Cancel meeting",
+      cancelLabel: "Keep it",
+    });
+    if (!ok) return;
     const id = editingMeetingId;
     setActivityRows((prev) => prev.filter((a) => a.id !== id));
     setMeetingOpen(false);
@@ -434,7 +442,11 @@ export default function ProjectDetailPage() {
   async function bulkDeleteTasks() {
     const ids = selectedIds;
     if (ids.length === 0) return;
-    if (!confirm(`Delete ${ids.length} task${ids.length !== 1 ? "s" : ""}?`)) return;
+    const ok = await confirmAction({
+      title: `Delete ${ids.length} task${ids.length !== 1 ? "s" : ""}?`,
+      confirmLabel: `Delete ${ids.length}`,
+    });
+    if (!ok) return;
     setTasks((prev) => prev.filter((t) => !ids.includes(t.id)));
     clear();
     const supabase = createClient();
@@ -583,7 +595,12 @@ export default function ProjectDetailPage() {
 
   async function deleteProject() {
     if (!project) return;
-    if (!confirm("Delete this project and all its tasks?")) return;
+    const ok = await confirmAction({
+      title: `Delete ${project.name}?`,
+      body: "Every task on it goes too. This can't be undone.",
+      confirmLabel: "Delete project",
+    });
+    if (!ok) return;
     const supabase = createClient();
     if (!supabase) return;
     await supabase.from("projects").delete().eq("id", project.id);
@@ -656,6 +673,12 @@ export default function ProjectDetailPage() {
   }
 
   async function deleteTask(id: string) {
+    const task = tasks.find((t) => t.id === id);
+    const ok = await confirmAction({
+      title: `Delete “${task?.name ?? "this task"}”?`,
+      confirmLabel: "Delete task",
+    });
+    if (!ok) return;
     setTasks((prev) => prev.filter((t) => t.id !== id));
     const supabase = createClient();
     if (!supabase) return;
@@ -2028,7 +2051,13 @@ function ProjectCalendar({
 
 /* ---------------------------------- Tasks timeline ---------------------------------- */
 
-const TIMELINE_COLORS = ["#a855f7", "#4cb782", "#6c74dd", "#4ea7e0", "#d9a53f", "#d95c8a"];
+/*
+  Was its own list of six hex values, four of which matched the schedule
+  page's and two of which didn't (#6c74dd vs #7e87e2 — both indigo, visibly
+  different; #a855f7 vs #eb5757 — not related at all). Nothing chose those
+  differences; they're what two lists do over time. Shared now.
+*/
+const TIMELINE_COLORS = CATEGORICAL_HUES;
 
 /**
  * Gantt-style strip: one bar per task, spanning its working window.

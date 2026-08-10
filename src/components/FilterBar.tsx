@@ -21,6 +21,7 @@ import { Popover, MenuItem, MenuLabel, MenuSeparator } from "@/components/ui/Pop
 import { PRIORITY_META } from "@/components/ui/PriorityPicker";
 import { cn } from "@/lib/utils";
 import { TASK_PRIORITIES, type TaskPriority } from "@/lib/types";
+import { confirmAction } from "@/components/ui/ConfirmDialog";
 import {
   countActiveFilters,
   EMPTY_FILTERS,
@@ -119,10 +120,19 @@ export function FilterBar({
     toast.success(`Renamed to “${name}”`);
   }
 
-  function deleteView(view: SavedView) {
-    if (!confirm(`Delete view “${view.name}”?`)) return;
+  async function deleteView(view: SavedView) {
+    const ok = await confirmAction({
+      title: `Delete view “${view.name}”?`,
+      confirmLabel: "Delete view",
+    });
+    if (!ok) return;
+    const before = views;
     onViewsChange(views.filter((v) => v.name !== view.name));
-    toast.success(`View “${view.name}” deleted`);
+    // A saved view is pure local state, so restoring it is free — no round
+    // trip, nothing to fail. Cheapest possible undo.
+    toast.success(`View “${view.name}” deleted`, {
+      action: { label: "Undo", onClick: () => onViewsChange(before) },
+    });
   }
 
   const dueRange: DayPickerRange | undefined =

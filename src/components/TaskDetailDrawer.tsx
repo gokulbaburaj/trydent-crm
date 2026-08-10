@@ -30,6 +30,7 @@ import { createClient } from "@/lib/supabase/client";
 import { initials } from "@/lib/format";
 import type { Profile, ProjectTask, TaskComment, TaskItem, TaskLink, TaskStatus } from "@/lib/types";
 import { TASK_STATUSES } from "@/lib/types";
+import { confirmAction } from "@/components/ui/ConfirmDialog";
 
 const SUBTASK_COLUMNS: TaskStatus[] = ["Not Started", "In Progress", "Done"];
 
@@ -183,6 +184,19 @@ export function TaskDetailDrawer({
     await supabase.from("task_items").update(patch).eq("id", id);
   }
 
+  /*
+    Deliberately NOT confirmed, unlike every other delete in the app.
+
+    A subtask is one line in a checklist you're actively editing, deleted from
+    a row you're already hovering. Confirming it costs a modal per line while
+    tidying a list, and the thing at risk is a sentence you typed. The point of
+    a confirmation is to interrupt an action whose cost exceeds the cost of
+    being interrupted; here it doesn't.
+
+    Over-confirming is its own failure mode — it teaches people to dismiss the
+    dialog without reading, which is exactly what makes the client-delete one
+    dangerous. Same reasoning applies to deleteItem in recruiting.
+  */
   async function deleteSubtask(id: string) {
     setSubtasks((prev) => prev.filter((s) => s.id !== id));
     const supabase = createClient();
@@ -253,13 +267,18 @@ export function TaskDetailDrawer({
                   <MenuItem
                     danger
                     icon={<Trash2 className="h-3.5 w-3.5" />}
-                    onClick={() => {
-                      if (confirm("Delete this task and its subtasks?")) {
-                        onDelete(task.id);
-                        onClose();
-                      } else {
-                        close();
-                      }
+                    onClick={async () => {
+                      // Close the menu first either way — leaving a popover
+                      // open behind a modal traps focus between the two.
+                      close();
+                      const ok = await confirmAction({
+                        title: `Delete “${task.name}”?`,
+                        body: "Its subtasks are deleted with it.",
+                        confirmLabel: "Delete task",
+                      });
+                      if (!ok) return;
+                      onDelete(task.id);
+                      onClose();
                     }}
                   >
                     Delete task
@@ -270,11 +289,15 @@ export function TaskDetailDrawer({
           ) : (
             <button
               title="Delete task"
-              onClick={() => {
-                if (confirm("Delete this task and its subtasks?")) {
-                  onDelete(task.id);
-                  onClose();
-                }
+              onClick={async () => {
+                const ok = await confirmAction({
+                  title: `Delete “${task.name}”?`,
+                  body: "Its subtasks are deleted with it.",
+                  confirmLabel: "Delete task",
+                });
+                if (!ok) return;
+                onDelete(task.id);
+                onClose();
               }}
               className="mt-1 shrink-0 rounded-md p-2 text-muted-foreground hover:bg-danger/10 hover:text-[var(--danger-fg)]"
             >

@@ -67,7 +67,7 @@ export function BulkActionBar({
   if (count === 0) return null;
 
   return createPortal(
-    <div className="fixed bottom-6 left-1/2 z-[120] -translate-x-1/2 animate-pop">
+    <div className="fixed bottom-6 left-1/2 z-[var(--z-overlay)] -translate-x-1/2 animate-pop">
       <div className="flex items-center gap-0.5 rounded-lg border border-border bg-popover px-1.5 py-1.5 shadow-[var(--shadow-xl)]">
         <span className="px-2 text-xs font-medium tabular-nums text-foreground">
           {count} selected

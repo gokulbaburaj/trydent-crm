@@ -24,6 +24,7 @@ import { TooltipContent } from "@/components/charts/tooltip/tooltip-content";
 import { PieChart } from "@/components/charts/pie-chart";
 import { PieSlice } from "@/components/charts/pie-slice";
 import { PieCenter } from "@/components/charts/pie-center";
+import { ChartSummary } from "@/components/charts/ChartSummary";
 import { Card } from "@/components/ui/Card";
 import { cn } from "@/lib/utils";
 import { KanbanBoard } from "@/components/KanbanBoard";
@@ -51,6 +52,7 @@ import { reportError } from "@/lib/reportError";
 import { CURRENCIES, useCurrency } from "@/lib/currency";
 import type { CurrencyCode, Deal, Client, Project } from "@/lib/types";
 import { DEAL_STAGES } from "@/lib/types";
+import { confirmAction } from "@/components/ui/ConfirmDialog";
 
 /** Stage colours — one hue stepped down, because stages are a progression. */
 const STAGE_COLORS = SERIES_SWATCHES;
@@ -385,7 +387,12 @@ export default function PipelinePage() {
   async function handleDelete(id: string) {
     const supabase = createClient();
     if (!supabase) return;
-    if (!confirm("Delete this deal?")) return;
+    const ok = await confirmAction({
+      title: "Delete this deal?",
+      body: "It's removed from the pipeline and from every forecast total.",
+      confirmLabel: "Delete deal",
+    });
+    if (!ok) return;
     await supabase.from("deals").delete().eq("id", id);
     setRows((prev) => prev.filter((d) => d.id !== id));
     setSelected(null);
@@ -558,6 +565,12 @@ export default function PipelinePage() {
 
           {stageChart === "share" ? (
             <div className="flex flex-col items-center justify-center gap-5 py-4 sm:h-[260px] sm:flex-row sm:gap-8 sm:py-0">
+              <ChartSummary
+                label="Share of deals by stage"
+                keyHeader="Stage"
+                valueHeader="Deals"
+                rows={stageSlices.map((s) => [s.label, String(s.value)])}
+              />
               <PieChart
                 data={stageSlices}
                 size={isPhone ? 160 : 220}
@@ -585,6 +598,16 @@ export default function PipelinePage() {
             // than ~6/1 turns into a wall of chart. On a 340px phone that same
             // ratio gives a 57px-tall plot — the bars vanish and only the
             // labels are left, which is exactly what the screenshot showed.
+            <>
+            <ChartSummary
+              label="Pipeline value by stage"
+              keyHeader="Stage"
+              valueHeader="Value"
+              rows={stageBars.map((s) => [
+                s.stage,
+                `${formatCurrency(s.value)} across ${s.deals} deal${s.deals === 1 ? "" : "s"}`,
+              ])}
+            />
             <BarChart
               data={stageBars}
               xDataKey="stage"
@@ -620,6 +643,7 @@ export default function PipelinePage() {
                 )}
               />
             </BarChart>
+            </>
           )}
         </Card>
       )}
