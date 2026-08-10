@@ -26,6 +26,20 @@ export const PHASE_ORDER: ProjectStatus[] = [
 
 export const ON_HOLD: ProjectStatus = "On Hold";
 
+/**
+ * Phases a project can be paused FROM.
+ *
+ * Not the same list as PHASE_ORDER, which includes Delivered — pausing a
+ * shipped project is meaningless, and the database says so too
+ * (`projects_paused_from_valid` in migration 2026-08-10a).
+ *
+ * Kept separate rather than derived with a `.slice(0, -1)`, because the reason
+ * Delivered is excluded is semantic, not positional: it isn't "the last one",
+ * it's "the one you can't stall in". A slice would silently start excluding
+ * Review the day a fifth phase is added.
+ */
+export const PAUSABLE_PHASES: ProjectStatus[] = ["Planning", "In Progress", "Review"];
+
 export type PhaseTone = "neutral" | "positive" | "negative";
 
 export interface PhaseStep {
@@ -37,29 +51,77 @@ export interface PhaseStep {
 /**
  * Steps to render for a project in a given status.
  *
- * ── A limitation worth naming ───────────────────────────────────────────────
+ * ── The limitation this used to have ────────────────────────────────────────
  *
- * When a project is On Hold we cannot say WHICH phase it paused in, because
- * the schema doesn't store it — `status` is a single column and "On Hold"
- * overwrote whatever was there. So the stepper shows the four phases with none
- * marked current, plus a paused terminal.
+ * `status` is a single column, so pausing a project overwrote the phase it was
+ * in. The stepper could only say "paused" and not "paused during Review" —
+ * documented as a known gap rather than guessed at, because inferring it from
+ * `updated_at` would be a guess wearing the costume of a fact.
  *
- * The honest alternative is a `paused_from` column and a migration. That's a
- * real fix and this is not it; this is the correct rendering of the data that
- * exists. Don't infer a phase from `updated_at` — it would be a guess wearing
- * the costume of a fact.
+ * Migration 2026-08-10a added `paused_from`, so that's now answerable. Passing
+ * it marks the phase the project stalled in as still-current beneath the
+ * paused terminal, which is the difference between "this stopped" and "this
+ * stopped HERE".
+ *
+ * Still optional. Projects paused before the migration have null, and null
+ * renders exactly as it did before — no phase marked. Nothing was backfilled
+ * because nobody knows where those stopped.
  */
-export function phaseStepsFor(status: ProjectStatus): PhaseStep[] {
+export function phaseStepsFor(
+  status: ProjectStatus,
+  pausedFrom?: ProjectStatus | null
+): PhaseStep[] {
   const phases: PhaseStep[] = PHASE_ORDER.map((p) => ({
     id: p,
     label: p,
     tone: p === "Delivered" ? ("positive" as const) : ("neutral" as const),
   }));
 
-  if (status === ON_HOLD) {
-    return [...phases, { id: ON_HOLD, label: "On Hold", tone: "negative" }];
+  if (status !== ON_HOLD) return phases;
+
+  /*
+    Paused, and we know where.
+
+    No appended terminal in this case. A project on hold IS at a phase — the
+    one it stopped in — so that phase is marked negative and the ones before it
+    read as done. Appending a fifth step as well would render every phase
+    before the terminal as complete, which claims a project paused during
+    Planning got all the way through Review.
+
+    The "On Hold" wording isn't lost: the status badge beside the stepper
+    already says it. The stepper's job here is WHERE, not WHETHER.
+  */
+  if (pausedFrom && PAUSABLE_PHASES.includes(pausedFrom)) {
+    return phases.map((p) =>
+      p.id === pausedFrom ? { ...p, tone: "negative" as const } : p
+    );
   }
-  return phases;
+
+  // Paused before the column existed. Unchanged from before: a terminal with
+  // no phase marked, which is the honest rendering of "we don't know".
+  return [...phases, { id: ON_HOLD, label: "On Hold", tone: "negative" }];
+}
+
+/**
+ * How far a paused project had got, 0..1, or null when unknowable.
+ *
+ * Separate from `phaseProgress`, which deliberately returns 0 for a paused
+ * project because it feeds the heat scale and a stalled project is not close
+ * to done. This answers a different question — "how far had it got" rather
+ * than "how close is it" — and the two must not be conflated.
+ *
+ * Null for a project that isn't paused, and for one paused before the column
+ * existed. The caller shows nothing rather than a zero that reads as progress.
+ */
+export function pausedProgress(
+  status: ProjectStatus,
+  pausedFrom: ProjectStatus | null | undefined
+): number | null {
+  if (status !== ON_HOLD || !pausedFrom) return null;
+  if (!PAUSABLE_PHASES.includes(pausedFrom)) return null;
+  const i = PHASE_ORDER.indexOf(pausedFrom);
+  if (i === -1) return null;
+  return (i + 1) / PHASE_ORDER.length;
 }
 
 /**
@@ -69,9 +131,49 @@ export function phaseStepsFor(status: ProjectStatus): PhaseStep[] {
  * this file doesn't recognise — which the stepper renders as "nothing reached
  * yet" rather than throwing.
  */
-export function currentPhaseIndex(status: ProjectStatus): number {
-  if (status === ON_HOLD) return PHASE_ORDER.length;
+export function currentPhaseIndex(
+  status: ProjectStatus,
+  pausedFrom?: ProjectStatus | null
+): number {
+  if (status === ON_HOLD) {
+    // Known pause: the project sits AT that phase, so the index points there
+    // rather than at an appended terminal that phaseStepsFor no longer emits.
+    if (pausedFrom && PAUSABLE_PHASES.includes(pausedFrom)) {
+      const i = PHASE_ORDER.indexOf(pausedFrom);
+      if (i !== -1) return i;
+    }
+    return PHASE_ORDER.length;
+  }
   return PHASE_ORDER.indexOf(status);
+}
+
+/**
+ * The patch to write when a project's status changes.
+ *
+ * `paused_from` can't be set independently of `status` — the database enforces
+ * `status = 'On Hold' or paused_from is null`, so any update that changes one
+ * has to consider the other or Postgres rejects it. Putting that in one place
+ * means no call site can get it half-right.
+ *
+ * Three rules:
+ *  - pausing from a real phase   → remember it
+ *  - pausing from anywhere else  → null (Delivered isn't pausable; pausing an
+ *                                 already-held project has nothing new to say)
+ *  - resuming, or any other move → CLEAR it
+ *
+ * That last one is the one that would have bitten. Leaving a stale value
+ * behind doesn't just look wrong, it violates the constraint and the whole
+ * update fails — so resuming a project would silently do nothing.
+ */
+export function statusChangePatch(
+  current: ProjectStatus,
+  next: ProjectStatus
+): { status: ProjectStatus; paused_from: ProjectStatus | null } {
+  if (next !== ON_HOLD) return { status: next, paused_from: null };
+  return {
+    status: ON_HOLD,
+    paused_from: PAUSABLE_PHASES.includes(current) ? current : null,
+  };
 }
 
 /** A project that has shipped. */

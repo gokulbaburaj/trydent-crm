@@ -27,6 +27,7 @@ import { Input, Label, Textarea } from "@/components/ui/Input";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { Dropdown } from "@/components/ui/Dropdown";
 import { StatusPicker } from "@/components/ui/StatusPicker";
+import { statusChangePatch } from "@/lib/projectPhase";
 import { Popover, MenuLabel } from "@/components/ui/Popover";
 import { toast } from "@/components/Toaster";
 import { FilterBar } from "@/components/FilterBar";
@@ -221,10 +222,18 @@ function ProjectsPageInner() {
 
   async function updateProjectStatus(id: string, status: Project["status"]) {
     const before = allProjects;
-    setRows((prev) => prev.map((p) => (p.id === id ? { ...p, status } : p)));
+    const current = allProjects.find((p) => p.id === id);
+    /*
+      `paused_from` moves with `status`, never on its own — the database
+      enforces `status = 'On Hold' or paused_from is null`, so an update that
+      changes one without the other is rejected outright. statusChangePatch
+      owns that pairing; see lib/projectPhase.ts.
+    */
+    const patch = statusChangePatch(current?.status ?? status, status);
+    setRows((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
     const supabase = createClient();
     if (!supabase) return;
-    const { error } = await supabase.from("projects").update({ status }).eq("id", id);
+    const { error } = await supabase.from("projects").update(patch).eq("id", id);
     if (error) {
       setRows(before);
       toast.error(`Couldn't update: ${error.message}`);

@@ -44,6 +44,7 @@ import {
   PHASE_ORDER,
   currentPhaseIndex,
   isDelivered,
+  pausedProgress,
   phaseProgress,
   phaseStepsFor,
   taskCompletion,
@@ -252,11 +253,19 @@ function ProjectRecord({
 }) {
   const completion = taskCompletion(tasks);
 
-  const steps = phaseStepsFor(project.status);
+  /*
+    Both calls take `paused_from`.
+
+    Without it a held project renders the old "we don't know where" shape even
+    when the column has the answer — and worse, the two calls would disagree:
+    phaseStepsFor would emit four steps while currentPhaseIndex pointed at a
+    fifth that no longer exists, so nothing would be marked current at all.
+  */
+  const steps = phaseStepsFor(project.status, project.paused_from);
   const stages: Stage[] = steps.map((s) => ({ id: s.id, label: s.label, tone: s.tone }));
-  // phaseStepsFor appends a slot for On Hold that isn't one of the phases, so
-  // the index comes from the same module rather than the stepper's own lookup.
-  const currentId = stages[currentPhaseIndex(project.status)]?.id ?? project.status;
+  const currentId =
+    stages[currentPhaseIndex(project.status, project.paused_from)]?.id ?? project.status;
+  const heldAt = pausedProgress(project.status, project.paused_from);
 
   const owner = profiles.find((p) => p.id === project.owner);
   const members = profiles.filter((p) => project.member_ids?.includes(p.id));
@@ -398,8 +407,14 @@ function ProjectRecord({
             />
           </div>
           <p className="mt-2 text-[12px] text-muted-foreground">
-            Phase {Math.round(phaseProgress(project.status) * 100)}%
-            {project.status === "On Hold" && " — paused"}
+            {/* A paused project reports where it GOT to, not how close it is —
+                phaseProgress deliberately returns 0 for held projects because
+                it feeds the heat scale. See pausedProgress. */}
+            {heldAt !== null
+              ? `Paused during ${project.paused_from} — ${Math.round(heldAt * 100)}% of the way through`
+              : project.status === "On Hold"
+                ? "Paused — phase unknown"
+                : `Phase ${Math.round(phaseProgress(project.status) * 100)}%`}
           </p>
         </WashCard>
 

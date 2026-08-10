@@ -6,8 +6,10 @@ import {
   isDelivered,
   parseDay,
   phaseProgress,
+  pausedProgress,
   phaseStepsFor,
   spanCoversDay,
+  statusChangePatch,
   spanPosition,
   taskCompletion,
   taskSpan,
@@ -32,6 +34,107 @@ test("a paused project shows a negative terminal, and none of the phases current
   assert.equal(steps[4].tone, "negative");
   // Points at the appended slot, not at a phase we'd be guessing.
   assert.equal(currentPhaseIndex("On Hold"), 4);
+});
+
+test("a KNOWN pause marks the phase it stopped in, with no extra terminal", () => {
+  // Appending a terminal AND keeping four phases renders everything before the
+  // terminal as done — which claims a project paused during Planning got all
+  // the way through Review. The phase itself carries it instead.
+  const steps = phaseStepsFor("On Hold", "Planning");
+  assert.equal(steps.length, 4, "no appended fifth step when we know where");
+  assert.equal(steps[0].tone, "negative", "Planning is where it stopped");
+  assert.equal(currentPhaseIndex("On Hold", "Planning"), 0);
+
+  // And the phases after it are NOT marked done.
+  assert.equal(steps[1].tone, "neutral");
+  assert.equal(steps[2].tone, "neutral");
+});
+
+test("an UNKNOWN pause still renders the honest 'we don't know' shape", () => {
+  // Projects paused before migration 2026-08-10a have null. Nothing was
+  // backfilled, so this path has to keep working exactly as it did.
+  const steps = phaseStepsFor("On Hold", null);
+  assert.equal(steps.length, 5);
+  assert.equal(steps[4].label, "On Hold");
+  assert.equal(currentPhaseIndex("On Hold", null), 4);
+  // Same for undefined — a caller that hasn't been updated yet.
+  assert.equal(phaseStepsFor("On Hold").length, 5);
+});
+
+test("a paused_from the database would reject is ignored, not rendered", () => {
+  // The DB constrains this to Planning/In Progress/Review, but the column is
+  // plain text and this code renders data it doesn't own.
+  const steps = phaseStepsFor("On Hold", "Delivered");
+  assert.equal(steps.length, 5, "falls back to the unknown shape");
+  assert.equal(currentPhaseIndex("On Hold", "Delivered"), 4);
+});
+
+test("pausedProgress answers 'how far did it get', not 'how close is it'", () => {
+  // Deliberately different from phaseProgress, which returns 0 for a paused
+  // project because it feeds the heat scale. Conflating the two would paint a
+  // project that reached Review as though it had never started.
+  assert.equal(phaseProgress("On Hold"), 0, "heat: not close to done");
+  assert.equal(pausedProgress("On Hold", "Review"), 0.75, "history: got to Review");
+
+  // Null where there's nothing to say — the caller shows nothing rather than a
+  // zero that reads as progress.
+  assert.equal(pausedProgress("On Hold", null), null);
+  assert.equal(pausedProgress("In Progress", "Planning"), null, "not paused");
+  assert.equal(pausedProgress("On Hold", "Delivered"), null, "not a pausable phase");
+});
+
+test("pausing remembers the phase it paused from", () => {
+  assert.deepEqual(statusChangePatch("Review", "On Hold"), {
+    status: "On Hold",
+    paused_from: "Review",
+  });
+  assert.deepEqual(statusChangePatch("Planning", "On Hold"), {
+    status: "On Hold",
+    paused_from: "Planning",
+  });
+});
+
+test("RESUMING clears paused_from — the constraint rejects the update otherwise", () => {
+  // `status = 'On Hold' or paused_from is null`. Leaving a stale value behind
+  // doesn't just look wrong, Postgres refuses the whole update — so resuming a
+  // project would silently do nothing at all.
+  assert.deepEqual(statusChangePatch("On Hold", "In Progress"), {
+    status: "In Progress",
+    paused_from: null,
+  });
+  assert.deepEqual(statusChangePatch("On Hold", "Delivered"), {
+    status: "Delivered",
+    paused_from: null,
+  });
+});
+
+test("pausing from a non-pausable state records nothing rather than a lie", () => {
+  // Delivered isn't pausable (the DB says so too), and pausing an already-held
+  // project has no new phase to record.
+  assert.deepEqual(statusChangePatch("Delivered", "On Hold"), {
+    status: "On Hold",
+    paused_from: null,
+  });
+  assert.deepEqual(statusChangePatch("On Hold", "On Hold"), {
+    status: "On Hold",
+    paused_from: null,
+  });
+});
+
+test("every status pair produces a patch the DB constraints accept", () => {
+  // Mirrors projects_paused_from_valid and projects_paused_from_only_when_held.
+  for (const from of PROJECT_STATUSES) {
+    for (const to of PROJECT_STATUSES) {
+      const p = statusChangePatch(from, to);
+      if (p.paused_from !== null) {
+        assert.equal(p.status, "On Hold", `${from}→${to}: value set while not held`);
+        assert.ok(
+          (["Planning", "In Progress", "Review"] as ProjectStatus[]).includes(p.paused_from),
+          `${from}→${to}: ${p.paused_from} is not a pausable phase`
+        );
+      }
+    }
+  }
 });
 
 test("Delivered is toned positive, not just 'current'", () => {

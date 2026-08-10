@@ -702,6 +702,21 @@ export interface Project {
   currency: CurrencyCode;
   /** Hidden from Accounts and the Projects list, but never deleted. */
   archived: boolean;
+  /**
+   * The phase this project was in when it moved to On Hold.
+   *
+   * `status` is one column, so pausing overwrites the phase — the information
+   * isn't hidden, it's destroyed. This keeps it.
+   *
+   * Null means either "not paused" or "paused before 2026-08-10a", and the UI
+   * treats both the same: show the paused terminal with no phase marked. There
+   * was no backfill because we genuinely don't know where the existing held
+   * projects stopped, and a guessed value is worse than an absent one.
+   *
+   * The database enforces that it's only ever Planning / In Progress / Review,
+   * and only ever set while status is On Hold.
+   */
+  paused_from: ProjectStatus | null;
   start_date: string | null;
   due_date: string | null;
   description: string | null;
