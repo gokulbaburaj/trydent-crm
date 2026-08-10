@@ -555,6 +555,8 @@ export interface KeyResult {
   unit: string | null;
   sort_order: number;
   created_at: string;
+  /** Maintained by a trigger — see 2026-08-11a. Drives stalled detection. */
+  updated_at: string;
 }
 
 /* ============ RECRUITING / ONBOARDING ============ */
