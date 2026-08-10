@@ -26,6 +26,7 @@ import {
   keyResultPct,
   type MetricSources,
 } from "@/lib/goals";
+import { formatCount, groupByPeriod } from "@/lib/goalPeriods";
 import type {
   Client,
   Deal,
@@ -121,12 +122,19 @@ function GoalsInner() {
     [goals, periodFilter]
   );
 
+  // Grouped rather than filtered. The period dropdown still narrows, but with
+  // headings you no longer have to pick a period to get a coherent read.
+  const groups = useMemo(() => groupByPeriod(visibleGoals), [visibleGoals]);
+
   const ownerOf = (id: string | null) => profiles.find((p) => p.id === id) ?? null;
 
   function formatValue(kr: KeyResult, value: number) {
     if (isMoneySource(kr.source)) return formatCurrency(value);
-    const rounded = Math.round(value * 100) / 100;
-    return kr.unit ? `${rounded} ${kr.unit}` : String(rounded);
+    // Was String(rounded) — six unseparated digits next to six more is a
+    // counting exercise. formatCount only touches what's displayed; the
+    // input below still holds the raw number.
+    const shown = formatCount(value);
+    return kr.unit ? `${shown} ${kr.unit}` : shown;
   }
 
   async function createGoal() {
@@ -322,28 +330,41 @@ function GoalsInner() {
         />
       )}
 
-      {visibleGoals.map((goal) => {
+      {groups.map(({ period, goals: periodGoals }) => (
+        <section key={period ?? "__none"} className="flex flex-col gap-2.5">
+          {/* The period was a chip repeated inside every card. As a heading it
+              is written once and does the sorting work visibly. */}
+          <div className="flex items-center gap-2.5 px-0.5">
+            <h2 className="text-[13px] font-semibold tracking-tight">
+              {period ?? "No period set"}
+            </h2>
+            <span className="text-[11px] tabular-nums text-muted-2">
+              {periodGoals.length}
+            </span>
+            <div className="h-px flex-1 bg-border-subtle" />
+          </div>
+
+      {periodGoals.map((goal) => {
         const krs = krsByGoal.get(goal.id) ?? [];
         const pct = goalPct(krs, goal, src);
         const owner = ownerOf(goal.owner);
         return (
           <Card key={goal.id} className="rounded-xl shadow-[var(--shadow-sm)]">
-            <div className="flex flex-wrap items-start gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <GoalRing pct={pct} />
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold leading-snug">{goal.objective}</p>
-                <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                  {goal.period && <span>{goal.period}</span>}
-                  {owner && (
+                {/* Period dropped from this line — it's the heading above now.
+                    Key-result count dropped too: the rows are directly below
+                    and countable, so it was narrating the next four pixels. */}
+                {owner && (
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1.5">
                       <Avatar name={owner.full_name} url={owner.avatar_url} size="xs" />
                       {owner.full_name}
                     </span>
-                  )}
-                  <span>
-                    {krs.length} key result{krs.length === 1 ? "" : "s"}
-                  </span>
-                </div>
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 {/* One control, not a badge next to a dropdown saying the same
@@ -375,60 +396,90 @@ function GoalsInner() {
                   No key results yet — this goal has nothing to measure.
                 </p>
               )}
+              {/*
+                One line per key result, not two.
+
+                The old row was `name [flex-1] ......... numbers`, which on an
+                880px card left a ~500px void between a result and its own
+                figures — the two things you most need to read together were
+                the two furthest apart. The bar then sat on a second line
+                underneath, with the source label right-aligned at its far end
+                where it read as a caption for the bar rather than a note about
+                where the number comes from.
+
+                So: the bar moves INTO the gap. It's the only element here
+                that's happy to be any width, so letting it absorb the slack
+                removes the void instead of decorating it, and costs a line of
+                height per row.
+              */}
               {krs.map((kr) => {
                 const value = currentValue(kr, goal, src);
                 const krPct = keyResultPct(kr, goal, src);
+                const auto = kr.source !== "manual";
                 return (
-                  <div key={kr.id} className="group">
-                    <div className="flex flex-wrap items-center gap-2 text-[13px]">
-                      <span className="min-w-0 flex-1 truncate">{kr.name}</span>
-                      {kr.source === "manual" ? (
-                        <input
-                          type="number"
-                          aria-label={`Current value for ${kr.name}`}
-                          value={kr.current_manual}
-                          onChange={(e) =>
-                            updateKeyResult(kr.id, {
-                              current_manual: Number(e.target.value) || 0,
-                            })
-                          }
-                          className="h-7 w-24 rounded-md border border-edge bg-transparent px-2 text-right text-xs tabular-nums focus:border-primary/60 focus:outline-none"
-                        />
-                      ) : (
-                        <span className="tabular-nums text-muted-foreground">
+                  <div
+                    key={kr.id}
+                    className="group grid grid-cols-[minmax(0,10rem)_minmax(3rem,1fr)_auto_auto] items-center gap-x-3 gap-y-1.5 text-[13px]"
+                  >
+                    <div className="min-w-0">
+                      <div className="truncate" title={kr.name}>
+                        {kr.name}
+                      </div>
+                      {/* Only auto-tracked rows say where the number comes
+                          from. On a manual row the editable field is the
+                          signal, so "Manual entry" was labelling the obvious
+                          on every line. */}
+                      {auto && (
+                        <div className="truncate text-[10px] text-muted-2">
+                          {KEY_RESULT_SOURCE_LABELS[kr.source]}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="h-1.5 overflow-hidden rounded-full bg-active">
+                      <div
+                        className={cn(
+                          "h-full rounded-full transition-[width] duration-300 ease-[var(--ease-out)]",
+                          krPct >= 100 ? "bg-success" : "bg-primary"
+                        )}
+                        style={{ width: `${krPct}%` }}
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-1.5 tabular-nums">
+                      {auto ? (
+                        <span className="text-muted-foreground">
                           {formatValue(kr, value)}
                         </span>
+                      ) : (
+                        <ValueInput
+                          label={`Current value for ${kr.name}`}
+                          value={Number(kr.current_manual) || 0}
+                          onCommit={(next) =>
+                            updateKeyResult(kr.id, { current_manual: next })
+                          }
+                        />
                       )}
                       <span className="text-muted-2">/</span>
-                      <span className="tabular-nums text-foreground-secondary">
+                      <span className="text-foreground-secondary">
                         {formatValue(kr, Number(kr.target))}
                       </span>
-                      <span className="w-10 shrink-0 text-right text-xs font-medium tabular-nums">
+                      {/* Muted and smaller than the ring: with one key result
+                          this number equals the goal's, and the ring should
+                          read as the headline of the two. */}
+                      <span className="w-9 shrink-0 text-right text-[11px] font-medium text-muted-foreground">
                         {krPct}%
                       </span>
-                      <button
-                        type="button"
-                        aria-label={`Delete ${kr.name}`}
-                        onClick={() => deleteKeyResult(kr.id)}
-                        className="rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:text-[var(--danger-fg)] group-hover:opacity-100"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
                     </div>
-                    <div className="mt-1 flex items-center gap-2">
-                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-active">
-                        <div
-                          className={cn(
-                            "h-full rounded-full transition-[width] duration-300 ease-[var(--ease-out)]",
-                            krPct >= 100 ? "bg-success" : "bg-primary"
-                          )}
-                          style={{ width: `${krPct}%` }}
-                        />
-                      </div>
-                      <span className="shrink-0 text-[10px] text-muted-2">
-                        {KEY_RESULT_SOURCE_LABELS[kr.source]}
-                      </span>
-                    </div>
+
+                    <button
+                      type="button"
+                      aria-label={`Delete ${kr.name}`}
+                      onClick={() => deleteKeyResult(kr.id)}
+                      className="rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:text-[var(--danger-fg)] focus-visible:opacity-100 group-hover:opacity-100"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
                   </div>
                 );
               })}
@@ -510,35 +561,109 @@ function GoalsInner() {
           </Card>
         );
       })}
+        </section>
+      ))}
     </div>
   );
 }
 
+/**
+ * A manual key result's current value.
+ *
+ * ── Why this isn't a plain controlled input ─────────────────────────────────
+ *
+ * It used to be, writing straight to Postgres from `onChange`. Typing 25000
+ * was five UPDATEs, four of them wrong (2, 25, 250, 2500) and each one
+ * repainting a progress bar mid-keystroke.
+ *
+ * Worse, the value went through `Number(e.target.value) || 0`, so clearing the
+ * field to retype wrote a real 0 — and because the input was controlled by
+ * that same value, the 0 came straight back and sat in front of whatever you
+ * typed next. You could only edit by selecting all first, which nobody
+ * discovers.
+ *
+ * So the draft is local and commits on blur or Enter; Escape abandons it. No
+ * effect syncing draft to prop — while `draft` is null the input simply shows
+ * the prop, which is the pattern CLAUDE.md points at in `lib/useChannel.ts`.
+ */
+function ValueInput({
+  value,
+  label,
+  onCommit,
+}: {
+  value: number;
+  label: string;
+  onCommit: (next: number) => void;
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
+
+  function commit() {
+    if (draft === null) return;
+    const trimmed = draft.trim();
+    // An empty field means "I haven't finished typing", not "zero". Revert
+    // rather than writing a number the person never entered.
+    const next = trimmed === "" ? value : Number(trimmed);
+    setDraft(null);
+    if (!Number.isFinite(next) || next === value) return;
+    onCommit(next);
+  }
+
+  return (
+    <input
+      type="number"
+      inputMode="decimal"
+      aria-label={label}
+      value={draft ?? String(value)}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          e.currentTarget.blur();
+        } else if (e.key === "Escape") {
+          setDraft(null);
+          e.currentTarget.blur();
+        }
+      }}
+      /*
+        Spinners off. They step by 1, and every target on this page is in the
+        thousands — 600,000 clicks to fill one in. They also stole horizontal
+        room from the digits, which is the only thing in the field worth
+        seeing.
+      */
+      className="h-7 w-24 rounded-md border border-edge bg-transparent px-2 text-right text-xs tabular-nums [appearance:textfield] focus:border-primary/60 focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+    />
+  );
+}
+
 function GoalRing({ pct }: { pct: number }) {
-  const r = 26;
+  const r = 20;
   const c = 2 * Math.PI * r;
   const color = pct >= 100 ? "var(--success)" : "var(--primary)";
   return (
-    <svg viewBox="0 0 64 64" className="h-16 w-16 shrink-0" role="img" aria-label={`${pct}% complete`}>
-      <circle cx="32" cy="32" r={r} fill="none" stroke="var(--border)" strokeWidth="6" />
+    // 48px, down from 64. It was the largest object on the card while
+    // carrying one number, and for a single-key-result goal that number is
+    // the same one the row repeats.
+    <svg viewBox="0 0 48 48" className="h-12 w-12 shrink-0" role="img" aria-label={`${pct}% complete`}>
+      <circle cx="24" cy="24" r={r} fill="none" stroke="var(--border)" strokeWidth="5" />
       <circle
-        cx="32"
-        cy="32"
+        cx="24"
+        cy="24"
         r={r}
         fill="none"
         stroke={color}
-        strokeWidth="6"
+        strokeWidth="5"
         strokeLinecap="round"
         strokeDasharray={`${Math.max((pct / 100) * c, 0.01)} ${c}`}
-        transform="rotate(-90 32 32)"
-        style={{ transition: "stroke-dasharray 700ms cubic-bezier(0.16, 1, 0.3, 1)" }}
+        transform="rotate(-90 24 24)"
+        style={{ transition: "stroke-dasharray 700ms var(--ease-out)" }}
       />
       <text
-        x="32"
-        y="36"
+        x="24"
+        y="28"
         textAnchor="middle"
         fill="var(--foreground)"
-        fontSize="14"
+        fontSize="13"
         fontWeight="600"
       >
         {pct}%

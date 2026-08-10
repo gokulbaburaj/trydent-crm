@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { isValidPortalUsername, portalEmail } from "@/lib/portal";
+import { serverError } from "@/lib/serverError";
 
 /**
  * POST /api/portal-users
@@ -83,7 +84,7 @@ export async function POST(req: Request) {
       createError.message.toLowerCase().includes("already") ||
       createError.status === 422;
     if (!alreadyExists) {
-      return NextResponse.json({ error: createError.message }, { status: 400 });
+      return serverError("create the portal login", createError);
     }
     // The login already exists — reset its password instead so credentials
     // can always be regenerated from the Portals tab.
@@ -106,7 +107,7 @@ export async function POST(req: Request) {
       user_metadata: metadata,
     });
     if (updateError) {
-      return NextResponse.json({ error: updateError.message }, { status: 400 });
+      return serverError("reset the portal password", updateError);
     }
     // Make sure the profile is linked to the right client even if the
     // signup trigger predates client_id support.

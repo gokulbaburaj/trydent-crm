@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createClient as createServerClient } from "@/lib/supabase/server";
+import { serverError, serverWarning } from "@/lib/serverError";
 
 const ALLOWED_ROLES = ["admin", "full_time", "part_time", "contract", "intern"] as const;
 
@@ -100,7 +101,9 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-    return NextResponse.json({ error: raw || "Couldn't create user." }, { status: 400 });
+    // Everything above this line is a message written deliberately. What's
+    // left is whatever Supabase Auth said, which is not ours to forward.
+    return serverError("create the account", createError);
   }
 
   // Fill in team / manager (not part of the signup trigger). Best-effort: the
@@ -113,7 +116,10 @@ export async function POST(req: Request) {
       .update({ team, reports_to: reportsTo })
       .eq("id", created.user.id);
     if (profileError) {
-      warning = `Member created, but team/manager couldn't be saved: ${profileError.message}`;
+      warning = serverWarning(
+        "Member created, but their team and manager couldn't be saved. Set them from the Team page.",
+        profileError
+      );
     }
   }
 
@@ -178,7 +184,7 @@ export async function DELETE(req: Request) {
   });
   const { error } = await admin.auth.admin.deleteUser(userId);
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+    return serverError("remove the team member", error);
   }
 
   return NextResponse.json({ ok: true });
