@@ -559,6 +559,25 @@ export interface KeyResult {
   updated_at: string;
 }
 
+/**
+ * One entry in a manual measure's progress log.
+ *
+ * `amount` is what was ADDED, not the new total — the current value is the sum
+ * of these. Signed, so a correction is a negative entry rather than an edit to
+ * history. `key_results.current_manual` is kept equal to that sum by a trigger
+ * (2026-08-11d), which is why nothing outside the Goals page had to change.
+ */
+export interface GoalContribution {
+  id: string;
+  key_result_id: string;
+  amount: number;
+  /** The day it happened, which is not always the day it was entered. */
+  occurred_on: string;
+  note: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+
 /* ============ RECRUITING / ONBOARDING ============ */
 
 export type ApplicantStage =

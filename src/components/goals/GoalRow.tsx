@@ -1,6 +1,13 @@
 "use client";
 
-import { AlertTriangle, CircleCheck, CircleDashed, Clock, Trash2 } from "lucide-react";
+import {
+  AlertTriangle,
+  ChevronDown,
+  CircleCheck,
+  CircleDashed,
+  Clock,
+  Trash2,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Pace, PaceStatus } from "@/lib/goalPace";
 
@@ -42,8 +49,9 @@ export function GoalRow({
   detail,
   action,
   stalled,
+  expanded,
+  onToggle,
   onDelete,
-  children,
 }: {
   title: string;
   pct: number;
@@ -53,9 +61,9 @@ export function GoalRow({
   /** Left-hand call to action: "₹25,000/week needed". Coloured by status. */
   action: string | null;
   stalled: boolean;
+  expanded: boolean;
+  onToggle: () => void;
   onDelete: () => void;
-  /** The editable value control, rendered inline at the end of the row. */
-  children?: React.ReactNode;
 }) {
   const meta = STATUS_META[pace.status];
   const Icon = meta.icon;
@@ -64,20 +72,39 @@ export function GoalRow({
   return (
     <div className="group px-4 py-3">
       <div className="flex items-center gap-3">
-        <Icon className={cn("h-4 w-4 shrink-0", meta.tone)} aria-hidden="true" />
-        <span className="min-w-0 flex-1 truncate text-[14px] font-medium" title={title}>
-          {title}
-        </span>
-        {stalled && (
-          <span
-            className="flex shrink-0 items-center gap-1 text-[11px] text-[var(--warning-fg)]"
-            title="No update in over three weeks"
-          >
-            <Clock className="h-3 w-3" aria-hidden="true" /> stale
+        {/*
+          The whole header is the toggle, not a small chevron hit area — the
+          row is 20px tall and a 16px target inside it is the "no precision
+          required" rule broken by construction. Delete stays a separate
+          button so opening a goal can never be a click away from removing it.
+        */}
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={expanded}
+          className="flex min-w-0 flex-1 items-center gap-3 rounded-md text-left"
+        >
+          <Icon className={cn("h-4 w-4 shrink-0", meta.tone)} aria-hidden="true" />
+          <span className="min-w-0 flex-1 truncate text-[14px] font-medium" title={title}>
+            {title}
           </span>
-        )}
-        {children}
-        <span className="w-10 shrink-0 text-right text-[13px] tabular-nums">{pct}%</span>
+          {stalled && (
+            <span
+              className="flex shrink-0 items-center gap-1 text-[11px] text-[var(--warning-fg)]"
+              title="No progress logged in over three weeks"
+            >
+              <Clock className="h-3 w-3" aria-hidden="true" /> stale
+            </span>
+          )}
+          <span className="w-10 shrink-0 text-right text-[13px] tabular-nums">{pct}%</span>
+          <ChevronDown
+            className={cn(
+              "h-4 w-4 shrink-0 text-muted-2 transition-transform duration-200 ease-[var(--ease-out)]",
+              expanded && "rotate-180"
+            )}
+            aria-hidden="true"
+          />
+        </button>
         <button
           type="button"
           aria-label={`Delete ${title}`}

@@ -11,6 +11,7 @@ import { RequireAccess } from "@/components/RequireAccess";
 import { confirmAction } from "@/components/ui/ConfirmDialog";
 import { GoalRow } from "@/components/goals/GoalRow";
 import { GoalComposer, type DraftGoal } from "@/components/goals/GoalComposer";
+import { GoalPanel, type GoalEdits } from "@/components/goals/GoalPanel";
 import { useSupabaseTable } from "@/lib/useSupabaseTable";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/useAuth";
@@ -41,6 +42,7 @@ import type {
   Client,
   Deal,
   Goal,
+  GoalContribution,
   Invoice,
   KeyResult,
   Profile,
@@ -95,8 +97,16 @@ function GoalsInner() {
   const { rows: invoices } = useSupabaseTable<Invoice>("invoices");
   const { rows: profiles } = useSupabaseTable<Profile>("profiles");
 
+  const { rows: contributions, setRows: setContributions } =
+    useSupabaseTable<GoalContribution>("goal_contributions", {
+      column: "occurred_on",
+      ascending: false,
+    });
+
   const [composerOpen, setComposerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  /** Only one goal open at a time — two expanded panels is a scroll problem. */
+  const [openId, setOpenId] = useState<string | null>(null);
 
   /*
     Frozen at mount. Reading Date.now() during render makes every goal's pace
@@ -153,6 +163,14 @@ function GoalsInner() {
         money ? formatCurrency(v) : `${formatCount(v)}${primary?.unit ? ` ${primary.unit}` : ""}`;
 
       /*
+        No unit. "3 people of 10 people" names the unit twice — it belongs on
+        the second number only, where it reads as "3 of 10 people". Money is
+        the exception: a currency symbol on both sides is correct, because
+        "₹25,000 of 200,000" looks like two different quantities.
+      */
+      const fmtBare = (v: number) => (money ? formatCurrency(v) : formatCount(v));
+
+      /*
         Run rates round UP to a whole unit for anything that isn't money.
         Straight division produced "0.71/week needed" for five team-building
         sessions across seven weeks — you cannot hold 0.71 of a session, and
@@ -170,11 +188,22 @@ function GoalsInner() {
         choice,
         days,
         stalled: primary ? isStalled(primary.source, primary.updated_at, now) : false,
+        fmt,
         action: actionLine(pace, rate, fmtRate),
-        detail: detailLine(pace, primary ? current : 0, primary ? Number(primary.target) : 0, days, fmt),
+        detail: detailLine(
+          pace,
+          primary ? current : 0,
+          primary ? Number(primary.target) : 0,
+          days,
+          fmt,
+          fmtBare
+        ),
       };
     });
   }, [goals, krsByGoal, src, now, formatCurrency]);
+
+  const contributionsFor = (keyResultId: string | undefined) =>
+    keyResultId ? contributions.filter((c) => c.key_result_id === keyResultId) : [];
 
   /** Newest period first; undated last. Same ordering rule as the headings. */
   const groups = useMemo(() => {
@@ -249,16 +278,108 @@ function GoalsInner() {
     toast.success("Goal created");
   }
 
-  async function updateMeasure(id: string, patch: Partial<KeyResult>) {
-    const before = keyResults;
-    setKeyResults((prev) => prev.map((k) => (k.id === id ? { ...k, ...patch } : k)));
+  /**
+   * Log what was added.
+   *
+   * `current_manual` is deliberately NOT patched here — a trigger keeps it
+   * equal to the sum (2026-08-11d). Setting it client-side too would be the
+   * same duplicated-state bug this rework removed everywhere else, and the two
+   * would disagree the moment an insert failed halfway. The refetched row is
+   * the authority.
+   */
+  async function addContribution(
+    keyResultId: string,
+    amount: number,
+    occurredOn: string,
+    note: string | null
+  ) {
     const supabase = createClient();
     if (!supabase) return;
-    const { error } = await supabase.from("key_results").update(patch).eq("id", id);
-    if (error) {
-      setKeyResults(before);
-      reportError("save", error);
+    const { data, error } = await supabase
+      .from("goal_contributions")
+      .insert({
+        key_result_id: keyResultId,
+        amount,
+        occurred_on: occurredOn,
+        note,
+        created_by: profile?.id ?? null,
+      })
+      .select()
+      .single();
+    if (error || !data) {
+      reportError("log the contribution", error);
+      return;
     }
+    setContributions((prev) => [data as GoalContribution, ...prev]);
+    await refreshMeasure(keyResultId);
+  }
+
+  async function removeContribution(id: string) {
+    const entry = contributions.find((c) => c.id === id);
+    const before = contributions;
+    setContributions((prev) => prev.filter((c) => c.id !== id));
+    const supabase = createClient();
+    if (!supabase) return;
+    const { error } = await supabase.from("goal_contributions").delete().eq("id", id);
+    if (error) {
+      setContributions(before);
+      reportError("remove the entry", error);
+      return;
+    }
+    if (entry) await refreshMeasure(entry.key_result_id);
+  }
+
+  /** Read back the trigger's work rather than guessing at it. */
+  async function refreshMeasure(keyResultId: string) {
+    const supabase = createClient();
+    if (!supabase) return;
+    const { data } = await supabase
+      .from("key_results")
+      .select("*")
+      .eq("id", keyResultId)
+      .single();
+    if (data) {
+      setKeyResults((prev) => prev.map((k) => (k.id === data.id ? (data as KeyResult) : k)));
+    }
+  }
+
+  async function saveGoal(goal: Goal, measure: KeyResult | null, edits: GoalEdits) {
+    const supabase = createClient();
+    if (!supabase) return;
+
+    const goalPatch = {
+      objective: edits.objective,
+      period: edits.period,
+      start_date: edits.start_date,
+      end_date: edits.end_date,
+    };
+    const measurePatch = {
+      target: edits.target,
+      unit: edits.unit,
+      source: edits.source,
+    };
+
+    const beforeGoals = goals;
+    const beforeKrs = keyResults;
+    setGoals((prev) => prev.map((g) => (g.id === goal.id ? { ...g, ...goalPatch } : g)));
+    if (measure) {
+      setKeyResults((prev) =>
+        prev.map((k) => (k.id === measure.id ? { ...k, ...measurePatch } : k))
+      );
+    }
+
+    const { error } = await supabase.from("goals").update(goalPatch).eq("id", goal.id);
+    const krError = measure
+      ? (await supabase.from("key_results").update(measurePatch).eq("id", measure.id)).error
+      : null;
+
+    if (error || krError) {
+      setGoals(beforeGoals);
+      setKeyResults(beforeKrs);
+      reportError("save the goal", error ?? krError);
+      return;
+    }
+    toast.success("Goal updated");
   }
 
   async function deleteGoal(goal: Goal) {
@@ -369,19 +490,27 @@ function GoalsInner() {
                   detail={row.detail}
                   action={row.action}
                   stalled={row.stalled}
+                  expanded={openId === row.goal.id}
+                  onToggle={() =>
+                    setOpenId((id) => (id === row.goal.id ? null : row.goal.id))
+                  }
                   onDelete={() => deleteGoal(row.goal)}
-                >
-                  {row.primary?.source === "manual" && (
-                    <ManualValue
-                      key={row.primary.id}
-                      value={Number(row.primary.current_manual) || 0}
-                      label={`Current value for ${row.goal.objective}`}
-                      onCommit={(next) =>
-                        updateMeasure(row.primary!.id, { current_manual: next })
-                      }
-                    />
-                  )}
-                </GoalRow>
+                />
+
+                {openId === row.goal.id && (
+                  <GoalPanel
+                    goal={row.goal}
+                    measure={row.primary}
+                    contributions={contributionsFor(row.primary?.id)}
+                    choice={row.choice}
+                    formatValue={row.fmt}
+                    onAddContribution={(amount, occurredOn, note) =>
+                      row.primary && addContribution(row.primary.id, amount, occurredOn, note)
+                    }
+                    onDeleteContribution={removeContribution}
+                    onSaveGoal={(edits) => saveGoal(row.goal, row.primary, edits)}
+                  />
+                )}
 
                 {shouldOfferRollover(row.pace) && row.choice?.kind === "quarter" && (
                   <div className="flex items-center gap-2 border-t border-border-subtle bg-raise px-4 py-2">
@@ -432,9 +561,10 @@ function detailLine(
   current: number,
   target: number,
   days: number | null,
-  fmt: (v: number) => string
+  fmt: (v: number) => string,
+  fmtBare: (v: number) => string
 ): string {
-  const progress = `${fmt(current)} of ${fmt(target)}`;
+  const progress = `${fmtBare(current)} of ${fmt(target)}`;
   if (pace.status === "not_started") {
     return days === null ? progress : `${progress} · not started`;
   }
@@ -461,54 +591,4 @@ function summarise(items: { pct: number; pace: Pace }[]): string {
     (dated.reduce((s, i) => s + (i.pace.expected ?? 0), 0) / dated.length) * 100
   );
   return `${count} · ${avg}% average · ${expected}% expected`;
-}
-
-/**
- * A manual measure's current value.
- *
- * Local draft, committed on blur or Enter. Writing on every keystroke turned
- * typing "25000" into five UPDATEs, four of them wrong, and `Number(v) || 0`
- * meant clearing the field wrote a real zero that came straight back — so the
- * only way to edit was select-all-then-type, which nobody discovers.
- */
-function ManualValue({
-  value,
-  label,
-  onCommit,
-}: {
-  value: number;
-  label: string;
-  onCommit: (next: number) => void;
-}) {
-  const [draft, setDraft] = useState<string | null>(null);
-
-  function commit() {
-    if (draft === null) return;
-    const trimmed = draft.trim();
-    const next = trimmed === "" ? value : Number(trimmed);
-    setDraft(null);
-    if (!Number.isFinite(next) || next === value) return;
-    onCommit(next);
-  }
-
-  return (
-    <input
-      type="number"
-      inputMode="decimal"
-      aria-label={label}
-      value={draft ?? String(value)}
-      onChange={(e) => setDraft(e.target.value)}
-      onBlur={commit}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          e.currentTarget.blur();
-        } else if (e.key === "Escape") {
-          setDraft(null);
-          e.currentTarget.blur();
-        }
-      }}
-      className="h-7 w-24 shrink-0 rounded-md border border-edge bg-transparent px-2 text-right text-xs tabular-nums [appearance:textfield] focus:border-primary/60 focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-    />
-  );
 }
