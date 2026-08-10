@@ -105,8 +105,13 @@ function GoalsInner() {
 
   const [composerOpen, setComposerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  /** Only one goal open at a time — two expanded panels is a scroll problem. */
-  const [openId, setOpenId] = useState<string | null>(null);
+  /*
+    Only one goal open at a time — two expanded panels is a scroll problem.
+    The mode records WHY it was opened: the chevron means "show me", the
+    pencil means "let me change it". Opening to read no longer puts every
+    field of the goal in an editable state.
+  */
+  const [open, setOpen] = useState<{ id: string; mode: "log" | "edit" } | null>(null);
 
   /*
     Frozen at mount. Reading Date.now() during render makes every goal's pace
@@ -490,19 +495,31 @@ function GoalsInner() {
                   detail={row.detail}
                   action={row.action}
                   stalled={row.stalled}
-                  expanded={openId === row.goal.id}
+                  expanded={open?.id === row.goal.id}
                   onToggle={() =>
-                    setOpenId((id) => (id === row.goal.id ? null : row.goal.id))
+                    setOpen((o) =>
+                      o?.id === row.goal.id && o.mode === "log"
+                        ? null
+                        : { id: row.goal.id, mode: "log" }
+                    )
+                  }
+                  onEdit={() =>
+                    setOpen((o) =>
+                      o?.id === row.goal.id && o.mode === "edit"
+                        ? null
+                        : { id: row.goal.id, mode: "edit" }
+                    )
                   }
                   onDelete={() => deleteGoal(row.goal)}
                 />
 
-                {openId === row.goal.id && (
+                {open?.id === row.goal.id && (
                   <GoalPanel
                     goal={row.goal}
                     measure={row.primary}
                     contributions={contributionsFor(row.primary?.id)}
                     choice={row.choice}
+                    mode={open.mode}
                     formatValue={row.fmt}
                     onAddContribution={(amount, occurredOn, note) =>
                       row.primary && addContribution(row.primary.id, amount, occurredOn, note)

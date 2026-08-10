@@ -6,6 +6,7 @@ import {
   CircleCheck,
   CircleDashed,
   Clock,
+  Pencil,
   Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -51,6 +52,7 @@ export function GoalRow({
   stalled,
   expanded,
   onToggle,
+  onEdit,
   onDelete,
 }: {
   title: string;
@@ -63,6 +65,7 @@ export function GoalRow({
   stalled: boolean;
   expanded: boolean;
   onToggle: () => void;
+  onEdit: () => void;
   onDelete: () => void;
 }) {
   const meta = STATUS_META[pace.status];
@@ -104,6 +107,20 @@ export function GoalRow({
             )}
             aria-hidden="true"
           />
+        </button>
+        {/*
+          Edit sits beside delete rather than inside the panel. Opening a goal
+          to read its history used to drop you into a form with every field
+          live, so the common case (look at it) carried the risk of the rare
+          one (change it). Two controls, two intents.
+        */}
+        <button
+          type="button"
+          aria-label={`Edit ${title}`}
+          onClick={onEdit}
+          className="shrink-0 rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100"
+        >
+          <Pencil className="h-3.5 w-3.5" />
         </button>
         <button
           type="button"

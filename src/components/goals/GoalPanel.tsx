@@ -74,6 +74,7 @@ export function GoalPanel({
   measure,
   contributions,
   choice,
+  mode,
   formatValue,
   onAddContribution,
   onDeleteContribution,
@@ -83,6 +84,8 @@ export function GoalPanel({
   measure: KeyResult | null;
   contributions: GoalContribution[];
   choice: PeriodChoice | null;
+  /** "log" opens on the history; "edit" opens on the goal's fields. */
+  mode: "log" | "edit";
   formatValue: (v: number) => string;
   onAddContribution: (amount: number, occurredOn: string, note: string | null) => void;
   onDeleteContribution: (id: string) => void;
@@ -91,6 +94,12 @@ export function GoalPanel({
   const today = useMemo(() => new Date(), []);
   const manual = measure?.source === "manual";
 
+  /*
+    The log form is hidden until asked for. It used to render open on every
+    expand, which put a live number field in front of you whether or not you
+    came to record anything — the same mistake as the edit form below.
+  */
+  const [logging, setLogging] = useState(false);
   const [amount, setAmount] = useState("");
   /*
     Local date, not UTC. `toISOString().slice(0,10)` was defaulting the picker
@@ -158,6 +167,17 @@ export function GoalPanel({
     <div className="border-t border-border-subtle bg-raise px-4 py-3">
       {manual ? (
         <>
+          {!logging && (
+            <button
+              type="button"
+              onClick={() => setLogging(true)}
+              className="flex items-center gap-1.5 rounded-md px-1.5 py-1 text-[12.5px] font-medium text-foreground-secondary transition-colors hover:bg-hover hover:text-foreground"
+            >
+              <Plus className="h-3.5 w-3.5" /> Log progress
+            </button>
+          )}
+
+          {logging && (
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -193,9 +213,22 @@ export function GoalPanel({
               />
             </div>
             <Button type="submit" size="sm" disabled={!canLog}>
-              <Plus className="h-3.5 w-3.5" /> Log it
+              Log it
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => {
+                setLogging(false);
+                setAmount("");
+                setNote("");
+              }}
+            >
+              Cancel
             </Button>
           </form>
+          )}
 
           {contributions.length > 0 && (
             <ul className="mt-3 flex flex-col">
@@ -247,6 +280,7 @@ export function GoalPanel({
         </p>
       )}
 
+      {mode === "edit" && (
       <div className="mt-3 border-t border-border-subtle pt-3">
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-4">
           <div className="sm:col-span-2">
@@ -266,7 +300,14 @@ export function GoalPanel({
           <div>
             <Label>{source === "manual" ? "Unit" : "Tracking"}</Label>
             {source === "manual" ? (
-              <Input value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="people" />
+              <Input
+                value={unit}
+                onChange={(e) => setUnit(e.target.value)}
+                /* Was "people", which asked a ₹600,000 savings goal whether it
+                   counted people. There is no sensible default noun, so the
+                   placeholder says the field is optional instead. */
+                placeholder="Optional"
+              />
             ) : (
               <div className="flex h-9 items-center rounded-md border border-edge px-2.5 text-[12.5px] text-muted-foreground">
                 {isMoneySource(source) ? "Money, automatic" : "Count, automatic"}
@@ -341,6 +382,7 @@ export function GoalPanel({
           )}
         </div>
       </div>
+      )}
     </div>
   );
 }
